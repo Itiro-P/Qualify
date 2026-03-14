@@ -1,36 +1,48 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# React gitignore
+#
+.DS_*
+*.log
+logs
+**/*.backup.*
+**/*.back.*
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
+node_modules
+bower_components
 
-# testing
-/coverage
+*.sublime*
 
-# next.js
-/.next/
-/out/
+psd
+thumb
+sketch
 
-# production
-/build
+# Go gitignore
+#
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
 
-# misc
-.DS_Store
-*.pem
+# Test binary, built with `go test -c`
+*.test
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Code coverage profiles and other test artifacts
+*.out
+coverage.*
+*.coverprofile
+profile.cov
 
-# local env files
-.env*.local
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+go.work.sum
+
+# env file
 .env
 
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# Editor/IDE
+# .idea/
+# .vscode/
