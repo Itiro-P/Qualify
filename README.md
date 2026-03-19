@@ -12,4 +12,5 @@ A aplicação oferece recursos como criação e gerenciamento de projetos de tes
   - Tailwind
 ## Backend
   - Go
+  - PostgreSQL
   - Docker
