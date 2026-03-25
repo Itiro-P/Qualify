@@ -1,0 +1,25 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: qualify_db
+    environment:
+      POSTGRES_USER: gouser
+      POSTGRES_PASSWORD: gopassword
+      POSTGRES_DB: godb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: qualify_app
+    ports:
+      - "8001:8001"
+    depends_on:
+      - db
+    environment:
+      DB_URL: postgres://gouser:gopassword@db:5432/godb?sslmode=disable
+
+volumes:
+  pgdata:
