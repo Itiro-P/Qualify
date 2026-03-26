@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"main/internal/database/handlers"
 	"os"
 
+	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -16,13 +18,10 @@ func main() {
 	}
 	defer conn.Close(context.Background())
 
-	var id int
-	name := "teste"
-	err = conn.QueryRow(context.Background(), `select id, name from "user" order by id limit 1`).Scan(&id, &name)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
-		os.Exit(1)
-	}
+	router := gin.Default()
 
-	fmt.Println("Id do usuário:", id, "\nNome do usuário:", name)
+	router.GET("/users", handlers.GetUsers(conn))
+	router.GET("/users/:id", handlers.GetUser(conn))
+
+	router.Run(":8001")
 }
