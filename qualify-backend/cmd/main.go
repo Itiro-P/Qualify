@@ -1,19 +1,27 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"net/http"
+	"os"
 
-	"golang.org/x/example/hello/reverse"
+	"github.com/jackc/pgx/v5"
 )
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello, Dockerized Go Application!")
-}
-
 func main() {
-	http.HandleFunc("/", handler)
-	fmt.Println("Server is running on port 8001")
-	fmt.Println(reverse.String("Hello"))
-	http.ListenAndServe(":8001", nil)
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DB_URL"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		os.Exit(1)
+	}
+	defer conn.Close(context.Background())
+
+	var id int
+	err = conn.QueryRow(context.Background(), `select id from "user" order by id limit 1`).Scan(&id)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Id do usuário:", id)
 }

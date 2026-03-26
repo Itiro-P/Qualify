@@ -10,16 +10,33 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gouser -d godb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    image: migrate/migrate:v4.16.2
+    volumes:
+      - ./internal/database/migrations:/migrations
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["-path", "/migrations", "-database", "postgres://gouser:gopassword@db:5432/godb?sslmode=disable", "up"]
 
   app:
     build: .
     container_name: qualify_app
     ports:
       - "8001:8001"
-    depends_on:
-      - db
     environment:
-      DB_URL: postgres://gouser:gopassword@db:5432/godb?sslmode=disable
+      - DB_URL=postgres://gouser:gopassword@db:5432/godb?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   pgdata:
