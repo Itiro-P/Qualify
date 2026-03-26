@@ -17,11 +17,12 @@ func main() {
 	defer conn.Close(context.Background())
 
 	var id int
-	err = conn.QueryRow(context.Background(), `select id from "user" order by id limit 1`).Scan(&id)
+	name := "teste"
+	err = conn.QueryRow(context.Background(), `select id, name from "user" order by id limit 1`).Scan(&id, &name)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Println("Id do usuário:", id)
+	fmt.Println("Id do usuário:", id, "\nNome do usuário:", name)
 }
