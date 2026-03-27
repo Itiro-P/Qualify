@@ -9,7 +9,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "QA-Match | Elite Software Testing Marketplace",
+  title: "Qualify | Fiverr para Testes de Software",
   description:
     "Conecte-se com os melhores profissionais de QA para testes exploratórios, automação e segurança. Deploy com 100% de confiança.",
 };
