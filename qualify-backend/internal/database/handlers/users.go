@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// Isso funciona
 func GetUsers(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		rows, err := conn.Query(context.Background(), "SELECT id, name FROM \"user\"")
