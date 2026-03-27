@@ -1,10 +1,10 @@
 import {
+  DeviceTesting,
+  Footer,
   Header,
   HeroSection,
-  TestingTiers,
-  DeviceTesting,
   RetestGuarantee,
-  Footer,
+  TestingTiers,
 } from "@/components/landing";
 
 export default function Home() {
