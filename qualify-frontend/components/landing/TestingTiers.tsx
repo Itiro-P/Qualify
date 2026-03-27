@@ -36,21 +36,21 @@ const tiers: TierCardProps[] = [
     title: "Teste de experiência",
     description:
       "Descubra casos extremos com intuição humana e cartas estruturadas. Perfeito para lançamentos de novas funcionalidades.",
-    features: ["Auditoria de Fluxo UX/UI", "Descoberta de Casos Extremos"],
+    features: ["Auditoria de fluxo UX/UI", "Descoberta de casos extremos"],
   },
   {
     icon: <Settings2 className="w-10 h-10" />,
-    title: "Engenharia de Automação",
+    title: "Engenharia de automação",
     description:
       "Construa pipelines robustos de CI/CD com Selenium, Playwright e Appium. Reduza o trabalho manual.",
-    features: ["Configuração de Framework Personalizado", "Scripting de Regressão"],
+    features: ["Configuração de framework personalizado", "Scripting de regressão"],
   },
   {
     icon: <ShieldCheck className="w-10 h-10" />,
-    title: "Auditorias de Segurança",
+    title: "Auditorias de segurança",
     description:
       "Identifique vulnerabilidades com testes de penetração abrangentes e verificações de conformidade SOC2.",
-    features: ["Varredura de Vulnerabilidades", "Preparação para Conformidade"],
+    features: ["Varredura de vulnerabilidades", "Preparação para conformidade"],
   },
 ];
 

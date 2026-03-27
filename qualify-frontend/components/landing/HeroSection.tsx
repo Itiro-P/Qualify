@@ -54,7 +54,7 @@ export function HeroSection() {
           <div className="absolute -top-6 -right-6 glass-panel p-6 rounded-xl border-primary/30">
             <p className="text-white font-bold text-3xl">99.9%</p>
             <p className="text-xs uppercase tracking-wider text-neutral-slate">
-              Satisfação do Cliente
+              Satisfação do cliente
             </p>
           </div>
         </div>
