@@ -33,7 +33,7 @@ Esta documentação explica o fluxo de `docker-compose` para o backend Qualify (
 2. Inicia `migrate` depois de `db` e aplica `up` nas migrations (tabelas e esquema).
 3. Inicia `app` depois que `migrate` termina com sucesso.
 
-> O app lê `DATABASE_URL` em `cmd/main.go` e consulta a tabela `widgets` (id=42). 
+> O app lê `DATABASE_URL` em `cmd/main.go` e consulta a tabela `user` (id=42). 
 
 ## Comandos úteis
 
