@@ -9,6 +9,7 @@ on:
     branches: ["main"]
     paths:
       - 'qualify-frontend/**'
+      - '.github/workflows/nextjs.yml'
       
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -56,6 +57,10 @@ jobs:
         with:
           node-version: "20"
           cache: ${{ steps.detect-package-manager.outputs.manager }}
+          cache-dependency-path: |
+            ${{ env.BASE_PATH }}/package-lock.json
+            ${{ env.BASE_PATH }}/npm-shrinkwrap.json
+            ${{ env.BASE_PATH }}/yarn.lock
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:
@@ -81,7 +86,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./out
+          path: ${{ env.BASE_PATH }}/out
 
   # Deployment job
   deploy:

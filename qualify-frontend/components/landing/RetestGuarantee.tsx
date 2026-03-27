@@ -16,7 +16,7 @@ export function RetestGuarantee() {
         <div className="flex flex-wrap justify-center gap-8">
           <div className="flex items-center gap-3">
             <History className="w-6 h-6 text-accent" />
-            <span className="text-sm font-medium">48h de Reteste</span>
+            <span className="text-sm font-medium">48h de reteste</span>
           </div>
           <div className="flex items-center gap-3">
             <Banknote className="w-6 h-6 text-accent" />
