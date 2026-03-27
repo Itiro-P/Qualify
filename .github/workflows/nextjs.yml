@@ -22,7 +22,7 @@ concurrency:
   group: "pages"
   cancel-in-progress: false
 env:
-  BASE_PATH: ${{ github.workspace }}/qualify-frontend
+  BASE_PATH: qualify-frontend
 
 jobs:
   # Build job
