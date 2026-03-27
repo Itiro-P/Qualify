@@ -27,7 +27,7 @@ export function HeroSection() {
           <div className="flex flex-wrap gap-4">
             <button className="bg-primary hover:scale-105 transition-transform px-8 py-4 font-bold rounded-lg flex items-center gap-2 cursor-pointer">
               Contratar especialistas em QA
-              <ArrowRight className="w-2 h-2" />
+              <ArrowRight className="w-5 h-5" />
             </button>
             <button className="bg-white/5 hover:bg-white/10 border border-white/10 px-8 py-4 font-bold rounded-lg cursor-pointer">
               Explorar o marketplace
