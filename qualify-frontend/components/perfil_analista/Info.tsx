@@ -2,10 +2,43 @@ import Image from 'next/image'
 import foto from "@/public/Testerson.jpg";
 import { Briefcase, MapPin, Star } from 'lucide-react';
 
+interface InfoCardsInter {
+    dado: string;
+    descricao: string;
+}
+
+const InfoTaxas: InfoCardsInter[] = [
+    {
+        dado: "124",
+        descricao: "Projetos Completos"
+    },
+    {
+        dado: "98%",
+        descricao: "Taxa de sucesso"
+    },
+    {
+        dado: "R$120/hr",
+        descricao: "Preço por hora"
+    },
+    {
+        dado: "1k+",
+        descricao: "Bugs descobridos"
+    },
+];
+
+function InfoCards({ dado, descricao }: InfoCardsInter) {
+  return (
+    <div className="flex justify-start inset-ring-2 inset-ring-zinc-800 flex-col w-full mx-3 bg-gray-950">
+        <p className="text-blue-800 text-2xl mt-4 mx-4">{dado}</p>
+        <p className="text-zinc-400 mt-1 mb-4 mx-4">{descricao}</p>
+    </div>
+  );
+}
+
 export function Info(){
     return(
         <section id="info" className="px-6 md:px-20 py-24">
-            <div className="flex justify-between ">
+            <div className="flex justify-between ml-3">
                 <div className="w-15/100">
                     <Image 
                         src={foto} 
@@ -33,11 +66,13 @@ export function Info(){
                 </div>
                 <div className="w-20/100 flex items-end content-end">
                     <button className="px-5 py-3 m-5 bg-zinc-900 shadow-lg shadow-zinc-900/40 inset-ring-2 inset-ring-zinc-800">Contate</button>
-                    <button className="px-5 py-3 m-5 bg-blue-700 shadow-lg shadow-blue-900/40 inset-ring-2 inset-ring-blue-600">Contrate agora</button>
+                    <button className="px-5 py-3 my-5 ml-5 bg-blue-700 shadow-lg shadow-blue-900/40 inset-ring-2 inset-ring-blue-600">Contrate agora</button>
                 </div>
             </div>
-            <div className="flex justify-between content-center">
-
+            <div className="flex justify-between content-center mt-8">
+                {InfoTaxas.map((infom) => (
+                    <InfoCards key={infom.dado} {...infom} />
+                ))}
             </div>
         </section>
     );
