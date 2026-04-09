@@ -32,8 +32,10 @@ services:
       - ./internal/database/migrations:/migrations
     profiles:
       - tools
-    command: ["-path", "/migrations", "-database", "postgres://gouser:gopassword@db:5432/godb?sslmode=disable"]
-
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["/migrate", "-path", "/migrations", "-database", "postgres://gouser:gopassword@db:5432/godb?sslmode=disable"]
   app:
     build: .
     container_name: qualify_app
