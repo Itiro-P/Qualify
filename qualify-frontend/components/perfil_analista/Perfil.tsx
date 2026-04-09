@@ -2,12 +2,12 @@ import Image from 'next/image'
 import foto from "@/public/Testerson.jpg";
 import { Briefcase, MapPin, Star } from 'lucide-react';
 
-interface InfoCardsInter {
+interface perfilCardsInter {
     dado: string;
     descricao: string;
 }
 
-const InfoTaxas: InfoCardsInter[] = [
+const perfilTaxas: perfilCardsInter[] = [
     {
         dado: "124",
         descricao: "Projetos Completos"
@@ -26,7 +26,7 @@ const InfoTaxas: InfoCardsInter[] = [
     },
 ];
 
-function InfoCards({ dado, descricao }: InfoCardsInter) {
+function PerfilCards({ dado, descricao }: perfilCardsInter) {
   return (
     <div className="flex justify-start inset-ring-2 inset-ring-zinc-800 flex-col w-full mx-3 bg-gray-950">
         <p className="text-blue-800 text-2xl mt-4 mx-4">{dado}</p>
@@ -35,9 +35,9 @@ function InfoCards({ dado, descricao }: InfoCardsInter) {
   );
 }
 
-export function Info(){
+export function Perfil(){
     return(
-        <section id="info" className="px-6 md:px-20 py-24">
+        <section id="perfil" className="px-6 md:px-20 py-24">
             <div className="flex justify-between ml-3">
                 <div className="w-15/100">
                     <Image 
@@ -70,8 +70,8 @@ export function Info(){
                 </div>
             </div>
             <div className="flex justify-between content-center mt-8">
-                {InfoTaxas.map((infom) => (
-                    <InfoCards key={infom.dado} {...infom} />
+                {perfilTaxas.map((perfilm) => (
+                    <PerfilCards key={perfilm.descricao} {...perfilm} />
                 ))}
             </div>
         </section>
