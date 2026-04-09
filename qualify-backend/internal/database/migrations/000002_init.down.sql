@@ -1,0 +1,11 @@
+ALTER TABLE IF EXISTS "user"
+    DROP COLUMN IF EXISTS time_created,
+    DROP COLUMN IF EXISTS country_code,
+    DROP COLUMN IF EXISTS country_name,
+    DROP COLUMN IF EXISTS city,
+    DROP COLUMN IF EXISTS timezone;
+
+DROP TABLE IF EXISTS review;
+DROP TABLE IF EXISTS analyst_skill;
+DROP TABLE IF EXISTS client;
+DROP TABLE IF EXISTS analyst;
