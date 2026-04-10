@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"fmt"
 	"main/pkg"
 	"net/http"
@@ -107,7 +106,7 @@ func GetReviews(conn *pgx.Conn) gin.HandlerFunc {
 		args = append(args, pageSize, offset)
 
 		// Execute query
-		rows, err := conn.Query(context.Background(), query, args...)
+		rows, err := conn.Query(c.Request.Context(), query, args...)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error fetching reviews: " + err.Error()})
 			return
@@ -154,7 +153,7 @@ func GetReview(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		var review pkg.Review
-		err := conn.QueryRow(context.Background(), "SELECT id, name FROM \"review\" WHERE id = $1", id).Scan(&review.ID)
+		err := conn.QueryRow(c.Request.Context(), "SELECT id, name FROM \"review\" WHERE id = $1", id).Scan(&review.ID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar avaliação"})
 			return

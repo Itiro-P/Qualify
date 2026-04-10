@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"fmt"
 	"main/pkg"
 	"net/http"
@@ -76,7 +75,7 @@ func GetAnalysts(conn *pgx.Conn) gin.HandlerFunc {
 		}
 
 		// Execute query
-		rows, err := conn.Query(context.Background(), query, args...)
+		rows, err := conn.Query(c.Request.Context(), query, args...)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar prestadores: " + err.Error()})
 			return
@@ -128,7 +127,7 @@ func GetAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		var analyst pkg.Analyst
-		err := conn.QueryRow(context.Background(), "SELECT id, name FROM \"analyst\" WHERE id = $1", id).Scan(&analyst.ID, &analyst.Name)
+		err := conn.QueryRow(c.Request.Context(), "SELECT id, name FROM \"analyst\" WHERE id = $1", id).Scan(&analyst.ID, &analyst.Name)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar prestador"})
 			return
