@@ -1,2 +1,1 @@
-export { Perfil } from "./Perfil";
-export { AoLado } from "./AoLado";
+export { Perfil } from "./Perfil";  
