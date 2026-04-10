@@ -25,6 +25,17 @@ services:
         condition: service_healthy
     command: ["-path", "/migrations", "-database", "postgres://gouser:gopassword@db:5432/godb?sslmode=disable", "up"]
 
+  migrate-cli:
+    image: migrate/migrate:v4.16.2
+    container_name: qualify_migrate_cli
+    volumes:
+      - ./internal/database/migrations:/migrations
+    profiles:
+      - tools
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["/migrate", "-path", "/migrations", "-database", "postgres://gouser:gopassword@db:5432/godb?sslmode=disable"]
   app:
     build: .
     container_name: qualify_app
