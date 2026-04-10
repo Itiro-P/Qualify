@@ -9,28 +9,6 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func GetUsers(conn *pgx.Conn) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		rows, err := conn.Query(context.Background(), "SELECT id, name FROM \"user\"")
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar usuários"})
-			return
-		}
-		defer rows.Close()
-
-		var users []pkg.User
-		for rows.Next() {
-			var u pkg.User
-			if err := rows.Scan(&u.ID, &u.Name); err != nil {
-				continue
-			}
-			users = append(users, u)
-		}
-
-		c.JSON(http.StatusOK, users)
-	}
-}
-
 func GetUser(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
