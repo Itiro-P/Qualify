@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"main/internal/database/handlers"
+	"main/internal/routes"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -20,8 +20,7 @@ func main() {
 
 	router := gin.Default()
 
-	router.GET("/users", handlers.GetUsers(conn))
-	router.GET("/users/:id", handlers.GetUser(conn))
+	routes.SetupRoutes(router, conn)
 
 	router.Run(":8001")
 }
