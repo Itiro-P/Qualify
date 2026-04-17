@@ -1,7 +1,7 @@
 import { Settings } from 'lucide-react';
-import { TechnologyCard } from '@/types/analyst/technology';
+import { ITechnology } from '@/types/analyst/technology';
 
-const technologiesCardsVector: TechnologyCard[] = [
+const technologiesCardsVector: ITechnology[] = [
     {
         technology: "Docker",
     },
@@ -16,7 +16,7 @@ const technologiesCardsVector: TechnologyCard[] = [
     },
 ];
 
-function TechnologiesCards({ technology }: TechnologyCard) {
+function Card({ technology }: ITechnology) {
     return (
         <p className="text-blue-600 border-blue-600 rounded-xl text-lg px-2 py-1 m-1 bg-blue-950">
             {technology}
@@ -35,7 +35,7 @@ export function Technologies(){
             </div>
             <div className="flex mt-2 mx-2 ">
                 {technologiesCardsVector.map((technologies) => (
-                    <TechnologiesCards key={technologies.technology} {...technologies} />
+                    <Card key={technologies.technology} {...technologies} />
                 ))}
             </div>
         </div>

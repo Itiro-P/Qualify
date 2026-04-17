@@ -1,4 +1,4 @@
-export interface StatisticProfileCard {
+export interface IStatisticProfile {
     value: string;
     statistic: string;
 }

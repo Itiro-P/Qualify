@@ -1,3 +1,3 @@
-export interface TechnologyCard {
+export interface ITechnology {
     technology: string;
 }

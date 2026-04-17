@@ -1,6 +1,6 @@
-import { StatisticProfileCard } from '@/types/analyst/statysticProfile';
+import { IStatisticProfile } from '@/types/analyst/statisticProfile';
 
-const StatisticProfileCardsVector: StatisticProfileCard[] = [
+const StatisticProfileCardsVector: IStatisticProfile[] = [
     {
         value: "124",
         statistic: "Projetos Completos"
@@ -19,7 +19,7 @@ const StatisticProfileCardsVector: StatisticProfileCard[] = [
     },
 ];
 
-function StatisticProfileCards({ value, statistic }: StatisticProfileCard) {
+function Card({ value, statistic }: IStatisticProfile) {
   return (
     <div className="flex justify-start inset-ring-2 inset-ring-zinc-800 flex-col w-full mx-3 mt-4 bg-gray-950">
         <p className="text-blue-800 text-2xl mt-4 mx-4">
@@ -36,7 +36,7 @@ export function StatisticProfile(){
     return(
         <div className="flex flex-col justify-between content-center mt-8 w-2/10 h-100">
             {StatisticProfileCardsVector.map((StatisticProfileCard) => (
-                <StatisticProfileCards key={StatisticProfileCard.statistic} {...StatisticProfileCard} />
+                <Card key={StatisticProfileCard.statistic} {...StatisticProfileCard} />
             ))}
         </div>
     );

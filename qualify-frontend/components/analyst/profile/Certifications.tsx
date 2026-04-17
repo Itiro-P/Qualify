@@ -1,7 +1,7 @@
 import { GraduationCap } from 'lucide-react';
-import { CertificationCard } from '@/types/analyst/certification';
+import { ICertification } from '@/types/analyst/certification';
 
-const certificationsCardsVector: CertificationCard[] = [
+const certificationsCardsVector: ICertification[] = [
   {
     name: "Certificado de Testador Supremo de Botões",
     institution: "Irmandade do Teste Supremo",
@@ -22,7 +22,7 @@ const certificationsCardsVector: CertificationCard[] = [
   }
 ];
 
-function Card({ name, institution, description, year }: CertificationCard) {
+function Card({ name, institution, description, year }: ICertification) {
   return (
     <div className="flex flex-col mt-4 mb-4">
         <h3 className="text-white-950 mb-1">
