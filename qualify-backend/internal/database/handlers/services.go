@@ -1,10 +1,10 @@
 package handlers
 
 import (
-	"context"
 	"fmt"
 	"main/pkg"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
@@ -30,7 +30,7 @@ func GetServices(conn *pgx.Conn) gin.HandlerFunc {
 
 		query += " ORDER BY time_created DESC"
 
-		rows, err := conn.Query(context.Background(), query, args...)
+		rows, err := conn.Query(c.Request.Context(), query, args...)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar serviços: " + err.Error()})
 			return
@@ -58,24 +58,33 @@ func GetServices(conn *pgx.Conn) gin.HandlerFunc {
 func GetService(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
-
-		var s pkg.Service
-		err := conn.QueryRow(context.Background(),
-			`SELECT id, title, content, proposal_letter_id, hourly_rate, status, time_created
-			 FROM service WHERE id = $1`, id,
-		).Scan(&s.Id, &s.Title, &s.Content, &s.Proposal_letter_id,
-			&s.Hourly_rate, &s.Status, &s.Time_created)
+		serviceID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar serviço: " + err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid service id"})
 			return
 		}
 
-		rows, err := conn.Query(context.Background(),
+		var s pkg.Service
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT id, title, content, proposal_letter_id, hourly_rate, status, time_created
+			 FROM service WHERE id = $1`, serviceID,
+		).Scan(&s.Id, &s.Title, &s.Content, &s.Proposal_letter_id,
+			&s.Hourly_rate, &s.Status, &s.Time_created)
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				c.JSON(http.StatusNotFound, gin.H{"error": "service not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		rows, err := conn.Query(c.Request.Context(),
 			`SELECT id, service_id, rating, comment, time_created
-			 FROM review WHERE service_id = $1 ORDER BY time_created DESC`, id,
+			 FROM review WHERE service_id = $1 ORDER BY time_created DESC`, serviceID,
 		)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar reviews: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		defer rows.Close()
@@ -84,16 +93,100 @@ func GetService(conn *pgx.Conn) gin.HandlerFunc {
 		for rows.Next() {
 			var r pkg.Review
 			if err := rows.Scan(&r.Id, &r.Service_id, &r.Rating, &r.Comment, &r.Time_created); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao escanear review: " + err.Error()})
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
 			}
 			reviews = append(reviews, r)
 		}
 		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao iterar reviews: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
 		c.JSON(http.StatusOK, gin.H{"service": s, "reviews": reviews})
+	}
+}
+
+func CreateService(conn *pgx.Conn) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var service pkg.Service
+		if err := c.BindJSON(&service); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		err := conn.QueryRow(c.Request.Context(),
+			`INSERT INTO service (proposal_letter_id, title, content, hourly_rate, status)
+			 VALUES ($1, $2, $3, $4, $5)
+			 RETURNING id, time_created`,
+			service.Proposal_letter_id, service.Title, service.Content, service.Hourly_rate, service.Status).
+			Scan(&service.Id, &service.Time_created)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusCreated, service)
+	}
+}
+
+func UpdateService(conn *pgx.Conn) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		serviceID, err := strconv.Atoi(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid service id"})
+			return
+		}
+
+		var service pkg.Service
+		if err := c.BindJSON(&service); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		err = conn.QueryRow(c.Request.Context(),
+			`UPDATE service SET proposal_letter_id = $1, title = $2, content = $3, hourly_rate = $4, status = $5
+			 WHERE id = $6
+			 RETURNING id, proposal_letter_id, title, content, hourly_rate, status, time_created`,
+			service.Proposal_letter_id, service.Title, service.Content, service.Hourly_rate, service.Status, serviceID).
+			Scan(&service.Id, &service.Proposal_letter_id, &service.Title, &service.Content, &service.Hourly_rate, &service.Status, &service.Time_created)
+
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				c.JSON(http.StatusNotFound, gin.H{"error": "service not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, service)
+	}
+}
+
+func DeleteService(conn *pgx.Conn) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		serviceID, err := strconv.Atoi(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid service id"})
+			return
+		}
+
+		result, err := conn.Exec(c.Request.Context(),
+			`DELETE FROM service WHERE id = $1`, serviceID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		if result.RowsAffected() == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "service not found"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "service deleted successfully"})
 	}
 }

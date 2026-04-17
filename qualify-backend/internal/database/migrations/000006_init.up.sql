@@ -4,9 +4,9 @@ CREATE TABLE IF NOT EXISTS user_profile (
 );
 
 CREATE TABLE IF NOT EXISTS analyst_profile (
-    analyst_id INTEGER PRIMARY KEY REFERENCES user_profile(user_id) ON DELETE CASCADE
+    user_id INTEGER PRIMARY KEY REFERENCES user_profile(user_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS client_profile (
-    client_id INTEGER PRIMARY KEY REFERENCES user_profile(user_id) ON DELETE CASCADE
+    user_id INTEGER PRIMARY KEY REFERENCES user_profile(user_id) ON DELETE CASCADE
 );

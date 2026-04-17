@@ -2,8 +2,6 @@
 -- PostgreSQL database dump
 --
 
-\restrict APTVyG3XSB6CvpdQf6XuGwl8giQ2xNVfqE3sur865VEzdPgEDMehG92eC2dg9ni
-
 -- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9
 
@@ -13,7 +11,7 @@ SET idle_in_transaction_session_timeout = 0;
 SET transaction_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
+SELECT pg_catalog.set_config('search_path', 'public', false);
 SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
@@ -22,18 +20,6 @@ SET row_security = off;
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
-
---
--- Name: schema_migrations; Type: TABLE; Schema: public; Owner: gouser
---
-
-CREATE TABLE public.schema_migrations (
-    version bigint NOT NULL,
-    dirty boolean NOT NULL
-);
-
-
-ALTER TABLE public.schema_migrations OWNER TO gouser;
 
 --
 -- Name: skill; Type: TABLE; Schema: public; Owner: gouser
@@ -121,14 +107,6 @@ ALTER TABLE ONLY public."user" ALTER COLUMN id SET DEFAULT nextval('public.user_
 
 
 --
--- Name: schema_migrations schema_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: gouser
---
-
-ALTER TABLE ONLY public.schema_migrations
-    ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
-
-
---
 -- Name: skill skill_name_key; Type: CONSTRAINT; Schema: public; Owner: gouser
 --
 
@@ -163,6 +141,3 @@ ALTER TABLE ONLY public."user"
 --
 -- PostgreSQL database dump complete
 --
-
-\unrestrict APTVyG3XSB6CvpdQf6XuGwl8giQ2xNVfqE3sur865VEzdPgEDMehG92eC2dg9ni
-

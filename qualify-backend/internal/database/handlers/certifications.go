@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"context"
 	"main/pkg"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
@@ -11,11 +11,11 @@ import (
 
 func GetCertifications(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		rows, err := conn.Query(context.Background(),
+		rows, err := conn.Query(c.Request.Context(),
 			`SELECT id, name, year, description FROM certification ORDER BY year DESC`,
 		)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar certificações: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		defer rows.Close()
@@ -40,14 +40,247 @@ func GetCertifications(conn *pgx.Conn) gin.HandlerFunc {
 func GetCertification(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
+		certID, err := strconv.Atoi(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid certification id"})
+			return
+		}
+
 		var cert pkg.Certification
-		err := conn.QueryRow(context.Background(),
-			`SELECT id, name, year, description FROM certification WHERE id = $1`, id,
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT id, name, year, description FROM certification WHERE id = $1`, certID,
 		).Scan(&cert.Id, &cert.Name, &cert.Year, &cert.Description)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar certificação: " + err.Error()})
+			if err == pgx.ErrNoRows {
+				c.JSON(http.StatusNotFound, gin.H{"error": "certification not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, cert)
+	}
+}
+
+func CreateCertification(conn *pgx.Conn) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var cert pkg.Certification
+		if err := c.BindJSON(&cert); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		// Validate required fields
+		if cert.Name == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "certification name is required"})
+			return
+		}
+		if cert.Year < 1900 || cert.Year > 2030 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "certification year must be between 1900 and 2030"})
+			return
+		}
+
+		err := conn.QueryRow(c.Request.Context(),
+			`INSERT INTO certification (name, year, description) VALUES ($1, $2, $3) RETURNING id`,
+			cert.Name, cert.Year, cert.Description,
+		).Scan(&cert.Id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusCreated, cert)
+	}
+}
+
+func UpdateCertification(conn *pgx.Conn) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		certID, err := strconv.Atoi(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid certification id"})
+			return
+		}
+
+		var cert pkg.Certification
+		if err := c.BindJSON(&cert); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		// Validate required fields
+		if cert.Name == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "certification name is required"})
+			return
+		}
+		if cert.Year < 1900 || cert.Year > 2030 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "certification year must be between 1900 and 2030"})
+			return
+		}
+
+		err = conn.QueryRow(c.Request.Context(),
+			`UPDATE certification SET name = $1, year = $2, description = $3 WHERE id = $4 RETURNING id, name, year, description`,
+			cert.Name, cert.Year, cert.Description, certID,
+		).Scan(&cert.Id, &cert.Name, &cert.Year, &cert.Description)
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				c.JSON(http.StatusNotFound, gin.H{"error": "certification not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, cert)
+	}
+}
+
+func DeleteCertification(conn *pgx.Conn) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		certID, err := strconv.Atoi(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid certification id"})
+			return
+		}
+
+		result, err := conn.Exec(c.Request.Context(),
+			`DELETE FROM certification WHERE id = $1`, certID,
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		if result.RowsAffected() == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "certification not found"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "certification deleted successfully"})
+	}
+}
+
+func GetAnalystCertifications(conn *pgx.Conn) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		analystID, err := strconv.Atoi(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid analyst id"})
+			return
+		}
+
+		rows, err := conn.Query(c.Request.Context(),
+			`SELECT c.id, c.name, c.year, c.description 
+			 FROM certification c 
+			 JOIN analyst_certification ac ON c.id = ac.certification_id 
+			 WHERE ac.analyst_id = $1 
+			 ORDER BY c.year DESC`,
+			analystID,
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		defer rows.Close()
+
+		var certs []pkg.Certification
+		for rows.Next() {
+			var cert pkg.Certification
+			if err := rows.Scan(&cert.Id, &cert.Name, &cert.Year, &cert.Description); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao escanear certificação: " + err.Error()})
+				return
+			}
+			certs = append(certs, cert)
+		}
+		if err = rows.Err(); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao iterar certificações: " + err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"certifications": certs, "count": len(certs)})
+	}
+}
+
+func CreateAnalystCertification(conn *pgx.Conn) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ac pkg.AnalystCertification
+		if err := c.BindJSON(&ac); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		// Validate that analyst exists
+		var analystExists bool
+		err := conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM analyst WHERE user_id = $1)`, ac.Analyst_id,
+		).Scan(&analystExists)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if !analystExists {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "analyst not found"})
+			return
+		}
+
+		// Validate that certification exists
+		var certExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM certification WHERE id = $1)`, ac.Certification_id,
+		).Scan(&certExists)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if !certExists {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "certification not found"})
+			return
+		}
+
+		_, err = conn.Exec(c.Request.Context(),
+			`INSERT INTO analyst_certification (analyst_id, certification_id) VALUES ($1, $2)`,
+			ac.Analyst_id, ac.Certification_id,
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusCreated, ac)
+	}
+}
+
+func DeleteAnalystCertification(conn *pgx.Conn) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		analystID := c.Param("id")
+		analystIDVal, err := strconv.Atoi(analystID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid analyst id"})
+			return
+		}
+
+		certID := c.Query("certification_id")
+		if certID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "certification_id query parameter required"})
+			return
+		}
+		certIDVal, err := strconv.Atoi(certID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid certification_id"})
+			return
+		}
+
+		result, err := conn.Exec(c.Request.Context(),
+			`DELETE FROM analyst_certification WHERE analyst_id = $1 AND certification_id = $2`,
+			analystIDVal, certIDVal,
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		if result.RowsAffected() == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "analyst certification not found"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "analyst certification deleted successfully"})
 	}
 }

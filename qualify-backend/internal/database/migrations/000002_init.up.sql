@@ -3,6 +3,7 @@ ALTER TABLE IF EXISTS "user"
 
     ADD COLUMN IF NOT EXISTS country_code CHAR(2)       NOT NULL DEFAULT 'BR',
     ADD COLUMN IF NOT EXISTS country_name VARCHAR(100)  NOT NULL DEFAULT 'Brazil',
+    ADD COLUMN IF NOT EXISTS country_state VARCHAR(100) NOT NULL DEFAULT 'Paraná',
     ADD COLUMN IF NOT EXISTS city         VARCHAR(100)  NOT NULL DEFAULT 'Campo Mourão',
     ADD COLUMN IF NOT EXISTS timezone     VARCHAR(50)  NOT NULL DEFAULT 'America/Sao_Paulo';
 
@@ -11,7 +12,7 @@ CREATE TABLE IF NOT EXISTS analyst (
     user_id INTEGER NOT NULL UNIQUE,
     hourly_rate FLOAT NOT NULL DEFAULT 0 CHECK (hourly_rate >= 0),
     total_reviews INTEGER NOT NULL DEFAULT 0 CHECK (total_reviews >= 0),
-    mean_rating INTEGER NOT NULL DEFAULT 0 CHECK (mean_rating >= 0 AND mean_rating <= 5),
+    mean_rating FLOAT NOT NULL DEFAULT 0 CHECK (mean_rating >= 0 AND mean_rating <= 5),
     FOREIGN KEY (user_id) REFERENCES "user" (id) ON DELETE CASCADE
 );
 
