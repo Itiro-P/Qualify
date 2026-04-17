@@ -1,11 +1,13 @@
 package pkg
 
+import "time"
+
 type ProposalLetter struct {
-	Id                   int     `json:"id"`
-	Title                string  `json:"title"`
-	Content              string  `json:"content"`
-	Client_id            string  `json:"client_id"`
-	Analyst_id           string  `json:"analyst_id"`
-	Proposed_hourly_rate float64 `json:"proposed_hourly_rate"`
-	Time_created         string  `json:"time_created"`
+	Id                   int       `json:"id"`
+	Title                string    `json:"title"`
+	Content              string    `json:"content"`
+	Client_id            string    `json:"client_id"`
+	Analyst_id           string    `json:"analyst_id"`
+	Proposed_hourly_rate float64   `json:"proposed_hourly_rate"`
+	Time_created         time.Time `json:"time_created"`
 }

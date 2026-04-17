@@ -12,23 +12,16 @@ import (
 func GetReviews(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Build query with filters
-		query := `SELECT id, client_id, analyst_id, rating, comment, time_created 
+		query := `SELECT id, service_id, rating, comment, time_created 
                   FROM review WHERE 1=1`
 
 		args := []interface{}{}
 		argCounter := 1
 
-		// Filter by client_id
-		if clientID := c.Query("client_id"); clientID != "" {
-			query += fmt.Sprintf(" AND client_id = $%d", argCounter)
-			args = append(args, clientID)
-			argCounter++
-		}
-
-		// Filter by analyst_id
-		if analystID := c.Query("analyst_id"); analystID != "" {
-			query += fmt.Sprintf(" AND analyst_id = $%d", argCounter)
-			args = append(args, analystID)
+		// Filter by service_id
+		if serviceID := c.Query("service_id"); serviceID != "" {
+			query += fmt.Sprintf(" AND service_id = $%d", argCounter)
+			args = append(args, serviceID)
 			argCounter++
 		}
 
@@ -76,7 +69,7 @@ func GetReviews(conn *pgx.Conn) gin.HandlerFunc {
 		if sortBy := c.Query("sort_by"); sortBy != "" {
 			// Validate sortBy to prevent SQL injection
 			allowedSortFields := map[string]bool{
-				"id": true, "client_id": true, "analyst_id": true,
+				"id": true, "service_id": true,
 				"rating": true, "time_created": true,
 			}
 			if allowedSortFields[sortBy] {
@@ -120,8 +113,7 @@ func GetReviews(conn *pgx.Conn) gin.HandlerFunc {
 			var review pkg.Review
 			err := rows.Scan(
 				&review.Id,
-				&review.Client_id,
-				&review.Analyst_id,
+				&review.Service_id,
 				&review.Rating,
 				&review.Comment,
 				&review.Time_created,
@@ -153,7 +145,7 @@ func GetReview(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		var review pkg.Review
-		err := conn.QueryRow(c.Request.Context(), "SELECT id, name FROM \"review\" WHERE id = $1", id).Scan(&review.Id)
+		err := conn.QueryRow(c.Request.Context(), "SELECT id, service_id, rating, comment, time_created FROM review WHERE id = $1", id).Scan(&review.Id, &review.Service_id, &review.Rating, &review.Comment, &review.Time_created)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar avaliação"})
 			return
