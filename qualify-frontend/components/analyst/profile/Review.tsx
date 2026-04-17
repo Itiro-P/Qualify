@@ -1,12 +1,7 @@
 import { SquarePen } from 'lucide-react';
+import { ReviewCard } from '@/types/analyst/reviews';
 
-interface reviewsCardsInterface {
-    rating: number,
-    comment: string,
-    date: string,
-}
-
-const reviewCardsVector: reviewsCardsInterface[] = [
+const reviewCardsVector: ReviewCard[] = [
     {
         rating: 2.5,
         comment: "Bons testes aletórios",
@@ -43,7 +38,7 @@ function StarRange ({ rating }: {rating: number}) {
     return <div>{StarRange}</div>;
 };
 
-function ReviewCards({ rating, comment, date }: reviewsCardsInterface ) {
+function ReviewCards({ rating, comment, date }: ReviewCard ) {
     return (
         <div id="comment" className="flex flex-col p-4 mb-6">
             <p className="text-zinc-200">{comment}</p>

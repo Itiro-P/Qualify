@@ -1,13 +1,7 @@
 import { GraduationCap } from 'lucide-react';
+import { CertificationCard } from '@/types/analyst/certification';
 
-interface certificationsCardsInterface {
-    name: string;
-    institution: string;
-    description: string;
-    year: string;
-}
-
-const certificationsCardsVector: certificationsCardsInterface[] = [
+const certificationsCardsVector: CertificationCard[] = [
   {
     name: "Certificado de Testador Supremo de Botões",
     institution: "Irmandade do Teste Supremo",
@@ -28,7 +22,7 @@ const certificationsCardsVector: certificationsCardsInterface[] = [
   }
 ];
 
-function CertificacoesCards({ name, institution, description, year }: certificationsCardsInterface) {
+function Card({ name, institution, description, year }: CertificationCard) {
   return (
     <div className="flex flex-col mt-4 mb-4">
         <h3 className="text-white-950 mb-1">
@@ -57,8 +51,8 @@ export function Certifications(){
                 </h2>
             </div>
             <div className="flex flex-col mx-3">
-                {certificationsCardsVector.map((certificados) => (
-                    <CertificacoesCards key={certificados.name} {...certificados} />
+                {certificationsCardsVector.map((certification) => (
+                    <Card key={certification.name} {...certification} />
                 ))}
             </div>
         </div>

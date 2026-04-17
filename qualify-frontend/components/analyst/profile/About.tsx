@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Review } from "./Review";
-import { Biography } from "./Biography";
-import { Technologies } from "./Technologies";
-import { Certifications } from "./Certifications";
+import { Review } from "@/components/analyst/profile/Review";
+import { Biography } from "@/components/analyst/profile/Biography";
+import { Technologies } from "@/components/analyst/profile/Technologies";
+import { Certifications } from "@/components/analyst/profile/Certifications";
 
 function TabsSystem() {
     const [abaAtiva, setAbaAtiva] = useState<"byographi" | "reviews" | "technologies" | "certifications">("byographi");

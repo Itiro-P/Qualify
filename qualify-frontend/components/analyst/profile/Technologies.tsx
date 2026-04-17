@@ -1,10 +1,7 @@
 import { Settings } from 'lucide-react';
+import { TechnologyCard } from '@/types/analyst/technology';
 
-interface technologiesCardsInterface {
-    technology: string;
-}
-
-const technologiesCardsVector: technologiesCardsInterface[] = [
+const technologiesCardsVector: TechnologyCard[] = [
     {
         technology: "Docker",
     },
@@ -19,7 +16,7 @@ const technologiesCardsVector: technologiesCardsInterface[] = [
     },
 ];
 
-function TechnologiesCards({ technology }: technologiesCardsInterface) {
+function TechnologiesCards({ technology }: TechnologyCard) {
     return (
         <p className="text-blue-600 border-blue-600 rounded-xl text-lg px-2 py-1 m-1 bg-blue-950">
             {technology}

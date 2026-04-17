@@ -1,7 +1,7 @@
-import { ImageProfile } from './ImageProfile';
+import { ImageProfile } from '@/components/analyst/profile/ImageProfile';
 import { StatisticProfile } from "./StatisticProfile";
-import { About } from ".//About";
-import { Informations } from "./Informations";
+import { About } from "./About";
+import { Informations } from "@/components/analyst/profile/Informations";
 import { ContactButtons } from "./ContactButtons";
 
 export function Profile(){

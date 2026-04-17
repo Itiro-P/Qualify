@@ -1,9 +1,6 @@
-interface statisticProfileCardInterface {
-    value: string;
-    statistic: string;
-}
+import { StatisticProfileCard } from '@/types/analyst/statysticProfile';
 
-const StatisticProfileCardsVector: statisticProfileCardInterface[] = [
+const StatisticProfileCardsVector: StatisticProfileCard[] = [
     {
         value: "124",
         statistic: "Projetos Completos"
@@ -22,7 +19,7 @@ const StatisticProfileCardsVector: statisticProfileCardInterface[] = [
     },
 ];
 
-function StatisticProfileCards({ value, statistic }: statisticProfileCardInterface) {
+function StatisticProfileCards({ value, statistic }: StatisticProfileCard) {
   return (
     <div className="flex justify-start inset-ring-2 inset-ring-zinc-800 flex-col w-full mx-3 mt-4 bg-gray-950">
         <p className="text-blue-800 text-2xl mt-4 mx-4">
