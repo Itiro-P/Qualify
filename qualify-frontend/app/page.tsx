@@ -7,10 +7,6 @@ import {
   TestingTiers,
 } from "@/components/landing";
 
-import {
-  Perfil,
-} from "@/components/perfil_analista";
-
 export default function Home() {
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
@@ -20,7 +16,6 @@ export default function Home() {
         <TestingTiers />
         <DeviceTesting />
         <RetestGuarantee />
-        <Perfil />
       </main>
       <Footer />
     </div>

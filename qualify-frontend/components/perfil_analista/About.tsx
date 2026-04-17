@@ -1,0 +1,56 @@
+"use client";
+
+import { useState } from "react";
+import { Review } from "./Review";
+import { Biography } from "./Biography";
+import { Technologies } from "./Technologies";
+import { Certifications } from "./Certifications";
+
+function TabsSystem() {
+    const [abaAtiva, setAbaAtiva] = useState<"byographi" | "reviews" | "technologies" | "certifications">("byographi");
+
+    return (
+        <div>
+            <div className="flex">
+                <button className="p-2 m-2 bg-blue-950" onClick={() => setAbaAtiva("byographi")}>
+                    Biografia
+                </button>
+                <button className="p-2 m-2 bg-blue-950" onClick={() => setAbaAtiva("reviews")}>
+                    Reviews
+                </button>
+                <button className="p-2 m-2 bg-blue-950" onClick={() => setAbaAtiva("technologies")}>
+                    Tecnologias
+                </button>
+                <button className="p-2 m-2 bg-blue-950" onClick={() => setAbaAtiva("certifications")}>
+                    Certificações
+                </button>
+            </div>
+
+            <div className="mt-4">
+                {abaAtiva === "byographi" && (
+                    <Biography />
+                )}
+
+                {abaAtiva === "reviews" && (
+                    <Review />
+                )}
+
+                {abaAtiva === "technologies" && (
+                    <Technologies />
+                )}
+
+                {abaAtiva === "certifications" && (
+                    <Certifications />
+                )}
+            </div>
+        </div>
+    );
+}
+
+export function About(){
+    return(
+        <section id="sobre" className="flex flex-col px-3 w-8/10">
+            <TabsSystem />
+        </section>
+    );
+}

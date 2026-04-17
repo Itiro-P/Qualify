@@ -1,4 +1,4 @@
-export function BotoesContato(){
+export function ContactButtons(){
     return(
         <div className="w-20/100 flex items-end content-end">
             <button className="px-5 py-3 m-5 bg-zinc-900 shadow-lg shadow-zinc-900/40 inset-ring-2 inset-ring-zinc-800">

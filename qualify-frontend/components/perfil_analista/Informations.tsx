@@ -1,6 +1,6 @@
 import { Briefcase, MapPin, Star } from 'lucide-react';
 
-export function Info(){
+export function Informations(){
     return(
         <div className="w-65/100 flex flex-col content-between">
             <h1 className="m-6 text-3xl">
@@ -26,7 +26,8 @@ export function Info(){
                     <Star className="text-yellow-500 fill-current mr-2"/>
                     <p className="mr-12 text-zinc-400">
                         4.9
-                    <span className="text-zinc-600 ml-1">20 reviews</span></p>
+                        <span className="text-zinc-600 ml-1">20 reviews</span>
+                    </p>
                 </div>
             </div>
         </div>
