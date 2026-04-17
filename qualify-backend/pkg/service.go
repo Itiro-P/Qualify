@@ -1,7 +1,7 @@
 package pkg
 
 type Service struct {
-	ID                 int    `json:"id"`
+	Id                 int    `json:"id"`
 	Proposal_letter_id int    `json:"proposal_letter_id"`
 	Title              string `json:"title"`
 	Content            string `json:"content"`

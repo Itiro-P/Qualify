@@ -1,7 +1,7 @@
 package pkg
 
 type ProposalLetter struct {
-	ID                   int     `json:"id"`
+	Id                   int     `json:"id"`
 	Title                string  `json:"title"`
 	Content              string  `json:"content"`
 	Client_id            string  `json:"client_id"`

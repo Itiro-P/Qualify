@@ -23,7 +23,7 @@ func GetCertifications(conn *pgx.Conn) gin.HandlerFunc {
 		var certs []pkg.Certification
 		for rows.Next() {
 			var cert pkg.Certification
-			if err := rows.Scan(&cert.ID, &cert.Name, &cert.Year, &cert.Description); err != nil {
+			if err := rows.Scan(&cert.Id, &cert.Name, &cert.Year, &cert.Description); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao escanear certificação: " + err.Error()})
 				return
 			}
@@ -43,7 +43,7 @@ func GetCertification(conn *pgx.Conn) gin.HandlerFunc {
 		var cert pkg.Certification
 		err := conn.QueryRow(context.Background(),
 			`SELECT id, name, year, description FROM certification WHERE id = $1`, id,
-		).Scan(&cert.ID, &cert.Name, &cert.Year, &cert.Description)
+		).Scan(&cert.Id, &cert.Name, &cert.Year, &cert.Description)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar certificação: " + err.Error()})
 			return

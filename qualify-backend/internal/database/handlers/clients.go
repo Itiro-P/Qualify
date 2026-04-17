@@ -83,7 +83,7 @@ func GetClients(conn *pgx.Conn) gin.HandlerFunc {
 		for rows.Next() {
 			var client pkg.Client
 			err := rows.Scan(
-				&client.ID,
+				&client.Id,
 				&client.Name,
 				&client.Email,
 				&client.Phone,
@@ -120,7 +120,7 @@ func GetClient(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		var client pkg.Client
-		err := conn.QueryRow(c.Request.Context(), "SELECT id, name FROM \"client\" WHERE id = $1", id).Scan(&client.ID, &client.Name)
+		err := conn.QueryRow(c.Request.Context(), "SELECT id, name FROM \"client\" WHERE id = $1", id).Scan(&client.Id, &client.Name)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar cliente"})
 			return

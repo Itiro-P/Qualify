@@ -88,7 +88,7 @@ func GetAnalysts(conn *pgx.Conn) gin.HandlerFunc {
 		for rows.Next() {
 			var analyst pkg.Analyst
 			err := rows.Scan(
-				&analyst.ID,
+				&analyst.Id,
 				&analyst.Name,
 				&analyst.Email,
 				&analyst.Phone,
@@ -127,7 +127,7 @@ func GetAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		var analyst pkg.Analyst
-		err := conn.QueryRow(c.Request.Context(), "SELECT id, name FROM \"analyst\" WHERE id = $1", id).Scan(&analyst.ID, &analyst.Name)
+		err := conn.QueryRow(c.Request.Context(), "SELECT id, name FROM \"analyst\" WHERE id = $1", id).Scan(&analyst.Id, &analyst.Name)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar prestador"})
 			return

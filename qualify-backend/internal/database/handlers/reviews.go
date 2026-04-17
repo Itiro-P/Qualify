@@ -119,7 +119,7 @@ func GetReviews(conn *pgx.Conn) gin.HandlerFunc {
 		for rows.Next() {
 			var review pkg.Review
 			err := rows.Scan(
-				&review.ID,
+				&review.Id,
 				&review.Client_id,
 				&review.Analyst_id,
 				&review.Rating,
@@ -153,7 +153,7 @@ func GetReview(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		var review pkg.Review
-		err := conn.QueryRow(c.Request.Context(), "SELECT id, name FROM \"review\" WHERE id = $1", id).Scan(&review.ID)
+		err := conn.QueryRow(c.Request.Context(), "SELECT id, name FROM \"review\" WHERE id = $1", id).Scan(&review.Id)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar avaliação"})
 			return

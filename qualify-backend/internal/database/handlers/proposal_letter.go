@@ -41,7 +41,7 @@ func GetProposalLetters(conn *pgx.Conn) gin.HandlerFunc {
 		var proposals []pkg.ProposalLetter
 		for rows.Next() {
 			var p pkg.ProposalLetter
-			if err := rows.Scan(&p.ID, &p.Client_id, &p.Analyst_id, &p.Proposed_hourly_rate,
+			if err := rows.Scan(&p.Id, &p.Client_id, &p.Analyst_id, &p.Proposed_hourly_rate,
 				&p.Title, &p.Content, &p.Time_created); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao escanear proposta: " + err.Error()})
 				return
@@ -66,7 +66,7 @@ func GetProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 			`SELECT id, client_id, analyst_id, proposed_hourly_rate,
 			        title, content, time_created
 			 FROM proposal_letter WHERE id = $1`, id,
-		).Scan(&p.ID, &p.Client_id, &p.Analyst_id, &p.Proposed_hourly_rate,
+		).Scan(&p.Id, &p.Client_id, &p.Analyst_id, &p.Proposed_hourly_rate,
 			&p.Title, &p.Content, &p.Time_created)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar proposta: " + err.Error()})
@@ -86,7 +86,7 @@ func GetProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 		var services []pkg.Service
 		for rows.Next() {
 			var s pkg.Service
-			if err := rows.Scan(&s.ID, &s.Title, &s.Content, &s.Proposal_letter_id,
+			if err := rows.Scan(&s.Id, &s.Title, &s.Content, &s.Proposal_letter_id,
 				&s.Hourly_rate, &s.Status, &s.Time_created); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao escanear serviço: " + err.Error()})
 				return

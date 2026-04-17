@@ -40,7 +40,7 @@ func GetServices(conn *pgx.Conn) gin.HandlerFunc {
 		var services []pkg.Service
 		for rows.Next() {
 			var s pkg.Service
-			if err := rows.Scan(&s.ID, &s.Title, &s.Content, &s.Proposal_letter_id,
+			if err := rows.Scan(&s.Id, &s.Title, &s.Content, &s.Proposal_letter_id,
 				&s.Hourly_rate, &s.Status, &s.Time_created); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao escanear serviço: " + err.Error()})
 				return
@@ -63,7 +63,7 @@ func GetService(conn *pgx.Conn) gin.HandlerFunc {
 		err := conn.QueryRow(context.Background(),
 			`SELECT id, title, content, proposal_letter_id, hourly_rate, status, time_created
 			 FROM service WHERE id = $1`, id,
-		).Scan(&s.ID, &s.Title, &s.Content, &s.Proposal_letter_id,
+		).Scan(&s.Id, &s.Title, &s.Content, &s.Proposal_letter_id,
 			&s.Hourly_rate, &s.Status, &s.Time_created)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar serviço: " + err.Error()})
@@ -83,7 +83,7 @@ func GetService(conn *pgx.Conn) gin.HandlerFunc {
 		var reviews []pkg.Review
 		for rows.Next() {
 			var r pkg.Review
-			if err := rows.Scan(&r.ID, &r.Service_id, &r.Rating, &r.Comment, &r.Time_created); err != nil {
+			if err := rows.Scan(&r.Id, &r.Service_id, &r.Rating, &r.Comment, &r.Time_created); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao escanear review: " + err.Error()})
 				return
 			}
