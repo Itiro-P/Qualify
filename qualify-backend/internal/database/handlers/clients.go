@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"fmt"
 	"main/pkg"
 	"net/http"
@@ -71,7 +70,7 @@ func GetClients(conn *pgx.Conn) gin.HandlerFunc {
 		}
 
 		// Execute query
-		rows, err := conn.Query(context.Background(), query, args...)
+		rows, err := conn.Query(c.Request.Context(), query, args...)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error fetching clients: " + err.Error()})
 			return
@@ -121,7 +120,7 @@ func GetClient(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		var client pkg.Client
-		err := conn.QueryRow(context.Background(), "SELECT id, name FROM \"client\" WHERE id = $1", id).Scan(&client.ID, &client.Name)
+		err := conn.QueryRow(c.Request.Context(), "SELECT id, name FROM \"client\" WHERE id = $1", id).Scan(&client.ID, &client.Name)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar cliente"})
 			return

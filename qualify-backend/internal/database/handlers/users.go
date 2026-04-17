@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"main/pkg"
 	"net/http"
 
@@ -13,7 +12,7 @@ func GetUser(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		var user pkg.User
-		err := conn.QueryRow(context.Background(), "SELECT id, name FROM \"user\" WHERE id = $1", id).Scan(&user.ID, &user.Name)
+		err := conn.QueryRow(c.Request.Context(), "SELECT id, name FROM \"user\" WHERE id = $1", id).Scan(&user.ID, &user.Name)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar usuário"})
 			return
