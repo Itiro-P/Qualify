@@ -12,40 +12,38 @@ import (
 
 func GetAnalysts(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Build query with filters
-		query := `SELECT id, name, email, phone, time_created, country_code, 
-                         country_name, country_state, city, timezone, 
-                         hourly_rate, total_reviews, mean_rating 
-                  FROM analyst WHERE 1=1`
+		query := `
+			SELECT u.id, u.name, u.email, u.phone, u.time_created,
+			       u.country_code, u.country_name, u.country_state, u.city, u.timezone,
+			       a.hourly_rate, a.total_reviews, a.mean_rating
+			FROM "user" u
+			JOIN analyst a ON a.id = u.id
+			WHERE 1=1`
 
 		args := []interface{}{}
 		argCounter := 1
 
-		// Name filter (partial match)
 		if name := c.Query("name"); name != "" {
-			query += fmt.Sprintf(" AND name ILIKE $%d", argCounter)
+			query += fmt.Sprintf(" AND u.name ILIKE $%d", argCounter)
 			args = append(args, "%"+name+"%")
 			argCounter++
 		}
 
-		// Country filter
 		if country := c.Query("country"); country != "" {
-			query += fmt.Sprintf(" AND country_name ILIKE $%d", argCounter)
+			query += fmt.Sprintf(" AND u.country_name ILIKE $%d", argCounter)
 			args = append(args, "%"+country+"%")
 			argCounter++
 		}
 
-		// City filter
 		if city := c.Query("city"); city != "" {
-			query += fmt.Sprintf(" AND city ILIKE $%d", argCounter)
+			query += fmt.Sprintf(" AND u.city ILIKE $%d", argCounter)
 			args = append(args, "%"+city+"%")
 			argCounter++
 		}
 
-		// Hourly rate range filter
 		if minRate := c.Query("min_hourly_rate"); minRate != "" {
 			if minRateVal, err := strconv.ParseFloat(minRate, 64); err == nil {
-				query += fmt.Sprintf(" AND hourly_rate >= $%d", argCounter)
+				query += fmt.Sprintf(" AND a.hourly_rate >= $%d", argCounter)
 				args = append(args, minRateVal)
 				argCounter++
 			}
@@ -53,57 +51,53 @@ func GetAnalysts(conn *pgx.Conn) gin.HandlerFunc {
 
 		if maxRate := c.Query("max_hourly_rate"); maxRate != "" {
 			if maxRateVal, err := strconv.ParseFloat(maxRate, 64); err == nil {
-				query += fmt.Sprintf(" AND hourly_rate <= $%d", argCounter)
+				query += fmt.Sprintf(" AND a.hourly_rate <= $%d", argCounter)
 				args = append(args, maxRateVal)
 				argCounter++
 			}
 		}
 
-		// Total reviews filter (minimum)
 		if minReviews := c.Query("min_total_reviews"); minReviews != "" {
 			if minReviewsVal, err := strconv.Atoi(minReviews); err == nil {
-				query += fmt.Sprintf(" AND total_reviews >= $%d", argCounter)
+				query += fmt.Sprintf(" AND a.total_reviews >= $%d", argCounter)
 				args = append(args, minReviewsVal)
 				argCounter++
 			}
 		}
 
-		// Mean rating filter (minimum)
 		if minRating := c.Query("min_mean_rating"); minRating != "" {
-			if minRatingVal, err := strconv.Atoi(minRating); err == nil {
-				query += fmt.Sprintf(" AND mean_rating >= $%d", argCounter)
+			if minRatingVal, err := strconv.ParseFloat(minRating, 64); err == nil {
+				query += fmt.Sprintf(" AND a.mean_rating >= $%d", argCounter)
 				args = append(args, minRatingVal)
 				argCounter++
 			}
 		}
 
-		// Optional: Add sorting
+		allowedSortFields := map[string]bool{
+			"name": true, "country_name": true, "city": true,
+			"hourly_rate": true, "total_reviews": true, "mean_rating": true,
+			"time_created": true,
+		}
 		if sortBy := c.Query("sort_by"); sortBy != "" {
-			// Validate sortBy to prevent SQL injection
-			allowedSortFields := map[string]bool{
-				"name": true, "country_name": true, "city": true,
-				"hourly_rate": true, "total_reviews": true, "mean_rating": true,
-				"time_created": true,
-			}
 			if allowedSortFields[sortBy] {
 				order := c.DefaultQuery("order", "ASC")
 				if order == "ASC" || order == "DESC" {
 					query += fmt.Sprintf(" ORDER BY %s %s", sortBy, order)
 				}
 			}
+		} else {
+			query += " ORDER BY u.time_created DESC"
 		}
 
-		// Execute query
 		rows, err := conn.Query(c.Request.Context(), query, args...)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar prestadores: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar analistas: " + err.Error()})
 			return
 		}
 		defer rows.Close()
 
 		var analysts []pkg.Analyst
 
-		// Iterate through results
 		for rows.Next() {
 			var analyst pkg.Analyst
 			err := rows.Scan(
@@ -128,13 +122,11 @@ func GetAnalysts(conn *pgx.Conn) gin.HandlerFunc {
 			analysts = append(analysts, analyst)
 		}
 
-		// Check for errors from iterating over rows
 		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao iterar prestadores: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao iterar analistas: " + err.Error()})
 			return
 		}
 
-		// Return results
 		c.JSON(http.StatusOK, gin.H{
 			"analysts": analysts,
 			"count":    len(analysts),
@@ -150,11 +142,15 @@ func GetAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid analyst id"})
 			return
 		}
+
 		var analyst pkg.Analyst
-		err = conn.QueryRow(c.Request.Context(), `SELECT id, name, email, phone, time_created, country_code, 
-                         country_name, country_state, city, timezone, 
-                         hourly_rate, total_reviews, mean_rating 
-                  FROM analyst WHERE id = $1`, analystID).Scan(
+		err = conn.QueryRow(c.Request.Context(), `
+			SELECT u.id, u.name, u.email, u.phone, u.time_created, 
+			       u.country_code, u.country_name, u.country_state, u.city, u.timezone,
+			       a.hourly_rate, a.total_reviews, a.mean_rating
+			FROM "user" u
+			JOIN analyst a ON a.id = u.id
+			WHERE u.id = $1`, analystID).Scan(
 			&analyst.Id,
 			&analyst.Name,
 			&analyst.Email,

@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS analyst_certification (
     analyst_id INTEGER NOT NULL,
     certification_id INTEGER NOT NULL,
     PRIMARY KEY (analyst_id, certification_id),
-    FOREIGN KEY (analyst_id) REFERENCES analyst (user_id) ON DELETE CASCADE,
+    FOREIGN KEY (analyst_id) REFERENCES analyst (id) ON DELETE CASCADE,
     FOREIGN KEY (certification_id) REFERENCES certification (id) ON DELETE CASCADE
 );
 
@@ -21,8 +21,8 @@ CREATE TABLE IF NOT EXISTS proposal_letter (
     title TEXT NOT NULL,
     content TEXT NOT NULL,
     time_created TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    FOREIGN KEY (client_id) REFERENCES client (user_id) ON DELETE CASCADE,
-    FOREIGN KEY (analyst_id) REFERENCES analyst (user_id) ON DELETE CASCADE
+    FOREIGN KEY (client_id) REFERENCES client (id) ON DELETE CASCADE,
+    FOREIGN KEY (analyst_id) REFERENCES analyst (id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS "service" (
