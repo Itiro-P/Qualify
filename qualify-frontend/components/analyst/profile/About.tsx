@@ -7,12 +7,12 @@ import { Technologies } from "@/components/analyst/profile/Technologies";
 import { Certifications } from "@/components/analyst/profile/Certifications";
 
 function TabsSystem() {
-    const [abaAtiva, setAbaAtiva] = useState<"byographi" | "reviews" | "technologies" | "certifications">("byographi");
+    const [abaAtiva, setAbaAtiva] = useState<"biography" | "reviews" | "technologies" | "certifications">("biography");
 
     return (
         <div>
             <div className="flex">
-                <button className="p-2 m-2 bg-blue-950" onClick={() => setAbaAtiva("byographi")}>
+                <button className="p-2 m-2 bg-blue-950" onClick={() => setAbaAtiva("biography")}>
                     Biografia
                 </button>
                 <button className="p-2 m-2 bg-blue-950" onClick={() => setAbaAtiva("reviews")}>
@@ -27,7 +27,7 @@ function TabsSystem() {
             </div>
 
             <div className="mt-4">
-                {abaAtiva === "byographi" && (
+                {abaAtiva === "biography" && (
                     <Biography />
                 )}
 
