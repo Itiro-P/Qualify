@@ -162,9 +162,9 @@ func DeleteCertification(conn *pgx.Conn) gin.HandlerFunc {
 func GetAnalystCertifications(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
-		analystID, err := strconv.Atoi(id)
+		userID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid analyst id"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
 			return
 		}
 
@@ -174,7 +174,7 @@ func GetAnalystCertifications(conn *pgx.Conn) gin.HandlerFunc {
 			 JOIN analyst_certification ac ON c.id = ac.certification_id 
 			 WHERE ac.analyst_id = $1 
 			 ORDER BY c.year DESC`,
-			analystID,
+			userID,
 		)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -201,16 +201,24 @@ func GetAnalystCertifications(conn *pgx.Conn) gin.HandlerFunc {
 
 func CreateAnalystCertification(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		id := c.Param("id")
+		analystID, err := strconv.Atoi(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			return
+		}
+
 		var ac pkg.AnalystCertification
 		if err := c.BindJSON(&ac); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			return
 		}
+		ac.Analyst_id = analystID
 
 		// Validate that analyst exists
 		var analystExists bool
-		err := conn.QueryRow(c.Request.Context(),
-			`SELECT EXISTS(SELECT 1 FROM analyst WHERE user_id = $1)`, ac.Analyst_id,
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, ac.Analyst_id,
 		).Scan(&analystExists)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -249,10 +257,10 @@ func CreateAnalystCertification(conn *pgx.Conn) gin.HandlerFunc {
 
 func DeleteAnalystCertification(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		analystID := c.Param("id")
-		analystIDVal, err := strconv.Atoi(analystID)
+		userID := c.Param("id")
+		userIDVal, err := strconv.Atoi(userID)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid analyst id"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
 			return
 		}
 
@@ -269,7 +277,7 @@ func DeleteAnalystCertification(conn *pgx.Conn) gin.HandlerFunc {
 
 		result, err := conn.Exec(c.Request.Context(),
 			`DELETE FROM analyst_certification WHERE analyst_id = $1 AND certification_id = $2`,
-			analystIDVal, certIDVal,
+			userIDVal, certIDVal,
 		)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

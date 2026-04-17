@@ -8,89 +8,106 @@ import (
 )
 
 func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
-	// User routes
-	router.GET("/user/:id", handlers.GetUser(conn))
-	router.POST("/user", handlers.CreateUser(conn))
-	router.PUT("/user/:id", handlers.UpdateUser(conn))
-	router.DELETE("/user/:id", handlers.DeleteUser(conn))
+	// Users are the base entity. Roles are assigned as nested sub-resources.
+	users := router.Group("/users")
+	{
+		users.POST("", handlers.CreateUser(conn))
+		users.GET("/:id", handlers.GetUser(conn))
 
-	// Analyst routes
-	router.GET("/analyst/:id", handlers.GetAnalyst(conn))
+		user := users.Group("/:id")
+		{
+			user.PUT("", handlers.UpdateUser(conn))
+			user.DELETE("", handlers.DeleteUser(conn))
+
+			// User-owned profile/sub-resources
+			user.GET("/profile", handlers.GetUserProfile(conn))
+			user.POST("/profile", handlers.CreateUserProfile(conn))
+			user.PUT("/profile", handlers.UpdateUserProfile(conn))
+			user.DELETE("/profile", handlers.DeleteUserProfile(conn))
+
+			user.GET("/skills", handlers.GetUserSkills(conn))
+			user.POST("/skills", handlers.CreateUserSkill(conn))
+			user.DELETE("/skills", handlers.DeleteUserSkill(conn))
+
+			// Role assignment under the user resource
+			analystRole := user.Group("/analyst")
+			{
+				analystRole.POST("", handlers.CreateAnalyst(conn))
+				analystRole.GET("", handlers.GetAnalyst(conn))
+				analystRole.PUT("", handlers.UpdateAnalyst(conn))
+				analystRole.DELETE("", handlers.DeleteAnalyst(conn))
+
+				// Analyst-specific sub-resources
+				analystRole.GET("/profile", handlers.GetAnalystProfile(conn))
+				analystRole.POST("/profile", handlers.CreateAnalystProfile(conn))
+				analystRole.PUT("/profile", handlers.UpdateAnalystProfile(conn))
+				analystRole.DELETE("/profile", handlers.DeleteAnalystProfile(conn))
+
+				analystRole.GET("/certifications", handlers.GetAnalystCertifications(conn))
+				analystRole.POST("/certifications", handlers.CreateAnalystCertification(conn))
+				analystRole.DELETE("/certifications", handlers.DeleteAnalystCertification(conn))
+			}
+
+			clientRole := user.Group("/client")
+			{
+				clientRole.POST("", handlers.CreateClient(conn))
+				clientRole.GET("", handlers.GetClient(conn))
+				clientRole.PUT("", handlers.UpdateClient(conn))
+				clientRole.DELETE("", handlers.DeleteClient(conn))
+
+				// Client-specific sub-resources
+				clientRole.GET("/profile", handlers.GetClientProfile(conn))
+				clientRole.POST("/profile", handlers.CreateClientProfile(conn))
+				clientRole.PUT("/profile", handlers.UpdateClientProfile(conn))
+				clientRole.DELETE("/profile", handlers.DeleteClientProfile(conn))
+			}
+		}
+	}
+
+	// Top-level collections for search/list endpoints
 	router.GET("/analysts", handlers.GetAnalysts(conn))
-	router.POST("/analyst", handlers.CreateAnalyst(conn))
-	router.PUT("/analyst/:id", handlers.UpdateAnalyst(conn))
-	router.DELETE("/analyst/:id", handlers.DeleteAnalyst(conn))
-
-	// Client routes
-	router.GET("/client/:id", handlers.GetClient(conn))
 	router.GET("/clients", handlers.GetClients(conn))
-	router.POST("/client", handlers.CreateClient(conn))
-	router.PUT("/client/:id", handlers.UpdateClient(conn))
-	router.DELETE("/client/:id", handlers.DeleteClient(conn))
 
-	// Review routes
-	router.GET("/review/:id", handlers.GetReview(conn))
-	router.GET("/reviews", handlers.GetReviews(conn))
-	router.POST("/review", handlers.CreateReview(conn))
-	router.PUT("/review/:id", handlers.UpdateReview(conn))
-	router.DELETE("/review/:id", handlers.DeleteReview(conn))
+	reviews := router.Group("/reviews")
+	{
+		reviews.GET("", handlers.GetReviews(conn))
+		reviews.GET("/:id", handlers.GetReview(conn))
+		reviews.POST("", handlers.CreateReview(conn))
+		reviews.PUT("/:id", handlers.UpdateReview(conn))
+		reviews.DELETE("/:id", handlers.DeleteReview(conn))
+	}
 
-	// Profile routes
-	router.GET("/user/:id/profile", handlers.GetUserProfile(conn))
-	router.POST("/user/profile", handlers.CreateUserProfile(conn))
-	router.PUT("/user/:id/profile", handlers.UpdateUserProfile(conn))
-	router.DELETE("/user/:id/profile", handlers.DeleteUserProfile(conn))
+	proposals := router.Group("/proposals")
+	{
+		proposals.GET("", handlers.GetProposalLetters(conn))
+		proposals.GET("/:id", handlers.GetProposalLetter(conn))
+		proposals.POST("", handlers.CreateProposalLetter(conn))
+		proposals.PUT("/:id", handlers.UpdateProposalLetter(conn))
+		proposals.DELETE("/:id", handlers.DeleteProposalLetter(conn))
+	}
 
-	router.GET("/analyst/:id/profile", handlers.GetAnalystProfile(conn))
-	router.POST("/analyst/profile", handlers.CreateAnalystProfile(conn))
-	router.PUT("/analyst/:id/profile", handlers.UpdateAnalystProfile(conn))
-	router.DELETE("/analyst/:id/profile", handlers.DeleteAnalystProfile(conn))
+	services := router.Group("/services")
+	{
+		services.GET("", handlers.GetServices(conn))
+		services.GET("/:id", handlers.GetService(conn))
+		services.POST("", handlers.CreateService(conn))
+		services.PUT("/:id", handlers.UpdateService(conn))
+		services.DELETE("/:id", handlers.DeleteService(conn))
+	}
 
-	router.GET("/client/:id/profile", handlers.GetClientProfile(conn))
-	router.POST("/client/profile", handlers.CreateClientProfile(conn))
-	router.PUT("/client/:id/profile", handlers.UpdateClientProfile(conn))
-	router.DELETE("/client/:id/profile", handlers.DeleteClientProfile(conn))
+	skills := router.Group("/skills")
+	{
+		skills.GET("", handlers.GetSkills(conn))
+		skills.POST("", handlers.CreateSkill(conn))
+		skills.PUT("/:id", handlers.UpdateSkill(conn))
+		skills.DELETE("/:id", handlers.DeleteSkill(conn))
+	}
 
-	// Skill routes
-	router.GET("/skill/:id", handlers.GetSkill(conn))
-	router.GET("/skills", handlers.GetSkills(conn))
-	router.POST("/skill", handlers.CreateSkill(conn))
-	router.PUT("/skill/:id", handlers.UpdateSkill(conn))
-	router.DELETE("/skill/:id", handlers.DeleteSkill(conn))
-
-	// Analyst skill routes
-	router.GET("/analyst/:id/skills", handlers.GetAnalystSkills(conn))
-	router.POST("/analyst/skill", handlers.CreateAnalystSkill(conn))
-	router.DELETE("/analyst/:id/skill", handlers.DeleteAnalystSkill(conn))
-
-	// User skill routes
-	router.GET("/user/:id/skills", handlers.GetUserSkills(conn))
-	router.POST("/user/skill", handlers.CreateUserSkill(conn))
-	router.DELETE("/user/:id/skill", handlers.DeleteUserSkill(conn))
-
-	// Proposal letter routes
-	router.GET("/proposal/:id", handlers.GetProposalLetter(conn))
-	router.GET("/proposals", handlers.GetProposalLetters(conn))
-	router.POST("/proposal", handlers.CreateProposalLetter(conn))
-	router.PUT("/proposal/:id", handlers.UpdateProposalLetter(conn))
-	router.DELETE("/proposal/:id", handlers.DeleteProposalLetter(conn))
-
-	// Service routes
-	router.GET("/service/:id", handlers.GetService(conn))
-	router.GET("/services", handlers.GetServices(conn))
-	router.POST("/service", handlers.CreateService(conn))
-	router.PUT("/service/:id", handlers.UpdateService(conn))
-	router.DELETE("/service/:id", handlers.DeleteService(conn))
-
-	// Certification routes
-	router.GET("/certification/:id", handlers.GetCertification(conn))
-	router.GET("/certifications", handlers.GetCertifications(conn))
-	router.POST("/certification", handlers.CreateCertification(conn))
-	router.PUT("/certification/:id", handlers.UpdateCertification(conn))
-	router.DELETE("/certification/:id", handlers.DeleteCertification(conn))
-
-	// Analyst certification routes
-	router.GET("/analyst/:id/certifications", handlers.GetAnalystCertifications(conn))
-	router.POST("/analyst/certification", handlers.CreateAnalystCertification(conn))
-	router.DELETE("/analyst/:id/certification", handlers.DeleteAnalystCertification(conn))
+	certifications := router.Group("/certifications")
+	{
+		certifications.GET("", handlers.GetCertifications(conn))
+		certifications.POST("", handlers.CreateCertification(conn))
+		certifications.PUT("/:id", handlers.UpdateCertification(conn))
+		certifications.DELETE("/:id", handlers.DeleteCertification(conn))
+	}
 }

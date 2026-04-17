@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"main/internal/database/services"
 	"main/pkg"
 	"net/http"
 	"strconv"
@@ -12,75 +13,66 @@ import (
 
 func GetClients(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Build query with filters
-		query := `SELECT id, name, email, phone, time_created, country_code, 
-                         country_name, country_state, city, timezone, 
-                         proposed_budget 
-                  FROM client WHERE 1=1`
+		query := `
+			SELECT u.id, u.name, u.email, u.phone, u.time_created,
+			       u.country_code, u.country_name, u.country_state, u.city, u.timezone,
+			       c.proposed_budget
+			FROM "user" u
+			JOIN client c ON c.id = u.id
+			WHERE 1=1`
 
 		args := []interface{}{}
 		argCounter := 1
 
-		// Name filter (partial match)
 		if name := c.Query("name"); name != "" {
-			query += fmt.Sprintf(" AND name ILIKE $%d", argCounter)
+			query += fmt.Sprintf(" AND u.name ILIKE $%d", argCounter)
 			args = append(args, "%"+name+"%")
 			argCounter++
 		}
 
-		// Country filter
 		if country := c.Query("country"); country != "" {
-			query += fmt.Sprintf(" AND country_name ILIKE $%d", argCounter)
+			query += fmt.Sprintf(" AND u.country_name ILIKE $%d", argCounter)
 			args = append(args, "%"+country+"%")
 			argCounter++
 		}
 
-		// City filter
 		if city := c.Query("city"); city != "" {
-			query += fmt.Sprintf(" AND city ILIKE $%d", argCounter)
+			query += fmt.Sprintf(" AND u.city ILIKE $%d", argCounter)
 			args = append(args, "%"+city+"%")
 			argCounter++
 		}
 
-		// Proposed budget range filter
 		if minBudget := c.Query("min_proposed_budget"); minBudget != "" {
-			min, err := strconv.ParseFloat(minBudget, 64)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid min_proposed_budget"})
-				return
+			if minBudgetVal, err := strconv.ParseFloat(minBudget, 64); err == nil {
+				query += fmt.Sprintf(" AND c.proposed_budget >= $%d", argCounter)
+				args = append(args, minBudgetVal)
+				argCounter++
 			}
-			query += fmt.Sprintf(" AND proposed_budget >= $%d", argCounter)
-			args = append(args, min)
-			argCounter++
 		}
 
 		if maxBudget := c.Query("max_proposed_budget"); maxBudget != "" {
-			max, err := strconv.ParseFloat(maxBudget, 64)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid max_proposed_budget"})
-				return
+			if maxBudgetVal, err := strconv.ParseFloat(maxBudget, 64); err == nil {
+				query += fmt.Sprintf(" AND c.proposed_budget <= $%d", argCounter)
+				args = append(args, maxBudgetVal)
+				argCounter++
 			}
-			query += fmt.Sprintf(" AND proposed_budget <= $%d", argCounter)
-			args = append(args, max)
-			argCounter++
 		}
 
-		// Optional: Add sorting
+		allowedSortFields := map[string]bool{
+			"name": true, "country_name": true, "city": true,
+			"proposed_budget": true, "time_created": true,
+		}
 		if sortBy := c.Query("sort_by"); sortBy != "" {
-			// Validate sortBy to prevent SQL injection
-			allowedSortFields := map[string]bool{
-				"name": true, "country_name": true, "city": true,
-				"proposed_budget": true, "time_created": true,
-			}
 			if allowedSortFields[sortBy] {
 				order := c.DefaultQuery("order", "ASC")
 				if order == "ASC" || order == "DESC" {
 					query += fmt.Sprintf(" ORDER BY %s %s", sortBy, order)
 				}
 			}
+		} else {
+			query += " ORDER BY u.time_created DESC"
 		}
 
-		// Execute query
 		rows, err := conn.Query(c.Request.Context(), query, args...)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error fetching clients: " + err.Error()})
@@ -89,8 +81,6 @@ func GetClients(conn *pgx.Conn) gin.HandlerFunc {
 		defer rows.Close()
 
 		var clients []pkg.Client
-
-		// Iterate through results
 		for rows.Next() {
 			var client pkg.Client
 			err := rows.Scan(
@@ -113,13 +103,11 @@ func GetClients(conn *pgx.Conn) gin.HandlerFunc {
 			clients = append(clients, client)
 		}
 
-		// Check for errors from iterating over rows
 		if err = rows.Err(); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error iterating clients: " + err.Error()})
 			return
 		}
 
-		// Return results
 		c.JSON(http.StatusOK, gin.H{
 			"clients": clients,
 			"count":   len(clients),
@@ -136,9 +124,13 @@ func GetClient(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 		var client pkg.Client
-		err = conn.QueryRow(c.Request.Context(), `SELECT id, name, email, phone, time_created, country_code, 
-                         country_name, country_state, city, timezone, proposed_budget 
-                  FROM client WHERE id = $1`, clientID).Scan(
+		err = conn.QueryRow(c.Request.Context(), `
+			SELECT u.id, u.name, u.email, u.phone, u.time_created, 
+			       u.country_code, u.country_name, u.country_state, u.city, u.timezone,
+			       c.proposed_budget
+			FROM "user" u
+			JOIN client c ON c.id = u.id
+			WHERE u.id = $1`, clientID).Scan(
 			&client.Id,
 			&client.Name,
 			&client.Email,
@@ -166,22 +158,28 @@ func GetClient(conn *pgx.Conn) gin.HandlerFunc {
 
 func CreateClient(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var client pkg.Client
-		if err := c.BindJSON(&client); err != nil {
+		userIDParam := c.Param("id")
+		userID, err := strconv.Atoi(userIDParam)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			return
+		}
+
+		var request struct {
+			Proposed_budget float64 `json:"proposed_budget"`
+		}
+		if err := c.BindJSON(&request); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			return
 		}
 
-		err := conn.QueryRow(c.Request.Context(),
-			`INSERT INTO client (name, email, phone, country_code, country_name, country_state, city, timezone, proposed_budget)
-			 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-			 RETURNING id, time_created`,
-			client.Name, client.Email, client.Phone, client.Country_code, client.Country_name, client.Country_state,
-			client.City, client.Timezone, client.Proposed_budget).
-			Scan(&client.Id, &client.Time_created)
-
+		client, err := services.AssignClientRole(c.Request.Context(), conn, userID, request.Proposed_budget)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			if err == pgx.ErrNoRows {
+				c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to assign client role: " + err.Error()})
 			return
 		}
 
@@ -203,22 +201,57 @@ func UpdateClient(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		err = conn.QueryRow(c.Request.Context(),
-			`UPDATE client SET name = $1, email = $2, phone = $3, country_code = $4, 
-			 country_name = $5, country_state = $6, city = $7, timezone = $8, proposed_budget = $9
-			 WHERE id = $10
-			 RETURNING id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone, proposed_budget`,
+		// Update user table
+		_, err = conn.Exec(c.Request.Context(),
+			`UPDATE "user" SET name = $1, email = $2, phone = $3, country_code = $4, 
+			 country_name = $5, country_state = $6, city = $7, timezone = $8
+			 WHERE id = $9`,
 			client.Name, client.Email, client.Phone, client.Country_code, client.Country_name, client.Country_state,
-			client.City, client.Timezone, client.Proposed_budget, clientID).
-			Scan(&client.Id, &client.Name, &client.Email, &client.Phone, &client.Time_created, &client.Country_code,
-				&client.Country_name, &client.Country_state, &client.City, &client.Timezone, &client.Proposed_budget)
+			client.City, client.Timezone, clientID)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user: " + err.Error()})
+			return
+		}
+
+		// Update client table
+		_, err = conn.Exec(c.Request.Context(),
+			`UPDATE client SET proposed_budget = $1
+			 WHERE id = $2`,
+			client.Proposed_budget, clientID)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update client: " + err.Error()})
+			return
+		}
+
+		// Fetch the updated client
+		err = conn.QueryRow(c.Request.Context(), `
+			SELECT u.id, u.name, u.email, u.phone, u.time_created, 
+			       u.country_code, u.country_name, u.country_state, u.city, u.timezone,
+			       c.proposed_budget
+			FROM "user" u
+			JOIN client c ON c.id = u.id
+			WHERE u.id = $1`, clientID).Scan(
+			&client.Id,
+			&client.Name,
+			&client.Email,
+			&client.Phone,
+			&client.Time_created,
+			&client.Country_code,
+			&client.Country_name,
+			&client.Country_state,
+			&client.City,
+			&client.Timezone,
+			&client.Proposed_budget,
+		)
 
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, gin.H{"error": "client not found"})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch updated client: " + err.Error()})
 			return
 		}
 

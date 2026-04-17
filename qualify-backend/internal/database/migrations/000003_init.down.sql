@@ -8,9 +8,5 @@ DROP TABLE IF EXISTS "service";
     
 DROP TABLE IF EXISTS review;
 
-ALTER TABLE IF EXISTS review
-    DROP COLUMN IF EXISTS service_id,
-    ADD COLUMN IF NOT EXISTS analyst_id,
-    ADD COLUMN IF NOT EXISTS client_id,
-    ADD FOREIGN KEY (analyst_id) REFERENCES analyst (id) ON DELETE CASCADE;
-    ADD FOREIGN KEY (client_id) REFERENCES client (id) ON DELETE CASCADE;
+ALTER TABLE review DROP CONSTRAINT IF EXISTS fk_review_service;
+ALTER TABLE review DROP COLUMN IF EXISTS service_id;

@@ -39,13 +39,21 @@ func GetUserProfile(conn *pgx.Conn) gin.HandlerFunc {
 
 func CreateUserProfile(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		id := c.Param("id")
+		userID, err := strconv.Atoi(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			return
+		}
+
 		var profile pkg.UserProfile
 		if err := c.BindJSON(&profile); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			return
 		}
+		profile.User_id = userID
 
-		err := conn.QueryRow(c.Request.Context(),
+		err = conn.QueryRow(c.Request.Context(),
 			`INSERT INTO user_profile (user_id, biography)
 			 VALUES ($1, $2)
 			 RETURNING user_id`,
@@ -151,13 +159,21 @@ func GetAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
 
 func CreateAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		id := c.Param("id")
+		userID, err := strconv.Atoi(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			return
+		}
+
 		var profile pkg.AnalystProfile
 		if err := c.BindJSON(&profile); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			return
 		}
+		profile.User_id = userID
 
-		err := conn.QueryRow(c.Request.Context(),
+		err = conn.QueryRow(c.Request.Context(),
 			`INSERT INTO user_profile (user_id, biography)
 			 VALUES ($1, $2)
 			 RETURNING user_id`,
@@ -263,13 +279,21 @@ func GetClientProfile(conn *pgx.Conn) gin.HandlerFunc {
 
 func CreateClientProfile(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		id := c.Param("id")
+		userID, err := strconv.Atoi(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			return
+		}
+
 		var profile pkg.ClientProfile
 		if err := c.BindJSON(&profile); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			return
 		}
+		profile.User_id = userID
 
-		err := conn.QueryRow(c.Request.Context(),
+		err = conn.QueryRow(c.Request.Context(),
 			`INSERT INTO user_profile (user_id, biography)
 			 VALUES ($1, $2)
 			 RETURNING user_id`,

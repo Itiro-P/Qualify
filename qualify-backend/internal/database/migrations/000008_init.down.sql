@@ -1,0 +1,7 @@
+ALTER TABLE client
+    DROP CONSTRAINT IF EXISTS client_fk,
+    DROP CONSTRAINT IF EXISTS client_pk;
+
+ALTER TABLE analyst
+    DROP CONSTRAINT IF EXISTS analyst_fk,
+    DROP CONSTRAINT IF EXISTS analyst_pk;

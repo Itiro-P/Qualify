@@ -13,11 +13,29 @@ import (
 func GetReviews(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Build query with filters
-		query := `SELECT id, service_id, rating, comment, time_created 
+		query := `SELECT id, analyst_id, client_id, service_id, rating, comment, time_created 
                   FROM review WHERE 1=1`
 
 		args := []interface{}{}
 		argCounter := 1
+
+		// Filter by analyst_id
+		if analystID := c.Query("analyst_id"); analystID != "" {
+			if analystIDVal, err := strconv.Atoi(analystID); err == nil {
+				query += fmt.Sprintf(" AND analyst_id = $%d", argCounter)
+				args = append(args, analystIDVal)
+				argCounter++
+			}
+		}
+
+		// Filter by client_id
+		if clientID := c.Query("client_id"); clientID != "" {
+			if clientIDVal, err := strconv.Atoi(clientID); err == nil {
+				query += fmt.Sprintf(" AND client_id = $%d", argCounter)
+				args = append(args, clientIDVal)
+				argCounter++
+			}
+		}
 
 		// Filter by service_id
 		if serviceID := c.Query("service_id"); serviceID != "" {
@@ -78,7 +96,7 @@ func GetReviews(conn *pgx.Conn) gin.HandlerFunc {
 		if sortBy := c.Query("sort_by"); sortBy != "" {
 			// Validate sortBy to prevent SQL injection
 			allowedSortFields := map[string]bool{
-				"id": true, "service_id": true,
+				"id": true, "analyst_id": true, "client_id": true, "service_id": true,
 				"rating": true, "time_created": true,
 			}
 			if allowedSortFields[sortBy] {
@@ -126,6 +144,8 @@ func GetReviews(conn *pgx.Conn) gin.HandlerFunc {
 			var review pkg.Review
 			err := rows.Scan(
 				&review.Id,
+				&review.Analyst_id,
+				&review.Client_id,
 				&review.Service_id,
 				&review.Rating,
 				&review.Comment,
@@ -163,7 +183,7 @@ func GetReview(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 		var review pkg.Review
-		err = conn.QueryRow(c.Request.Context(), "SELECT id, service_id, rating, comment, time_created FROM review WHERE id = $1", reviewID).Scan(&review.Id, &review.Service_id, &review.Rating, &review.Comment, &review.Time_created)
+		err = conn.QueryRow(c.Request.Context(), "SELECT id, analyst_id, client_id, service_id, rating, comment, time_created FROM review WHERE id = $1", reviewID).Scan(&review.Id, &review.Analyst_id, &review.Client_id, &review.Service_id, &review.Rating, &review.Comment, &review.Time_created)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, gin.H{"error": "review not found"})
@@ -192,10 +212,10 @@ func CreateReview(conn *pgx.Conn) gin.HandlerFunc {
 		}
 
 		err := conn.QueryRow(c.Request.Context(),
-			`INSERT INTO review (service_id, rating, comment)
-			 VALUES ($1, $2, $3)
+			`INSERT INTO review (analyst_id, client_id, service_id, rating, comment)
+			 VALUES ($1, $2, $3, $4, $5)
 			 RETURNING id, time_created`,
-			review.Service_id, review.Rating, review.Comment).
+			review.Analyst_id, review.Client_id, review.Service_id, review.Rating, review.Comment).
 			Scan(&review.Id, &review.Time_created)
 
 		if err != nil {
@@ -228,11 +248,11 @@ func UpdateReview(conn *pgx.Conn) gin.HandlerFunc {
 		}
 
 		err = conn.QueryRow(c.Request.Context(),
-			`UPDATE review SET service_id = $1, rating = $2, comment = $3
-			 WHERE id = $4
-			 RETURNING id, service_id, rating, comment, time_created`,
-			review.Service_id, review.Rating, review.Comment, reviewID).
-			Scan(&review.Id, &review.Service_id, &review.Rating, &review.Comment, &review.Time_created)
+			`UPDATE review SET analyst_id = $1, client_id = $2, service_id = $3, rating = $4, comment = $5
+			 WHERE id = $6
+			 RETURNING id, analyst_id, client_id, service_id, rating, comment, time_created`,
+			review.Analyst_id, review.Client_id, review.Service_id, review.Rating, review.Comment, reviewID).
+			Scan(&review.Id, &review.Analyst_id, &review.Client_id, &review.Service_id, &review.Rating, &review.Comment, &review.Time_created)
 
 		if err != nil {
 			if err == pgx.ErrNoRows {

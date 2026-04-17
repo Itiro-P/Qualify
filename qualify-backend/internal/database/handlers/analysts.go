@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"main/internal/database/services"
 	"main/pkg"
 	"net/http"
 	"strconv"
@@ -180,22 +181,28 @@ func GetAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 
 func CreateAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var analyst pkg.Analyst
-		if err := c.BindJSON(&analyst); err != nil {
+		userIDParam := c.Param("id")
+		userID, err := strconv.Atoi(userIDParam)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			return
+		}
+
+		var request struct {
+			Hourly_rate float64 `json:"hourly_rate"`
+		}
+		if err := c.BindJSON(&request); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			return
 		}
 
-		err := conn.QueryRow(c.Request.Context(),
-			`INSERT INTO analyst (name, email, phone, country_code, country_name, country_state, city, timezone, hourly_rate, total_reviews, mean_rating)
-			 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-			 RETURNING id, time_created`,
-			analyst.Name, analyst.Email, analyst.Phone, analyst.Country_code, analyst.Country_name, analyst.Country_state,
-			analyst.City, analyst.Timezone, analyst.Hourly_rate, analyst.Total_reviews, analyst.Mean_rating).
-			Scan(&analyst.Id, &analyst.Time_created)
-
+		analyst, err := services.AssignAnalystRole(c.Request.Context(), conn, userID, request.Hourly_rate)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			if err == pgx.ErrNoRows {
+				c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to assign analyst role: " + err.Error()})
 			return
 		}
 
@@ -217,23 +224,59 @@ func UpdateAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		err = conn.QueryRow(c.Request.Context(),
-			`UPDATE analyst SET name = $1, email = $2, phone = $3, country_code = $4, 
-			 country_name = $5, country_state = $6, city = $7, timezone = $8, hourly_rate = $9, total_reviews = $10, mean_rating = $11
-			 WHERE id = $12
-			 RETURNING id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone, hourly_rate, total_reviews, mean_rating`,
+		// Update user table
+		_, err = conn.Exec(c.Request.Context(),
+			`UPDATE "user" SET name = $1, email = $2, phone = $3, country_code = $4, 
+			 country_name = $5, country_state = $6, city = $7, timezone = $8
+			 WHERE id = $9`,
 			analyst.Name, analyst.Email, analyst.Phone, analyst.Country_code, analyst.Country_name, analyst.Country_state,
-			analyst.City, analyst.Timezone, analyst.Hourly_rate, analyst.Total_reviews, analyst.Mean_rating, analystID).
-			Scan(&analyst.Id, &analyst.Name, &analyst.Email, &analyst.Phone, &analyst.Time_created, &analyst.Country_code,
-				&analyst.Country_name, &analyst.Country_state, &analyst.City, &analyst.Timezone,
-				&analyst.Hourly_rate, &analyst.Total_reviews, &analyst.Mean_rating)
+			analyst.City, analyst.Timezone, analystID)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user: " + err.Error()})
+			return
+		}
+
+		// Update analyst table
+		_, err = conn.Exec(c.Request.Context(),
+			`UPDATE analyst SET hourly_rate = $1, total_reviews = $2, mean_rating = $3
+			 WHERE id = $4`,
+			analyst.Hourly_rate, analyst.Total_reviews, analyst.Mean_rating, analystID)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update analyst: " + err.Error()})
+			return
+		}
+
+		// Fetch the updated analyst
+		err = conn.QueryRow(c.Request.Context(), `
+			SELECT u.id, u.name, u.email, u.phone, u.time_created, 
+			       u.country_code, u.country_name, u.country_state, u.city, u.timezone,
+			       a.hourly_rate, a.total_reviews, a.mean_rating
+			FROM "user" u
+			JOIN analyst a ON a.id = u.id
+			WHERE u.id = $1`, analystID).Scan(
+			&analyst.Id,
+			&analyst.Name,
+			&analyst.Email,
+			&analyst.Phone,
+			&analyst.Time_created,
+			&analyst.Country_code,
+			&analyst.Country_name,
+			&analyst.Country_state,
+			&analyst.City,
+			&analyst.Timezone,
+			&analyst.Hourly_rate,
+			&analyst.Total_reviews,
+			&analyst.Mean_rating,
+		)
 
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, gin.H{"error": "analyst not found"})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch updated analyst: " + err.Error()})
 			return
 		}
 

@@ -301,13 +301,21 @@ func GetUserSkills(conn *pgx.Conn) gin.HandlerFunc {
 
 func CreateUserSkill(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		id := c.Param("id")
+		userID, err := strconv.Atoi(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			return
+		}
+
 		var skill pkg.User_Skill
 		if err := c.BindJSON(&skill); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			return
 		}
+		skill.User_id = userID
 
-		_, err := conn.Exec(c.Request.Context(),
+		_, err = conn.Exec(c.Request.Context(),
 			`INSERT INTO user_skill (user_id, skill_id)
 			 VALUES ($1, $2)`,
 			skill.User_id, skill.Skill_id)

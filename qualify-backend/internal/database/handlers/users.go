@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"main/internal/database/services"
 	"main/pkg"
 	"net/http"
 	"strconv"
@@ -54,12 +55,7 @@ func CreateUser(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		err := conn.QueryRow(c.Request.Context(),
-			`INSERT INTO "user" (name, email, phone, country_code, country_name, country_state, city, timezone)
-			 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-			 RETURNING id, time_created`,
-			user.Name, user.Email, user.Phone, user.Country_code, user.Country_name, user.Country_state, user.City, user.Timezone).
-			Scan(&user.Id, &user.Time_created)
+		err := services.CreateUser(c.Request.Context(), conn, &user)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

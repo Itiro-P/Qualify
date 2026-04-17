@@ -36,8 +36,5 @@ CREATE TABLE IF NOT EXISTS "service" (
     FOREIGN KEY (proposal_letter_id) REFERENCES proposal_letter (id) ON DELETE CASCADE
 );
     
-ALTER TABLE IF EXISTS review
-    DROP COLUMN IF EXISTS analyst_id,
-    DROP COLUMN IF EXISTS client_id,
-    ADD COLUMN service_id INTEGER,
-    ADD CONSTRAINT fk_service_id FOREIGN KEY (service_id) REFERENCES "service" (id) ON DELETE CASCADE;
+ALTER TABLE review ADD COLUMN IF NOT EXISTS service_id INTEGER;
+ALTER TABLE review ADD CONSTRAINT fk_review_service FOREIGN KEY (service_id) REFERENCES "service" (id) ON DELETE CASCADE;
