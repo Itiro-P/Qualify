@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 CREATE TABLE IF NOT EXISTS certification (
     id SERIAL PRIMARY KEY,
     "name" VARCHAR(255) NOT NULL,
@@ -42,7 +41,3 @@ ALTER TABLE IF EXISTS review
     DROP COLUMN IF EXISTS client_id,
     ADD COLUMN service_id INTEGER,
     ADD CONSTRAINT fk_service_id FOREIGN KEY (service_id) REFERENCES "service" (id) ON DELETE CASCADE;
-=======
-ALTER TABLE "user" 
-ADD CONSTRAINT email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');
->>>>>>> feat-criar-migrations-e-tabelas

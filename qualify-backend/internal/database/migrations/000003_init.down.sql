@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 DROP TABLE IF EXISTS certification;
 
 DROP TABLE IF EXISTS analyst_certification;
@@ -15,7 +14,3 @@ ALTER TABLE IF EXISTS review
     ADD COLUMN IF NOT EXISTS client_id,
     ADD FOREIGN KEY (analyst_id) REFERENCES analyst (user_id) ON DELETE CASCADE;
     ADD FOREIGN KEY (client_id) REFERENCES client (user_id) ON DELETE CASCADE;
-=======
-ALTER TABLE "user" 
-DROP CONSTRAINT email_format;
->>>>>>> feat-criar-migrations-e-tabelas
