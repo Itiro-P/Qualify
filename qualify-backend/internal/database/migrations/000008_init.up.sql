@@ -1,0 +1,7 @@
+ALTER TABLE analyst
+    ADD CONSTRAINT analyst_pk PRIMARY KEY (id),
+    ADD CONSTRAINT analyst_fk FOREIGN KEY (id) REFERENCES "user"(id) ON DELETE CASCADE;
+
+ALTER TABLE client
+    ADD CONSTRAINT client_pk PRIMARY KEY (id),
+    ADD CONSTRAINT client_fk FOREIGN KEY (id) REFERENCES "user"(id) ON DELETE CASCADE;
