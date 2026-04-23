@@ -11,6 +11,20 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// GetAnalysts godoc
+// @Summary Listar analistas
+// @Description Retorna uma lista de analistas com filtros opcionais
+// @Tags Analistas
+// @Accept json
+// @Produce json
+// @Param name query string false "Nome parcial para busca"
+// @Param country query string false "País"
+// @Param city query string false "Cidade"
+// @Param min_hourly_rate query number false "Valor mínimo por hora"
+// @Param max_hourly_rate query number false "Valor máximo por hora"
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]string
+// @Router /analysts [get]
 func GetAnalysts(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		query := `
@@ -135,6 +149,18 @@ func GetAnalysts(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// GetAnalyst godoc
+// @Summary Obter analista
+// @Description Retorna os detalhes de um analista pelo ID do usuário
+// @Tags Analistas
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário"
+// @Success 200 {object} pkg.Analyst
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/analyst [get]
 func GetAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -179,6 +205,18 @@ func GetAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// CreateAnalyst godoc
+// @Summary Criar papel de analista
+// @Description Atribui o papel de analista a um usuário existente
+// @Tags Analistas
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário"
+// @Param hourly_rate body object true "{\"hourly_rate\": number}"
+// @Success 201 {object} pkg.Analyst
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/analyst [post]
 func CreateAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userIDParam := c.Param("id")
@@ -210,6 +248,19 @@ func CreateAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// UpdateAnalyst godoc
+// @Summary Atualizar analista
+// @Description Atualiza dados do analista pelo ID do usuário
+// @Tags Analistas
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário"
+// @Param analyst body pkg.Analyst true "Objeto analista"
+// @Success 200 {object} pkg.Analyst
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/analyst [put]
 func UpdateAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -284,6 +335,18 @@ func UpdateAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// DeleteAnalyst godoc
+// @Summary Excluir analista
+// @Description Remove o papel de analista de um usuário
+// @Tags Analistas
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/analyst [delete]
 func DeleteAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")

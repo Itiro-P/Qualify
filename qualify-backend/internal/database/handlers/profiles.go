@@ -11,6 +11,18 @@ import (
 
 // User Profile Handlers
 
+// GetUserProfile godoc
+// @Summary Obter perfil do usuário
+// @Description Retorna o perfil do usuário pelo ID
+// @Tags Perfis
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário"
+// @Success 200 {object} pkg.UserProfile
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/profile [get]
 func GetUserProfile(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -37,6 +49,18 @@ func GetUserProfile(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// CreateUserProfile godoc
+// @Summary Criar perfil do usuário
+// @Description Cria o perfil para o usuário especificado
+// @Tags Perfis
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário"
+// @Param profile body pkg.UserProfile true "Objeto perfil"
+// @Success 201 {object} pkg.UserProfile
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/profile [post]
 func CreateUserProfile(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -69,6 +93,19 @@ func CreateUserProfile(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// UpdateUserProfile godoc
+// @Summary Atualizar perfil do usuário
+// @Description Atualiza o perfil do usuário pelo ID
+// @Tags Perfis
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário"
+// @Param profile body pkg.UserProfile true "Objeto perfil"
+// @Success 200 {object} pkg.UserProfile
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/profile [put]
 func UpdateUserProfile(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -103,6 +140,18 @@ func UpdateUserProfile(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// DeleteUserProfile godoc
+// @Summary Excluir perfil do usuário
+// @Description Remove o perfil do usuário
+// @Tags Perfis
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/profile [delete]
 func DeleteUserProfile(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -131,6 +180,18 @@ func DeleteUserProfile(conn *pgx.Conn) gin.HandlerFunc {
 
 // Analyst Profile Handlers
 
+// GetAnalystProfile godoc
+// @Summary Obter perfil do analista
+// @Description Retorna o perfil do analista pelo ID do usuário
+// @Tags Perfis
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário (analista)"
+// @Success 200 {object} pkg.AnalystProfile
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/analyst/profile [get]
 func GetAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -157,6 +218,18 @@ func GetAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// CreateAnalystProfile godoc
+// @Summary Criar perfil do analista
+// @Description Cria o perfil do analista para o usuário especificado
+// @Tags Perfis
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário (analista)"
+// @Param profile body pkg.AnalystProfile true "Objeto perfil"
+// @Success 201 {object} pkg.AnalystProfile
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/analyst/profile [post]
 func CreateAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -189,6 +262,19 @@ func CreateAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// UpdateAnalystProfile godoc
+// @Summary Atualizar perfil do analista
+// @Description Atualiza o perfil do analista pelo ID do usuário
+// @Tags Perfis
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário (analista)"
+// @Param profile body pkg.AnalystProfile true "Objeto perfil"
+// @Success 200 {object} pkg.AnalystProfile
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/analyst/profile [put]
 func UpdateAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -223,6 +309,18 @@ func UpdateAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// DeleteAnalystProfile godoc
+// @Summary Excluir perfil do analista
+// @Description Remove o perfil do analista
+// @Tags Perfis
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário (analista)"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/analyst/profile [delete]
 func DeleteAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -251,6 +349,18 @@ func DeleteAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
 
 // Client Profile Handlers
 
+// GetClientProfile godoc
+// @Summary Obter perfil do cliente
+// @Description Retorna o perfil do cliente pelo ID do usuário
+// @Tags Perfis
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário (cliente)"
+// @Success 200 {object} pkg.ClientProfile
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/client/profile [get]
 func GetClientProfile(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -277,6 +387,18 @@ func GetClientProfile(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// CreateClientProfile godoc
+// @Summary Criar perfil do cliente
+// @Description Cria o perfil do cliente para o usuário especificado
+// @Tags Perfis
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário (cliente)"
+// @Param profile body pkg.ClientProfile true "Objeto perfil"
+// @Success 201 {object} pkg.ClientProfile
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/client/profile [post]
 func CreateClientProfile(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -309,6 +431,19 @@ func CreateClientProfile(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// UpdateClientProfile godoc
+// @Summary Atualizar perfil do cliente
+// @Description Atualiza o perfil do cliente pelo ID do usuário
+// @Tags Perfis
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário (cliente)"
+// @Param profile body pkg.ClientProfile true "Objeto perfil"
+// @Success 200 {object} pkg.ClientProfile
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/client/profile [put]
 func UpdateClientProfile(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -343,6 +478,18 @@ func UpdateClientProfile(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// DeleteClientProfile godoc
+// @Summary Excluir perfil do cliente
+// @Description Remove o perfil do cliente
+// @Tags Perfis
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário (cliente)"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/client/profile [delete]
 func DeleteClientProfile(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")

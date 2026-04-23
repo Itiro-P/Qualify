@@ -12,6 +12,16 @@ import (
 
 // Skill Handlers
 
+// GetSkills godoc
+// @Summary Listar habilidades
+// @Description Retorna lista de habilidades
+// @Tags Habilidades
+// @Accept json
+// @Produce json
+// @Param name query string false "Nome parcial"
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]string
+// @Router /skills [get]
 func GetSkills(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		query := `SELECT id, name FROM skill WHERE 1=1`
@@ -52,6 +62,18 @@ func GetSkills(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// GetSkill godoc
+// @Summary Obter habilidade
+// @Description Retorna uma habilidade pelo ID
+// @Tags Habilidades
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da habilidade"
+// @Success 200 {object} pkg.Skill
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /skills/{id} [get]
 func GetSkill(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -78,6 +100,17 @@ func GetSkill(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// CreateSkill godoc
+// @Summary Criar habilidade
+// @Description Cria uma nova habilidade
+// @Tags Habilidades
+// @Accept json
+// @Produce json
+// @Param skill body pkg.Skill true "Objeto habilidade"
+// @Success 201 {object} pkg.Skill
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /skills [post]
 func CreateSkill(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var skill pkg.Skill
@@ -102,6 +135,19 @@ func CreateSkill(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// UpdateSkill godoc
+// @Summary Atualizar habilidade
+// @Description Atualiza uma habilidade pelo ID
+// @Tags Habilidades
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da habilidade"
+// @Param skill body pkg.Skill true "Objeto habilidade"
+// @Success 200 {object} pkg.Skill
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /skills/{id} [put]
 func UpdateSkill(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -136,6 +182,18 @@ func UpdateSkill(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// DeleteSkill godoc
+// @Summary Excluir habilidade
+// @Description Remove uma habilidade pelo ID
+// @Tags Habilidades
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da habilidade"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /skills/{id} [delete]
 func DeleteSkill(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")

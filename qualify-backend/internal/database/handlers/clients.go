@@ -11,6 +11,20 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// GetClients godoc
+// @Summary Listar clientes
+// @Description Retorna uma lista de clientes com filtros opcionais
+// @Tags Clientes
+// @Accept json
+// @Produce json
+// @Param name query string false "Nome parcial para busca"
+// @Param country query string false "País"
+// @Param city query string false "Cidade"
+// @Param min_proposed_budget query number false "Orçamento mínimo"
+// @Param max_proposed_budget query number false "Orçamento máximo"
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]string
+// @Router /clients [get]
 func GetClients(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		query := `
@@ -115,6 +129,18 @@ func GetClients(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// GetClient godoc
+// @Summary Obter cliente
+// @Description Retorna os detalhes de um cliente pelo ID do usuário
+// @Tags Clientes
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário"
+// @Success 200 {object} pkg.Client
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/client [get]
 func GetClient(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -156,6 +182,18 @@ func GetClient(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// CreateClient godoc
+// @Summary Criar papel de cliente
+// @Description Atribui o papel de cliente a um usuário existente
+// @Tags Clientes
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário"
+// @Param proposed_budget body object true "{\"proposed_budget\": number}"
+// @Success 201 {object} pkg.Client
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/client [post]
 func CreateClient(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userIDParam := c.Param("id")
@@ -187,6 +225,19 @@ func CreateClient(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// UpdateClient godoc
+// @Summary Atualizar cliente
+// @Description Atualiza dados do cliente pelo ID do usuário
+// @Tags Clientes
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário"
+// @Param client body pkg.Client true "Objeto cliente"
+// @Success 200 {object} pkg.Client
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/client [put]
 func UpdateClient(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -259,6 +310,18 @@ func UpdateClient(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// DeleteClient godoc
+// @Summary Excluir cliente
+// @Description Remove o papel de cliente de um usuário
+// @Tags Clientes
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/client [delete]
 func DeleteClient(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
