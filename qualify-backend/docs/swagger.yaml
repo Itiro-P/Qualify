@@ -321,22 +321,6 @@ definitions:
       user:
         $ref: '#/definitions/pkg.User'
     type: object
-  pkg.UserSkill:
-    properties:
-      skill_id:
-        type: integer
-      user_id:
-        type: integer
-    type: object
-  pkg.UserSkillsResponse:
-    properties:
-      count:
-        type: integer
-      user_skills:
-        items:
-          $ref: '#/definitions/pkg.UserSkill'
-        type: array
-    type: object
 info:
   contact: {}
 paths:
@@ -382,123 +366,6 @@ paths:
       summary: Listar analistas
       tags:
       - Analistas
-  /analysts/{id}/skills:
-    delete:
-      consumes:
-      - application/json
-      description: Exclui uma habilidade de um analista pelo ID
-      parameters:
-      - description: ID do analista
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Excluir habilidade do analista
-      tags:
-      - Habilidades
-    get:
-      consumes:
-      - application/json
-      description: Retorna as habilidades de um analista pelo ID
-      parameters:
-      - description: ID do analista
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/pkg.AnalystSkillsResponse'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Obter habilidades do analista
-      tags:
-      - Habilidades
-    post:
-      consumes:
-      - application/json
-      description: Cria uma nova habilidade para um analista pelo ID
-      parameters:
-      - description: ID do analista
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/pkg.AnalystSkillResponse'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Criar habilidade para o analista
-      tags:
-      - Habilidades
   /certifications:
     get:
       consumes:
@@ -2089,6 +1956,130 @@ paths:
       summary: Atualizar perfil do analista
       tags:
       - Perfis
+  /users/{id}/analyst/skills:
+    get:
+      consumes:
+      - application/json
+      description: Retorna as habilidades de um analista pelo ID
+      parameters:
+      - description: ID do analista
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.AnalystSkillsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obter habilidades do analista
+      tags:
+      - Habilidades
+  /users/{id}/analyst/skills/:
+    delete:
+      consumes:
+      - application/json
+      description: Exclui uma habilidade de um analista pelo ID e id da habilidade
+      parameters:
+      - description: ID do analista
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Excluir habilidade do analista
+      tags:
+      - Habilidades
+    post:
+      consumes:
+      - application/json
+      description: Cria uma nova habilidade para um analista pelo ID e ID da habilidade
+      parameters:
+      - description: ID do analista
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto associação
+        in: body
+        name: certification
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.AnalystSkill'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.AnalystSkillResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Criar habilidade para o analista
+      tags:
+      - Habilidades
   /users/{id}/client:
     delete:
       consumes:
@@ -2572,121 +2563,4 @@ paths:
       summary: Atualizar perfil do usuário
       tags:
       - Perfis
-  /users/{id}/skills:
-    delete:
-      consumes:
-      - application/json
-      description: Exclui uma habilidade de um usuário pelo ID
-      parameters:
-      - description: ID do usuário
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Excluir habilidade do usuário
-      tags:
-      - Habilidades
-    get:
-      consumes:
-      - application/json
-      description: Retorna as habilidades de um usuário pelo ID
-      parameters:
-      - description: ID do usuário
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/pkg.UserSkillsResponse'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Obter habilidades do usuário
-      tags:
-      - Habilidades
-    post:
-      consumes:
-      - application/json
-      description: Cria uma habilidade para um usuário pelo ID
-      parameters:
-      - description: ID do usuário
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/pkg.UserSkillsResponse'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Criar habilidade do usuário
-      tags:
-      - Habilidades
 swagger: "2.0"

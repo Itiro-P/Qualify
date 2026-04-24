@@ -238,76 +238,116 @@ func GetAnalystSkills(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		analystID := c.Param("id")
 		analystIDVal, err := strconv.Atoi(analystID)
+
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid analyst id"})
 			return
 		}
 
-		query := `SELECT analyst_id, skill_id FROM analyst_skill WHERE analyst_id = $1 ORDER BY skill_id`
-
-		rows, err := conn.Query(c.Request.Context(), query, analystIDVal)
+		rows, err := conn.Query(c.Request.Context(),
+			`SELECT s.id, s.name
+			 FROM skill s
+			 JOIN analyst_skill ac ON s.id = ac.skill_id
+			 WHERE ac.analyst_id = $1
+			 ORDER BY s.name`,
+			analystIDVal,
+		)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		defer rows.Close()
-
-		var skills []pkg.AnalystSkill
+		var skills []pkg.Skill
 		for rows.Next() {
-			var skill pkg.AnalystSkill
-			if err := rows.Scan(&skill.Analyst_id, &skill.Skill_id); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			var skill pkg.Skill
+			if err := rows.Scan(&skill.Id, &skill.Name); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao escanear habilidade: " + err.Error()})
 				return
 			}
 			skills = append(skills, skill)
 		}
 
 		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao iterar habilidades: " + err.Error()})
 			return
 		}
 
-		c.JSON(http.StatusOK, pkg.AnalystSkillsResponse{Analyst_skills: skills, Count: len(skills)})
+		c.JSON(http.StatusOK, pkg.SkillsResponse{Skills: skills, Count: len(skills)})
 	}
 }
 
 // CreateAnalystSkill godoc
 // @Summary Criar habilidade para o analista
-// @Description Cria uma nova habilidade para um analista pelo ID
+// @Description Cria uma nova habilidade para um analista pelo ID e ID da habilidade
 // @Tags Habilidades
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do analista"
+// @Param certification body pkg.AnalystSkill true "Objeto associação"
 // @Success 200 {object} pkg.AnalystSkillResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /users/{id}/analyst/skills [post]
+// @Router /users/{id}/analyst/skills/ [post]
 func CreateAnalystSkill(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var skill pkg.AnalystSkill
-		if err := c.BindJSON(&skill); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		id := c.Param("id")
+		analystID, err := strconv.Atoi(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
 			return
 		}
 
-		_, err := conn.Exec(c.Request.Context(),
-			`INSERT INTO analyst_skill (analyst_id, skill_id)
-			 VALUES ($1, $2)`,
-			skill.Analyst_id, skill.Skill_id)
+		var as pkg.AnalystSkill
+		if err := c.BindJSON(&as); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+		as.Analyst_id = analystID
 
+		// Validate that analyst exists
+		var analystExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, as.Analyst_id,
+		).Scan(&analystExists)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+		if !analystExists {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "analyst not found"})
+			return
+		}
 
-		c.JSON(http.StatusCreated, pkg.AnalystSkillResponse{Analyst_skill: skill})
+		// Validate that skill exists
+		var skillExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM skill WHERE id = $1)`, as.Skill_id,
+		).Scan(&skillExists)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if !skillExists {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "skill not found"})
+			return
+		}
+
+		_, err = conn.Exec(c.Request.Context(),
+			`INSERT INTO analyst_skill (analyst_id, skill_id) VALUES ($1, $2)`,
+			as.Analyst_id, as.Skill_id,
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusCreated, pkg.AnalystSkillResponse{Analyst_skill: as})
 	}
 }
 
 // DeleteAnalystSkill godoc
 // @Summary Excluir habilidade do analista
-// @Description Exclui uma habilidade de um analista pelo ID
+// @Description Exclui uma habilidade de um analista pelo ID e id da habilidade
 // @Tags Habilidades
 // @Accept json
 // @Produce json
@@ -316,13 +356,13 @@ func CreateAnalystSkill(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /users/{id}/analyst/skills [delete]
+// @Router /users/{id}/analyst/skills/ [delete]
 func DeleteAnalystSkill(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		analystID := c.Param("id")
-		analystIDVal, err := strconv.Atoi(analystID)
+		userID := c.Param("id")
+		userIDVal, err := strconv.Atoi(userID)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid analyst id"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
 			return
 		}
 
@@ -333,14 +373,14 @@ func DeleteAnalystSkill(conn *pgx.Conn) gin.HandlerFunc {
 		}
 		skillIDVal, err := strconv.Atoi(skillID)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid skill id"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid skill_id"})
 			return
 		}
 
 		result, err := conn.Exec(c.Request.Context(),
 			`DELETE FROM analyst_skill WHERE analyst_id = $1 AND skill_id = $2`,
-			analystIDVal, skillIDVal)
-
+			userIDVal, skillIDVal,
+		)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -352,148 +392,5 @@ func DeleteAnalystSkill(conn *pgx.Conn) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"message": "analyst skill deleted successfully"})
-	}
-}
-
-// User Skill Handlers
-
-// GetUserSkills godoc
-// @Summary Obter habilidades do usuário
-// @Description Retorna as habilidades de um usuário pelo ID
-// @Tags Habilidades
-// @Accept json
-// @Produce json
-// @Param id path int true "ID do usuário"
-// @Success 200 {object} pkg.UserSkillsResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Router /users/{id}/skills [get]
-func GetUserSkills(conn *pgx.Conn) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		userID := c.Param("id")
-		userIDVal, err := strconv.Atoi(userID)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
-			return
-		}
-
-		query := `SELECT user_id, skill_id FROM user_skill WHERE user_id = $1 ORDER BY skill_id`
-
-		rows, err := conn.Query(c.Request.Context(), query, userIDVal)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		defer rows.Close()
-
-		var skills []pkg.UserSkill
-		for rows.Next() {
-			var skill pkg.UserSkill
-			if err := rows.Scan(&skill.User_id, &skill.Skill_id); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-			skills = append(skills, skill)
-		}
-
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		c.JSON(http.StatusOK, pkg.UserSkillsResponse{User_skills: skills, Count: len(skills)})
-	}
-}
-
-// CreateUserSkill godoc
-// @Summary Criar habilidade do usuário
-// @Description Cria uma habilidade para um usuário pelo ID
-// @Tags Habilidades
-// @Accept json
-// @Produce json
-// @Param id path int true "ID do usuário"
-// @Success 200 {object} pkg.UserSkillsResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Router /users/{id}/skills [post]
-func CreateUserSkill(conn *pgx.Conn) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, err := strconv.Atoi(id)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
-			return
-		}
-
-		var skill pkg.UserSkill
-		if err := c.BindJSON(&skill); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-			return
-		}
-		skill.User_id = userID
-
-		_, err = conn.Exec(c.Request.Context(),
-			`INSERT INTO user_skill (user_id, skill_id)
-			 VALUES ($1, $2)`,
-			skill.User_id, skill.Skill_id)
-
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		c.JSON(http.StatusCreated, pkg.UserSkillResponse{User_skill: skill})
-	}
-}
-
-// DeleteUserSkill godoc
-// @Summary Excluir habilidade do usuário
-// @Description Exclui uma habilidade de um usuário pelo ID
-// @Tags Habilidades
-// @Accept json
-// @Produce json
-// @Param id path int true "ID do usuário"
-// @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Router /users/{id}/skills [delete]
-func DeleteUserSkill(conn *pgx.Conn) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		userID := c.Param("id")
-		userIDVal, err := strconv.Atoi(userID)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
-			return
-		}
-
-		skillID := c.Query("skill_id")
-		if skillID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "skill_id query parameter required"})
-			return
-		}
-		skillIDVal, err := strconv.Atoi(skillID)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid skill id"})
-			return
-		}
-
-		result, err := conn.Exec(c.Request.Context(),
-			`DELETE FROM user_skill WHERE user_id = $1 AND skill_id = $2`,
-			userIDVal, skillIDVal)
-
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		if result.RowsAffected() == 0 {
-			c.JSON(http.StatusNotFound, gin.H{"error": "user skill not found"})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{"message": "user skill deleted successfully"})
 	}
 }

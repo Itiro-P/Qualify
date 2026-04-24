@@ -25,10 +25,6 @@ func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
 			user.PUT("/profile", handlers.UpdateUserProfile(conn))
 			user.DELETE("/profile", handlers.DeleteUserProfile(conn))
 
-			user.GET("/skills", handlers.GetUserSkills(conn))
-			user.POST("/skills", handlers.CreateUserSkill(conn))
-			user.DELETE("/skills", handlers.DeleteUserSkill(conn))
-
 			// Role assignment under the user resource
 			analystRole := user.Group("/analyst")
 			{
@@ -36,8 +32,11 @@ func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
 				analystRole.GET("", handlers.GetAnalyst(conn))
 				analystRole.PUT("", handlers.UpdateAnalyst(conn))
 				analystRole.DELETE("", handlers.DeleteAnalyst(conn))
-
 				// Analyst-specific sub-resources
+
+				analystRole.GET("/skills", handlers.GetAnalystSkills(conn))
+				analystRole.POST("/skills", handlers.CreateAnalystSkill(conn))
+				analystRole.DELETE("/skills", handlers.DeleteAnalystSkill(conn))
 				analystRole.GET("/profile", handlers.GetAnalystProfile(conn))
 				analystRole.POST("/profile", handlers.CreateAnalystProfile(conn))
 				analystRole.PUT("/profile", handlers.UpdateAnalystProfile(conn))
