@@ -19,7 +19,8 @@ import (
 // @Accept json
 // @Produce json
 // @Param name query string false "Nome parcial"
-// @Success 200 {object} map[string]interface{}
+// @Success 200 {object} pkg.SkillsResponse
+// @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /skills [get]
 func GetSkills(conn *pgx.Conn) gin.HandlerFunc {
@@ -58,7 +59,7 @@ func GetSkills(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"skills": skills, "count": len(skills)})
+		c.JSON(http.StatusOK, pkg.SkillsResponse{Skills: skills, Count: len(skills)})
 	}
 }
 
@@ -69,7 +70,7 @@ func GetSkills(conn *pgx.Conn) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID da habilidade"
-// @Success 200 {object} pkg.Skill
+// @Success 200 {object} pkg.SkillResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -96,7 +97,7 @@ func GetSkill(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, skill)
+		c.JSON(http.StatusOK, pkg.SkillResponse{Skill: skill})
 	}
 }
 
@@ -107,7 +108,7 @@ func GetSkill(conn *pgx.Conn) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param skill body pkg.Skill true "Objeto habilidade"
-// @Success 201 {object} pkg.Skill
+// @Success 201 {object} pkg.SkillResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /skills [post]
@@ -131,7 +132,7 @@ func CreateSkill(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, skill)
+		c.JSON(http.StatusCreated, pkg.SkillResponse{Skill: skill})
 	}
 }
 
@@ -143,7 +144,7 @@ func CreateSkill(conn *pgx.Conn) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID da habilidade"
 // @Param skill body pkg.Skill true "Objeto habilidade"
-// @Success 200 {object} pkg.Skill
+// @Success 200 {object} pkg.SkillResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -178,7 +179,7 @@ func UpdateSkill(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, skill)
+		c.JSON(http.StatusOK, pkg.SkillResponse{Skill: skill})
 	}
 }
 
@@ -221,6 +222,18 @@ func DeleteSkill(conn *pgx.Conn) gin.HandlerFunc {
 
 // Analyst Skill Handlers
 
+// GetAnalystSkills godoc
+// @Summary Obter habilidades do analista
+// @Description Retorna as habilidades de um analista pelo ID
+// @Tags Habilidades
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do analista"
+// @Success 200 {object} pkg.AnalystSkillsResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /analysts/{id}/skills [get]
 func GetAnalystSkills(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		analystID := c.Param("id")
@@ -254,10 +267,22 @@ func GetAnalystSkills(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"skills": skills, "count": len(skills)})
+		c.JSON(http.StatusOK, pkg.AnalystSkillsResponse{Analyst_skills: skills, Count: len(skills)})
 	}
 }
 
+// CreateAnalystSkill godoc
+// @Summary Criar habilidade para o analista
+// @Description Cria uma nova habilidade para um analista pelo ID
+// @Tags Habilidades
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do analista"
+// @Success 200 {object} pkg.AnalystSkillResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /analysts/{id}/skills [post]
 func CreateAnalystSkill(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var skill pkg.AnalystSkill
@@ -276,10 +301,22 @@ func CreateAnalystSkill(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, skill)
+		c.JSON(http.StatusCreated, pkg.AnalystSkillResponse{Analyst_skill: skill})
 	}
 }
 
+// DeleteAnalystSkill godoc
+// @Summary Excluir habilidade do analista
+// @Description Exclui uma habilidade de um analista pelo ID
+// @Tags Habilidades
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do analista"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /analysts/{id}/skills [delete]
 func DeleteAnalystSkill(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		analystID := c.Param("id")
@@ -320,6 +357,18 @@ func DeleteAnalystSkill(conn *pgx.Conn) gin.HandlerFunc {
 
 // User Skill Handlers
 
+// GetUserSkills godoc
+// @Summary Obter habilidades do usuário
+// @Description Retorna as habilidades de um usuário pelo ID
+// @Tags Habilidades
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário"
+// @Success 200 {object} pkg.UserSkillsResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/skills [get]
 func GetUserSkills(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.Param("id")
@@ -338,9 +387,9 @@ func GetUserSkills(conn *pgx.Conn) gin.HandlerFunc {
 		}
 		defer rows.Close()
 
-		var skills []pkg.User_Skill
+		var skills []pkg.UserSkill
 		for rows.Next() {
-			var skill pkg.User_Skill
+			var skill pkg.UserSkill
 			if err := rows.Scan(&skill.User_id, &skill.Skill_id); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
@@ -353,10 +402,22 @@ func GetUserSkills(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"skills": skills, "count": len(skills)})
+		c.JSON(http.StatusOK, pkg.UserSkillsResponse{User_skills: skills, Count: len(skills)})
 	}
 }
 
+// CreateUserSkill godoc
+// @Summary Criar habilidade do usuário
+// @Description Cria uma habilidade para um usuário pelo ID
+// @Tags Habilidades
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário"
+// @Success 200 {object} pkg.UserSkillsResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/skills [post]
 func CreateUserSkill(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -366,7 +427,7 @@ func CreateUserSkill(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		var skill pkg.User_Skill
+		var skill pkg.UserSkill
 		if err := c.BindJSON(&skill); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			return
@@ -383,10 +444,22 @@ func CreateUserSkill(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, skill)
+		c.JSON(http.StatusCreated, pkg.UserSkillResponse{User_skill: skill})
 	}
 }
 
+// DeleteUserSkill godoc
+// @Summary Excluir habilidade do usuário
+// @Description Exclui uma habilidade de um usuário pelo ID
+// @Tags Habilidades
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/skills [delete]
 func DeleteUserSkill(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.Param("id")

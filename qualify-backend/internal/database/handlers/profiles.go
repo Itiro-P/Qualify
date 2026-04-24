@@ -18,7 +18,7 @@ import (
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do usuário"
-// @Success 200 {object} pkg.UserProfile
+// @Success 200 {object} pkg.UserProfileResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -45,7 +45,7 @@ func GetUserProfile(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, profile)
+		c.JSON(http.StatusOK, pkg.UserProfileResponse{User_profile: profile})
 	}
 }
 
@@ -57,7 +57,7 @@ func GetUserProfile(conn *pgx.Conn) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário"
 // @Param profile body pkg.UserProfile true "Objeto perfil"
-// @Success 201 {object} pkg.UserProfile
+// @Success 201 {object} pkg.UserProfileResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/profile [post]
@@ -89,7 +89,7 @@ func CreateUserProfile(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, profile)
+		c.JSON(http.StatusCreated, pkg.UserProfileResponse{User_profile: profile})
 	}
 }
 
@@ -101,7 +101,7 @@ func CreateUserProfile(conn *pgx.Conn) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário"
 // @Param profile body pkg.UserProfile true "Objeto perfil"
-// @Success 200 {object} pkg.UserProfile
+// @Success 200 {object} pkg.UserProfileResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -136,7 +136,7 @@ func UpdateUserProfile(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, profile)
+		c.JSON(http.StatusOK, pkg.UserProfileResponse{User_profile: profile})
 	}
 }
 
@@ -187,7 +187,7 @@ func DeleteUserProfile(conn *pgx.Conn) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do usuário (analista)"
-// @Success 200 {object} pkg.AnalystProfile
+// @Success 200 {object} pkg.AnalystProfileResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -214,7 +214,7 @@ func GetAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, profile)
+		c.JSON(http.StatusOK, pkg.AnalystProfileResponse{Analyst_profile: profile})
 	}
 }
 
@@ -226,7 +226,7 @@ func GetAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário (analista)"
 // @Param profile body pkg.AnalystProfile true "Objeto perfil"
-// @Success 201 {object} pkg.AnalystProfile
+// @Success 201 {object} pkg.AnalystProfileResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/analyst/profile [post]
@@ -258,7 +258,7 @@ func CreateAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, profile)
+		c.JSON(http.StatusCreated, pkg.AnalystProfileResponse{Analyst_profile: profile})
 	}
 }
 
@@ -270,7 +270,7 @@ func CreateAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário (analista)"
 // @Param profile body pkg.AnalystProfile true "Objeto perfil"
-// @Success 200 {object} pkg.AnalystProfile
+// @Success 200 {object} pkg.AnalystProfileResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -305,7 +305,7 @@ func UpdateAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, profile)
+		c.JSON(http.StatusOK, pkg.AnalystProfileResponse{Analyst_profile: profile})
 	}
 }
 
@@ -356,7 +356,7 @@ func DeleteAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do usuário (cliente)"
-// @Success 200 {object} pkg.ClientProfile
+// @Success 200 {object} pkg.ClientProfileResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -383,7 +383,7 @@ func GetClientProfile(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, profile)
+		c.JSON(http.StatusOK, pkg.ClientProfileResponse{Client_profile: profile})
 	}
 }
 
@@ -395,7 +395,7 @@ func GetClientProfile(conn *pgx.Conn) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário (cliente)"
 // @Param profile body pkg.ClientProfile true "Objeto perfil"
-// @Success 201 {object} pkg.ClientProfile
+// @Success 201 {object} pkg.ClientProfileResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/client/profile [post]
@@ -427,7 +427,7 @@ func CreateClientProfile(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, profile)
+		c.JSON(http.StatusCreated, pkg.ClientProfileResponse{Client_profile: profile})
 	}
 }
 
@@ -439,7 +439,7 @@ func CreateClientProfile(conn *pgx.Conn) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário (cliente)"
 // @Param profile body pkg.ClientProfile true "Objeto perfil"
-// @Success 200 {object} pkg.ClientProfile
+// @Success 200 {object} pkg.ClientProfileResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -474,7 +474,7 @@ func UpdateClientProfile(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, profile)
+		c.JSON(http.StatusOK, pkg.ClientProfileResponse{Client_profile: profile})
 	}
 }
 

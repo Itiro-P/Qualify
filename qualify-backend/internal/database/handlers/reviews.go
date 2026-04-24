@@ -24,7 +24,7 @@ import (
 // @Param max_rating query int false "Avaliação máxima"
 // @Param page query int false "Página"
 // @Param page_size query int false "Tamanho da página"
-// @Success 200 {object} map[string]interface{}
+// @Success 200 {object} pkg.ReviewsResponse
 // @Failure 500 {object} map[string]string
 // @Router /reviews [get]
 func GetReviews(conn *pgx.Conn) gin.HandlerFunc {
@@ -182,11 +182,11 @@ func GetReviews(conn *pgx.Conn) gin.HandlerFunc {
 		}
 
 		// Return results
-		c.JSON(http.StatusOK, gin.H{
-			"reviews":   reviews,
-			"count":     len(reviews),
-			"page":      page,
-			"page_size": pageSize,
+		c.JSON(http.StatusOK, pkg.ReviewsResponse{
+			Reviews:   reviews,
+			Count:     len(reviews),
+			Page:      page,
+			Page_size: pageSize,
 		})
 	}
 }
@@ -198,7 +198,7 @@ func GetReviews(conn *pgx.Conn) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID da avaliação"
-// @Success 200 {object} pkg.Review
+// @Success 200 {object} pkg.ReviewResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -222,7 +222,7 @@ func GetReview(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, review)
+		c.JSON(http.StatusOK, pkg.ReviewResponse{Review: review})
 	}
 }
 
@@ -233,7 +233,7 @@ func GetReview(conn *pgx.Conn) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param review body pkg.Review true "Objeto avaliação"
-// @Success 201 {object} pkg.Review
+// @Success 201 {object} pkg.ReviewResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /reviews [post]
@@ -263,7 +263,7 @@ func CreateReview(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, review)
+		c.JSON(http.StatusCreated, pkg.ReviewResponse{Review: review})
 	}
 }
 
@@ -275,7 +275,7 @@ func CreateReview(conn *pgx.Conn) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID da avaliação"
 // @Param review body pkg.Review true "Objeto avaliação"
-// @Success 200 {object} pkg.Review
+// @Success 200 {object} pkg.ReviewResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -316,7 +316,7 @@ func UpdateReview(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, review)
+		c.JSON(http.StatusOK, pkg.ReviewResponse{Review: review})
 	}
 }
 

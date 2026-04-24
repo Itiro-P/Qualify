@@ -22,7 +22,8 @@ import (
 // @Param city query string false "Cidade"
 // @Param min_proposed_budget query number false "Orçamento mínimo"
 // @Param max_proposed_budget query number false "Orçamento máximo"
-// @Success 200 {object} map[string]interface{}
+// @Success 200 {object} pkg.ClientsResponse
+// @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /clients [get]
 func GetClients(conn *pgx.Conn) gin.HandlerFunc {
@@ -122,9 +123,9 @@ func GetClients(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{
-			"clients": clients,
-			"count":   len(clients),
+		c.JSON(http.StatusOK, pkg.ClientsResponse{
+			Clients: clients,
+			Count:   len(clients),
 		})
 	}
 }
@@ -136,7 +137,7 @@ func GetClients(conn *pgx.Conn) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do usuário"
-// @Success 200 {object} pkg.Client
+// @Success 200 {object} pkg.ClientResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -178,7 +179,7 @@ func GetClient(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, client)
+		c.JSON(http.StatusOK, pkg.ClientResponse{Client: client})
 	}
 }
 
@@ -190,7 +191,7 @@ func GetClient(conn *pgx.Conn) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário"
 // @Param proposed_budget body object true "{\"proposed_budget\": number}"
-// @Success 201 {object} pkg.Client
+// @Success 201 {object} pkg.ClientResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/client [post]
@@ -221,7 +222,7 @@ func CreateClient(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, client)
+		c.JSON(http.StatusCreated, pkg.ClientResponse{Client: *client})
 	}
 }
 
@@ -233,7 +234,7 @@ func CreateClient(conn *pgx.Conn) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário"
 // @Param client body pkg.Client true "Objeto cliente"
-// @Success 200 {object} pkg.Client
+// @Success 200 {object} pkg.ClientResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -306,7 +307,7 @@ func UpdateClient(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, client)
+		c.JSON(http.StatusOK, pkg.ClientResponse{Client: client})
 	}
 }
 

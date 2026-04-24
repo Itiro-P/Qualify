@@ -11,3 +11,14 @@ type Review struct {
 	Comment      string    `json:"comment"`
 	Time_created time.Time `json:"time_created"`
 }
+
+type ReviewResponse struct {
+	Review Review `json:"review"`
+}
+
+type ReviewsResponse struct {
+	Reviews   []Review `json:"reviews"`
+	Count     int      `json:"count"`
+	Page      int      `json:"page"`
+	Page_size int      `json:"page_size"`
+}

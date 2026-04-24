@@ -22,7 +22,7 @@ import (
 // @Param city query string false "Cidade"
 // @Param min_hourly_rate query number false "Valor mínimo por hora"
 // @Param max_hourly_rate query number false "Valor máximo por hora"
-// @Success 200 {object} map[string]interface{}
+// @Success 200 {object} pkg.AnalystsResponse
 // @Failure 500 {object} map[string]string
 // @Router /analysts [get]
 func GetAnalysts(conn *pgx.Conn) gin.HandlerFunc {
@@ -142,9 +142,9 @@ func GetAnalysts(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{
-			"analysts": analysts,
-			"count":    len(analysts),
+		c.JSON(http.StatusOK, pkg.AnalystsResponse{
+			Analysts: analysts,
+			Count:    len(analysts),
 		})
 	}
 }
@@ -156,7 +156,7 @@ func GetAnalysts(conn *pgx.Conn) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do usuário"
-// @Success 200 {object} pkg.Analyst
+// @Success 200 {object} pkg.AnalystResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -201,7 +201,9 @@ func GetAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, analyst)
+		c.JSON(http.StatusOK, pkg.AnalystResponse{
+			Analyst: analyst,
+		})
 	}
 }
 
@@ -213,7 +215,7 @@ func GetAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário"
 // @Param hourly_rate body object true "{\"hourly_rate\": number}"
-// @Success 201 {object} pkg.Analyst
+// @Success 201 {object} pkg.AnalystResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/analyst [post]
@@ -244,7 +246,9 @@ func CreateAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, analyst)
+		c.JSON(http.StatusCreated, pkg.AnalystResponse{
+			Analyst: *analyst,
+		})
 	}
 }
 
@@ -256,7 +260,7 @@ func CreateAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário"
 // @Param analyst body pkg.Analyst true "Objeto analista"
-// @Success 200 {object} pkg.Analyst
+// @Success 200 {object} pkg.AnalystResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -331,7 +335,9 @@ func UpdateAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, analyst)
+		c.JSON(http.StatusOK, pkg.AnalystResponse{
+			Analyst: analyst,
+		})
 	}
 }
 

@@ -64,8 +64,183 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
+                            "$ref": "#/definitions/pkg.AnalystsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
                             "type": "object",
-                            "additionalProperties": true
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/analysts/{id}/skills": {
+            "get": {
+                "description": "Retorna as habilidades de um analista pelo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Habilidades"
+                ],
+                "summary": "Obter habilidades do analista",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do analista",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.AnalystSkillsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Cria uma nova habilidade para um analista pelo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Habilidades"
+                ],
+                "summary": "Criar habilidade para o analista",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do analista",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.AnalystSkillResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Exclui uma habilidade de um analista pelo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Habilidades"
+                ],
+                "summary": "Excluir habilidade do analista",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do analista",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
@@ -97,8 +272,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/pkg.CertificationsResponse"
                         }
                     },
                     "500": {
@@ -139,7 +313,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/pkg.Certification"
+                            "$ref": "#/definitions/pkg.CertificationResponse"
                         }
                     },
                     "400": {
@@ -189,7 +363,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.Certification"
+                            "$ref": "#/definitions/pkg.CertificationResponse"
                         }
                     },
                     "400": {
@@ -255,7 +429,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.Certification"
+                            "$ref": "#/definitions/pkg.CertificationResponse"
                         }
                     },
                     "400": {
@@ -397,8 +571,16 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
+                            "$ref": "#/definitions/pkg.ClientsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
                             "type": "object",
-                            "additionalProperties": true
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
@@ -444,8 +626,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/pkg.ProposalLettersResponse"
                         }
                     },
                     "500": {
@@ -486,7 +667,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/pkg.ProposalLetter"
+                            "$ref": "#/definitions/pkg.ProposalLetterResponse"
                         }
                     },
                     "400": {
@@ -536,8 +717,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/pkg.ProposalLetterResponse"
                         }
                     },
                     "400": {
@@ -603,7 +783,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.ProposalLetter"
+                            "$ref": "#/definitions/pkg.ProposalLetterResponse"
                         }
                     },
                     "400": {
@@ -763,8 +943,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/pkg.ReviewsResponse"
                         }
                     },
                     "500": {
@@ -805,7 +984,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/pkg.Review"
+                            "$ref": "#/definitions/pkg.ReviewResponse"
                         }
                     },
                     "400": {
@@ -855,7 +1034,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.Review"
+                            "$ref": "#/definitions/pkg.ReviewResponse"
                         }
                     },
                     "400": {
@@ -921,7 +1100,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.Review"
+                            "$ref": "#/definitions/pkg.ReviewResponse"
                         }
                     },
                     "400": {
@@ -1045,8 +1224,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/pkg.ServicesResponse"
                         }
                     },
                     "500": {
@@ -1087,7 +1265,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/pkg.Service"
+                            "$ref": "#/definitions/pkg.ServiceResponse"
                         }
                     },
                     "400": {
@@ -1137,8 +1315,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/pkg.ServiceResponse"
                         }
                     },
                     "400": {
@@ -1204,7 +1381,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.Service"
+                            "$ref": "#/definitions/pkg.ServiceResponse"
                         }
                     },
                     "400": {
@@ -1322,8 +1499,16 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
+                            "$ref": "#/definitions/pkg.SkillsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
                             "type": "object",
-                            "additionalProperties": true
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
@@ -1364,7 +1549,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/pkg.Skill"
+                            "$ref": "#/definitions/pkg.SkillResponse"
                         }
                     },
                     "400": {
@@ -1414,7 +1599,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.Skill"
+                            "$ref": "#/definitions/pkg.SkillResponse"
                         }
                     },
                     "400": {
@@ -1480,7 +1665,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.Skill"
+                            "$ref": "#/definitions/pkg.SkillResponse"
                         }
                     },
                     "400": {
@@ -1601,7 +1786,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/pkg.User"
+                            "$ref": "#/definitions/pkg.UserResponse"
                         }
                     },
                     "400": {
@@ -1651,7 +1836,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.User"
+                            "$ref": "#/definitions/pkg.UserResponse"
                         }
                     },
                     "400": {
@@ -1717,7 +1902,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.User"
+                            "$ref": "#/definitions/pkg.UserResponse"
                         }
                     },
                     "400": {
@@ -1836,7 +2021,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.Analyst"
+                            "$ref": "#/definitions/pkg.AnalystResponse"
                         }
                     },
                     "400": {
@@ -1902,7 +2087,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.Analyst"
+                            "$ref": "#/definitions/pkg.AnalystResponse"
                         }
                     },
                     "400": {
@@ -1968,7 +2153,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/pkg.Analyst"
+                            "$ref": "#/definitions/pkg.AnalystResponse"
                         }
                     },
                     "400": {
@@ -2078,8 +2263,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/pkg.CertificationsResponse"
                         }
                     },
                     "400": {
@@ -2136,7 +2320,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AnalystCertification"
+                            "$ref": "#/definitions/pkg.AnalystCertificationResponse"
                         }
                     },
                     "400": {
@@ -2253,7 +2437,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AnalystProfile"
+                            "$ref": "#/definitions/pkg.AnalystProfileResponse"
                         }
                     },
                     "400": {
@@ -2319,7 +2503,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AnalystProfile"
+                            "$ref": "#/definitions/pkg.AnalystProfileResponse"
                         }
                     },
                     "400": {
@@ -2385,7 +2569,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AnalystProfile"
+                            "$ref": "#/definitions/pkg.AnalystProfileResponse"
                         }
                     },
                     "400": {
@@ -2495,7 +2679,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.Client"
+                            "$ref": "#/definitions/pkg.ClientResponse"
                         }
                     },
                     "400": {
@@ -2561,7 +2745,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.Client"
+                            "$ref": "#/definitions/pkg.ClientResponse"
                         }
                     },
                     "400": {
@@ -2627,7 +2811,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/pkg.Client"
+                            "$ref": "#/definitions/pkg.ClientResponse"
                         }
                     },
                     "400": {
@@ -2737,7 +2921,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.ClientProfile"
+                            "$ref": "#/definitions/pkg.ClientProfileResponse"
                         }
                     },
                     "400": {
@@ -2803,7 +2987,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.ClientProfile"
+                            "$ref": "#/definitions/pkg.ClientProfileResponse"
                         }
                     },
                     "400": {
@@ -2869,7 +3053,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/pkg.ClientProfile"
+                            "$ref": "#/definitions/pkg.ClientProfileResponse"
                         }
                     },
                     "400": {
@@ -2979,7 +3163,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.UserProfile"
+                            "$ref": "#/definitions/pkg.UserProfileResponse"
                         }
                     },
                     "400": {
@@ -3045,7 +3229,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.UserProfile"
+                            "$ref": "#/definitions/pkg.UserProfileResponse"
                         }
                     },
                     "400": {
@@ -3111,7 +3295,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/pkg.UserProfile"
+                            "$ref": "#/definitions/pkg.UserProfileResponse"
                         }
                     },
                     "400": {
@@ -3146,6 +3330,182 @@ const docTemplate = `{
                     "Perfis"
                 ],
                 "summary": "Excluir perfil do usuário",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do usuário",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}/skills": {
+            "get": {
+                "description": "Retorna as habilidades de um usuário pelo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Habilidades"
+                ],
+                "summary": "Obter habilidades do usuário",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do usuário",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.UserSkillsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Cria uma habilidade para um usuário pelo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Habilidades"
+                ],
+                "summary": "Criar habilidade do usuário",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do usuário",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.UserSkillsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Exclui uma habilidade de um usuário pelo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Habilidades"
+                ],
+                "summary": "Excluir habilidade do usuário",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3252,6 +3612,14 @@ const docTemplate = `{
                 }
             }
         },
+        "pkg.AnalystCertificationResponse": {
+            "type": "object",
+            "properties": {
+                "analyst_certification": {
+                    "$ref": "#/definitions/pkg.AnalystCertification"
+                }
+            }
+        },
         "pkg.AnalystProfile": {
             "type": "object",
             "properties": {
@@ -3259,6 +3627,69 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "pkg.AnalystProfileResponse": {
+            "type": "object",
+            "properties": {
+                "analyst_profile": {
+                    "$ref": "#/definitions/pkg.AnalystProfile"
+                }
+            }
+        },
+        "pkg.AnalystResponse": {
+            "type": "object",
+            "properties": {
+                "analyst": {
+                    "$ref": "#/definitions/pkg.Analyst"
+                }
+            }
+        },
+        "pkg.AnalystSkill": {
+            "type": "object",
+            "properties": {
+                "analyst_id": {
+                    "type": "integer"
+                },
+                "skill_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "pkg.AnalystSkillResponse": {
+            "type": "object",
+            "properties": {
+                "analyst_skill": {
+                    "$ref": "#/definitions/pkg.AnalystSkill"
+                }
+            }
+        },
+        "pkg.AnalystSkillsResponse": {
+            "type": "object",
+            "properties": {
+                "analyst_skills": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/pkg.AnalystSkill"
+                    }
+                },
+                "count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "pkg.AnalystsResponse": {
+            "type": "object",
+            "properties": {
+                "analysts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/pkg.Analyst"
+                    }
+                },
+                "count": {
                     "type": "integer"
                 }
             }
@@ -3276,6 +3707,28 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "year": {
+                    "type": "integer"
+                }
+            }
+        },
+        "pkg.CertificationResponse": {
+            "type": "object",
+            "properties": {
+                "certification": {
+                    "$ref": "#/definitions/pkg.Certification"
+                }
+            }
+        },
+        "pkg.CertificationsResponse": {
+            "type": "object",
+            "properties": {
+                "certifications": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/pkg.Certification"
+                    }
+                },
+                "count": {
                     "type": "integer"
                 }
             }
@@ -3329,6 +3782,36 @@ const docTemplate = `{
                 }
             }
         },
+        "pkg.ClientProfileResponse": {
+            "type": "object",
+            "properties": {
+                "client_profile": {
+                    "$ref": "#/definitions/pkg.ClientProfile"
+                }
+            }
+        },
+        "pkg.ClientResponse": {
+            "type": "object",
+            "properties": {
+                "client": {
+                    "$ref": "#/definitions/pkg.Client"
+                }
+            }
+        },
+        "pkg.ClientsResponse": {
+            "type": "object",
+            "properties": {
+                "clients": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/pkg.Client"
+                    }
+                },
+                "count": {
+                    "type": "integer"
+                }
+            }
+        },
         "pkg.ProposalLetter": {
             "type": "object",
             "properties": {
@@ -3352,6 +3835,28 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
+                }
+            }
+        },
+        "pkg.ProposalLetterResponse": {
+            "type": "object",
+            "properties": {
+                "proposal_letter": {
+                    "$ref": "#/definitions/pkg.ProposalLetter"
+                }
+            }
+        },
+        "pkg.ProposalLettersResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "proposal_letters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/pkg.ProposalLetter"
+                    }
                 }
             }
         },
@@ -3381,6 +3886,34 @@ const docTemplate = `{
                 }
             }
         },
+        "pkg.ReviewResponse": {
+            "type": "object",
+            "properties": {
+                "review": {
+                    "$ref": "#/definitions/pkg.Review"
+                }
+            }
+        },
+        "pkg.ReviewsResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
+                "reviews": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/pkg.Review"
+                    }
+                }
+            }
+        },
         "pkg.Service": {
             "type": "object",
             "properties": {
@@ -3407,6 +3940,28 @@ const docTemplate = `{
                 }
             }
         },
+        "pkg.ServiceResponse": {
+            "type": "object",
+            "properties": {
+                "service": {
+                    "$ref": "#/definitions/pkg.Service"
+                }
+            }
+        },
+        "pkg.ServicesResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "services": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/pkg.Service"
+                    }
+                }
+            }
+        },
         "pkg.Skill": {
             "type": "object",
             "properties": {
@@ -3415,6 +3970,28 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "pkg.SkillResponse": {
+            "type": "object",
+            "properties": {
+                "skill": {
+                    "$ref": "#/definitions/pkg.Skill"
+                }
+            }
+        },
+        "pkg.SkillsResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "skills": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/pkg.Skill"
+                    }
                 }
             }
         },
@@ -3461,6 +4038,47 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "pkg.UserProfileResponse": {
+            "type": "object",
+            "properties": {
+                "user_profile": {
+                    "$ref": "#/definitions/pkg.UserProfile"
+                }
+            }
+        },
+        "pkg.UserResponse": {
+            "type": "object",
+            "properties": {
+                "user": {
+                    "$ref": "#/definitions/pkg.User"
+                }
+            }
+        },
+        "pkg.UserSkill": {
+            "type": "object",
+            "properties": {
+                "skill_id": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "pkg.UserSkillsResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "user_skills": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/pkg.UserSkill"
+                    }
                 }
             }
         }

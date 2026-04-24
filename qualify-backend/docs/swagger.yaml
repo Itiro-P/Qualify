@@ -35,11 +35,56 @@ definitions:
       certification_id:
         type: integer
     type: object
+  pkg.AnalystCertificationResponse:
+    properties:
+      analyst_certification:
+        $ref: '#/definitions/pkg.AnalystCertification'
+    type: object
   pkg.AnalystProfile:
     properties:
       biography:
         type: string
       user_id:
+        type: integer
+    type: object
+  pkg.AnalystProfileResponse:
+    properties:
+      analyst_profile:
+        $ref: '#/definitions/pkg.AnalystProfile'
+    type: object
+  pkg.AnalystResponse:
+    properties:
+      analyst:
+        $ref: '#/definitions/pkg.Analyst'
+    type: object
+  pkg.AnalystSkill:
+    properties:
+      analyst_id:
+        type: integer
+      skill_id:
+        type: integer
+    type: object
+  pkg.AnalystSkillResponse:
+    properties:
+      analyst_skill:
+        $ref: '#/definitions/pkg.AnalystSkill'
+    type: object
+  pkg.AnalystSkillsResponse:
+    properties:
+      analyst_skills:
+        items:
+          $ref: '#/definitions/pkg.AnalystSkill'
+        type: array
+      count:
+        type: integer
+    type: object
+  pkg.AnalystsResponse:
+    properties:
+      analysts:
+        items:
+          $ref: '#/definitions/pkg.Analyst'
+        type: array
+      count:
         type: integer
     type: object
   pkg.Certification:
@@ -51,6 +96,20 @@ definitions:
       name:
         type: string
       year:
+        type: integer
+    type: object
+  pkg.CertificationResponse:
+    properties:
+      certification:
+        $ref: '#/definitions/pkg.Certification'
+    type: object
+  pkg.CertificationsResponse:
+    properties:
+      certifications:
+        items:
+          $ref: '#/definitions/pkg.Certification'
+        type: array
+      count:
         type: integer
     type: object
   pkg.Client:
@@ -85,6 +144,25 @@ definitions:
       user_id:
         type: integer
     type: object
+  pkg.ClientProfileResponse:
+    properties:
+      client_profile:
+        $ref: '#/definitions/pkg.ClientProfile'
+    type: object
+  pkg.ClientResponse:
+    properties:
+      client:
+        $ref: '#/definitions/pkg.Client'
+    type: object
+  pkg.ClientsResponse:
+    properties:
+      clients:
+        items:
+          $ref: '#/definitions/pkg.Client'
+        type: array
+      count:
+        type: integer
+    type: object
   pkg.ProposalLetter:
     properties:
       analyst_id:
@@ -101,6 +179,20 @@ definitions:
         type: string
       title:
         type: string
+    type: object
+  pkg.ProposalLetterResponse:
+    properties:
+      proposal_letter:
+        $ref: '#/definitions/pkg.ProposalLetter'
+    type: object
+  pkg.ProposalLettersResponse:
+    properties:
+      count:
+        type: integer
+      proposal_letters:
+        items:
+          $ref: '#/definitions/pkg.ProposalLetter'
+        type: array
     type: object
   pkg.Review:
     properties:
@@ -119,6 +211,24 @@ definitions:
       time_created:
         type: string
     type: object
+  pkg.ReviewResponse:
+    properties:
+      review:
+        $ref: '#/definitions/pkg.Review'
+    type: object
+  pkg.ReviewsResponse:
+    properties:
+      count:
+        type: integer
+      page:
+        type: integer
+      page_size:
+        type: integer
+      reviews:
+        items:
+          $ref: '#/definitions/pkg.Review'
+        type: array
+    type: object
   pkg.Service:
     properties:
       content:
@@ -136,12 +246,40 @@ definitions:
       title:
         type: string
     type: object
+  pkg.ServiceResponse:
+    properties:
+      service:
+        $ref: '#/definitions/pkg.Service'
+    type: object
+  pkg.ServicesResponse:
+    properties:
+      count:
+        type: integer
+      services:
+        items:
+          $ref: '#/definitions/pkg.Service'
+        type: array
+    type: object
   pkg.Skill:
     properties:
       id:
         type: integer
       name:
         type: string
+    type: object
+  pkg.SkillResponse:
+    properties:
+      skill:
+        $ref: '#/definitions/pkg.Skill'
+    type: object
+  pkg.SkillsResponse:
+    properties:
+      count:
+        type: integer
+      skills:
+        items:
+          $ref: '#/definitions/pkg.Skill'
+        type: array
     type: object
   pkg.User:
     properties:
@@ -172,6 +310,32 @@ definitions:
         type: string
       user_id:
         type: integer
+    type: object
+  pkg.UserProfileResponse:
+    properties:
+      user_profile:
+        $ref: '#/definitions/pkg.UserProfile'
+    type: object
+  pkg.UserResponse:
+    properties:
+      user:
+        $ref: '#/definitions/pkg.User'
+    type: object
+  pkg.UserSkill:
+    properties:
+      skill_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  pkg.UserSkillsResponse:
+    properties:
+      count:
+        type: integer
+      user_skills:
+        items:
+          $ref: '#/definitions/pkg.UserSkill'
+        type: array
     type: object
 info:
   contact: {}
@@ -208,8 +372,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/pkg.AnalystsResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -219,6 +382,123 @@ paths:
       summary: Listar analistas
       tags:
       - Analistas
+  /analysts/{id}/skills:
+    delete:
+      consumes:
+      - application/json
+      description: Exclui uma habilidade de um analista pelo ID
+      parameters:
+      - description: ID do analista
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Excluir habilidade do analista
+      tags:
+      - Habilidades
+    get:
+      consumes:
+      - application/json
+      description: Retorna as habilidades de um analista pelo ID
+      parameters:
+      - description: ID do analista
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.AnalystSkillsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obter habilidades do analista
+      tags:
+      - Habilidades
+    post:
+      consumes:
+      - application/json
+      description: Cria uma nova habilidade para um analista pelo ID
+      parameters:
+      - description: ID do analista
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.AnalystSkillResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Criar habilidade para o analista
+      tags:
+      - Habilidades
   /certifications:
     get:
       consumes:
@@ -230,8 +510,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/pkg.CertificationsResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -258,7 +537,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/pkg.Certification'
+            $ref: '#/definitions/pkg.CertificationResponse'
         "400":
           description: Bad Request
           schema:
@@ -331,7 +610,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.Certification'
+            $ref: '#/definitions/pkg.CertificationResponse'
         "400":
           description: Bad Request
           schema:
@@ -375,7 +654,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.Certification'
+            $ref: '#/definitions/pkg.CertificationResponse'
         "400":
           description: Bad Request
           schema:
@@ -429,7 +708,12 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
+            $ref: '#/definitions/pkg.ClientsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
             type: object
         "500":
           description: Internal Server Error
@@ -460,8 +744,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/pkg.ProposalLettersResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -488,7 +771,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/pkg.ProposalLetter'
+            $ref: '#/definitions/pkg.ProposalLetterResponse'
         "400":
           description: Bad Request
           schema:
@@ -561,8 +844,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/pkg.ProposalLetterResponse'
         "400":
           description: Bad Request
           schema:
@@ -606,7 +888,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.ProposalLetter'
+            $ref: '#/definitions/pkg.ProposalLetterResponse'
         "400":
           description: Bad Request
           schema:
@@ -672,8 +954,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/pkg.ReviewsResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -700,7 +981,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/pkg.Review'
+            $ref: '#/definitions/pkg.ReviewResponse'
         "400":
           description: Bad Request
           schema:
@@ -773,7 +1054,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.Review'
+            $ref: '#/definitions/pkg.ReviewResponse'
         "400":
           description: Bad Request
           schema:
@@ -817,7 +1098,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.Review'
+            $ref: '#/definitions/pkg.ReviewResponse'
         "400":
           description: Bad Request
           schema:
@@ -859,8 +1140,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/pkg.ServicesResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -887,7 +1167,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/pkg.Service'
+            $ref: '#/definitions/pkg.ServiceResponse'
         "400":
           description: Bad Request
           schema:
@@ -960,8 +1240,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/pkg.ServiceResponse'
         "400":
           description: Bad Request
           schema:
@@ -1005,7 +1284,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.Service'
+            $ref: '#/definitions/pkg.ServiceResponse'
         "400":
           description: Bad Request
           schema:
@@ -1043,7 +1322,12 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
+            $ref: '#/definitions/pkg.SkillsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
             type: object
         "500":
           description: Internal Server Error
@@ -1071,7 +1355,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/pkg.Skill'
+            $ref: '#/definitions/pkg.SkillResponse'
         "400":
           description: Bad Request
           schema:
@@ -1144,7 +1428,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.Skill'
+            $ref: '#/definitions/pkg.SkillResponse'
         "400":
           description: Bad Request
           schema:
@@ -1188,7 +1472,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.Skill'
+            $ref: '#/definitions/pkg.SkillResponse'
         "400":
           description: Bad Request
           schema:
@@ -1228,7 +1512,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/pkg.User'
+            $ref: '#/definitions/pkg.UserResponse'
         "400":
           description: Bad Request
           schema:
@@ -1301,7 +1585,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.User'
+            $ref: '#/definitions/pkg.UserResponse'
         "400":
           description: Bad Request
           schema:
@@ -1345,7 +1629,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.User'
+            $ref: '#/definitions/pkg.UserResponse'
         "400":
           description: Bad Request
           schema:
@@ -1424,7 +1708,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.Analyst'
+            $ref: '#/definitions/pkg.AnalystResponse'
         "400":
           description: Bad Request
           schema:
@@ -1468,7 +1752,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/pkg.Analyst'
+            $ref: '#/definitions/pkg.AnalystResponse'
         "400":
           description: Bad Request
           schema:
@@ -1506,7 +1790,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.Analyst'
+            $ref: '#/definitions/pkg.AnalystResponse'
         "400":
           description: Bad Request
           schema:
@@ -1590,8 +1874,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/pkg.CertificationsResponse'
         "400":
           description: Bad Request
           schema:
@@ -1629,7 +1912,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/pkg.AnalystCertification'
+            $ref: '#/definitions/pkg.AnalystCertificationResponse'
         "400":
           description: Bad Request
           schema:
@@ -1702,7 +1985,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.AnalystProfile'
+            $ref: '#/definitions/pkg.AnalystProfileResponse'
         "400":
           description: Bad Request
           schema:
@@ -1746,7 +2029,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/pkg.AnalystProfile'
+            $ref: '#/definitions/pkg.AnalystProfileResponse'
         "400":
           description: Bad Request
           schema:
@@ -1784,7 +2067,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.AnalystProfile'
+            $ref: '#/definitions/pkg.AnalystProfileResponse'
         "400":
           description: Bad Request
           schema:
@@ -1863,7 +2146,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.Client'
+            $ref: '#/definitions/pkg.ClientResponse'
         "400":
           description: Bad Request
           schema:
@@ -1907,7 +2190,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/pkg.Client'
+            $ref: '#/definitions/pkg.ClientResponse'
         "400":
           description: Bad Request
           schema:
@@ -1945,7 +2228,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.Client'
+            $ref: '#/definitions/pkg.ClientResponse'
         "400":
           description: Bad Request
           schema:
@@ -2024,7 +2307,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.ClientProfile'
+            $ref: '#/definitions/pkg.ClientProfileResponse'
         "400":
           description: Bad Request
           schema:
@@ -2068,7 +2351,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/pkg.ClientProfile'
+            $ref: '#/definitions/pkg.ClientProfileResponse'
         "400":
           description: Bad Request
           schema:
@@ -2106,7 +2389,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.ClientProfile'
+            $ref: '#/definitions/pkg.ClientProfileResponse'
         "400":
           description: Bad Request
           schema:
@@ -2185,7 +2468,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.UserProfile'
+            $ref: '#/definitions/pkg.UserProfileResponse'
         "400":
           description: Bad Request
           schema:
@@ -2229,7 +2512,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/pkg.UserProfile'
+            $ref: '#/definitions/pkg.UserProfileResponse'
         "400":
           description: Bad Request
           schema:
@@ -2267,7 +2550,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.UserProfile'
+            $ref: '#/definitions/pkg.UserProfileResponse'
         "400":
           description: Bad Request
           schema:
@@ -2289,4 +2572,121 @@ paths:
       summary: Atualizar perfil do usuário
       tags:
       - Perfis
+  /users/{id}/skills:
+    delete:
+      consumes:
+      - application/json
+      description: Exclui uma habilidade de um usuário pelo ID
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Excluir habilidade do usuário
+      tags:
+      - Habilidades
+    get:
+      consumes:
+      - application/json
+      description: Retorna as habilidades de um usuário pelo ID
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.UserSkillsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obter habilidades do usuário
+      tags:
+      - Habilidades
+    post:
+      consumes:
+      - application/json
+      description: Cria uma habilidade para um usuário pelo ID
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.UserSkillsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Criar habilidade do usuário
+      tags:
+      - Habilidades
 swagger: "2.0"

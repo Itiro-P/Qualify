@@ -17,7 +17,7 @@ import (
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do usuário"
-// @Success 200 {object} pkg.User
+// @Success 200 {object} pkg.UserResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -41,7 +41,7 @@ func GetUser(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, user)
+		c.JSON(http.StatusOK, pkg.UserResponse{User: user})
 	}
 }
 
@@ -52,7 +52,7 @@ func GetUser(conn *pgx.Conn) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param user body pkg.User true "Objeto do usuário"
-// @Success 201 {object} pkg.User
+// @Success 201 {object} pkg.UserResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users [post]
@@ -85,7 +85,7 @@ func CreateUser(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, user)
+		c.JSON(http.StatusCreated, pkg.UserResponse{User: user})
 	}
 }
 
@@ -97,7 +97,7 @@ func CreateUser(conn *pgx.Conn) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário"
 // @Param user body pkg.User true "Objeto do usuário"
-// @Success 200 {object} pkg.User
+// @Success 200 {object} pkg.UserResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -147,7 +147,7 @@ func UpdateUser(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, user)
+		c.JSON(http.StatusOK, pkg.UserResponse{User: user})
 	}
 }
 

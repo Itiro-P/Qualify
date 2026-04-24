@@ -14,3 +14,35 @@ type User struct {
 	City          string    `json:"city"`
 	Timezone      string    `json:"timezone"`
 }
+
+type UserProfile struct {
+	User_id   int    `json:"user_id"`
+	Biography string `json:"biography"`
+}
+
+type UserSkill struct {
+	User_id  int `json:"user_id"`
+	Skill_id int `json:"skill_id"`
+}
+
+type UserResponse struct {
+	User User `json:"user"`
+}
+
+type UsersResponse struct {
+	Users []User `json:"users"`
+	Count int    `json:"count"`
+}
+
+type UserSkillsResponse struct {
+	User_skills []UserSkill `json:"user_skills"`
+	Count       int         `json:"count"`
+}
+
+type UserProfileResponse struct {
+	User_profile UserProfile `json:"user_profile"`
+}
+
+type UserSkillResponse struct {
+	User_skill UserSkill `json:"user_skill"`
+}

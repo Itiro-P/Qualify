@@ -18,7 +18,7 @@ import (
 // @Produce json
 // @Param client_id query int false "ID do cliente"
 // @Param analyst_id query int false "ID do analista"
-// @Success 200 {object} map[string]interface{}
+// @Success 200 {object} pkg.ProposalLettersResponse
 // @Failure 500 {object} map[string]string
 // @Router /proposals [get]
 func GetProposalLetters(conn *pgx.Conn) gin.HandlerFunc {
@@ -63,7 +63,7 @@ func GetProposalLetters(conn *pgx.Conn) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"proposals": proposals, "count": len(proposals)})
+		c.JSON(http.StatusOK, pkg.ProposalLettersResponse{Proposal_letters: proposals, Count: len(proposals)})
 	}
 }
 
@@ -74,7 +74,7 @@ func GetProposalLetters(conn *pgx.Conn) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID da proposta"
-// @Success 200 {object} map[string]interface{}
+// @Success 200 {object} pkg.ProposalLetterResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -114,6 +114,7 @@ func GetProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 		}
 		defer rows.Close()
 
+		// Precisava disso?
 		var services []pkg.Service
 		for rows.Next() {
 			var s pkg.Service
@@ -129,7 +130,7 @@ func GetProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"proposal": p, "services": services})
+		c.JSON(http.StatusOK, pkg.ProposalLetterResponse{Proposal_letter: p})
 	}
 }
 
@@ -140,7 +141,7 @@ func GetProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param proposal body pkg.ProposalLetter true "Objeto proposta"
-// @Success 201 {object} pkg.ProposalLetter
+// @Success 201 {object} pkg.ProposalLetterResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /proposals [post]
@@ -164,7 +165,7 @@ func CreateProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, proposal)
+		c.JSON(http.StatusCreated, pkg.ProposalLetterResponse{Proposal_letter: proposal})
 	}
 }
 
@@ -176,7 +177,7 @@ func CreateProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID da proposta"
 // @Param proposal body pkg.ProposalLetter true "Objeto proposta"
-// @Success 200 {object} pkg.ProposalLetter
+// @Success 200 {object} pkg.ProposalLetterResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -211,7 +212,7 @@ func UpdateProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, proposal)
+		c.JSON(http.StatusOK, pkg.ProposalLetterResponse{Proposal_letter: proposal})
 	}
 }
 

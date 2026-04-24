@@ -18,7 +18,7 @@ import (
 // @Produce json
 // @Param status query string false "Status do serviço"
 // @Param proposal_letter_id query int false "ID da proposta"
-// @Success 200 {object} map[string]interface{}
+// @Success 200 {object} pkg.ServicesResponse
 // @Failure 500 {object} map[string]string
 // @Router /services [get]
 func GetServices(conn *pgx.Conn) gin.HandlerFunc {
@@ -62,7 +62,7 @@ func GetServices(conn *pgx.Conn) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao iterar serviços: " + err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"services": services, "count": len(services)})
+		c.JSON(http.StatusOK, pkg.ServicesResponse{Services: services, Count: len(services)})
 	}
 }
 
@@ -73,7 +73,7 @@ func GetServices(conn *pgx.Conn) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do serviço"
-// @Success 200 {object} map[string]interface{}
+// @Success 200 {object} pkg.ServiceResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -126,7 +126,7 @@ func GetService(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"service": s, "reviews": reviews})
+		c.JSON(http.StatusOK, pkg.ServiceResponse{Service: s})
 	}
 }
 
@@ -137,7 +137,7 @@ func GetService(conn *pgx.Conn) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param service body pkg.Service true "Objeto serviço"
-// @Success 201 {object} pkg.Service
+// @Success 201 {object} pkg.ServiceResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /services [post]
@@ -161,7 +161,7 @@ func CreateService(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, service)
+		c.JSON(http.StatusCreated, pkg.ServiceResponse{Service: service})
 	}
 }
 
@@ -173,7 +173,7 @@ func CreateService(conn *pgx.Conn) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do serviço"
 // @Param service body pkg.Service true "Objeto serviço"
-// @Success 200 {object} pkg.Service
+// @Success 200 {object} pkg.ServiceResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -209,7 +209,7 @@ func UpdateService(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, service)
+		c.JSON(http.StatusOK, pkg.ServiceResponse{Service: service})
 	}
 }
 

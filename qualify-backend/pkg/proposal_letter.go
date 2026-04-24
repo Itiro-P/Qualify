@@ -11,3 +11,12 @@ type ProposalLetter struct {
 	Proposed_hourly_rate float64   `json:"proposed_hourly_rate"`
 	Time_created         time.Time `json:"time_created"`
 }
+
+type ProposalLetterResponse struct {
+	Proposal_letter ProposalLetter `json:"proposal_letter"`
+}
+
+type ProposalLettersResponse struct {
+	Proposal_letters []ProposalLetter `json:"proposal_letters"`
+	Count            int              `json:"count"`
+}

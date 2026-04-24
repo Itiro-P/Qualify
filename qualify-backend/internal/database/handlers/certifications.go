@@ -15,7 +15,7 @@ import (
 // @Tags Certificações
 // @Accept json
 // @Produce json
-// @Success 200 {object} map[string]interface{}
+// @Success 200 {object} pkg.CertificationsResponse
 // @Failure 500 {object} map[string]string
 // @Router /certifications [get]
 func GetCertifications(conn *pgx.Conn) gin.HandlerFunc {
@@ -42,7 +42,10 @@ func GetCertifications(conn *pgx.Conn) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao iterar certificações: " + err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"certifications": certs, "count": len(certs)})
+		c.JSON(http.StatusOK, pkg.CertificationsResponse{
+			Certifications: certs,
+			Count:          len(certs),
+		})
 	}
 }
 
@@ -53,7 +56,7 @@ func GetCertifications(conn *pgx.Conn) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID da certificação"
-// @Success 200 {object} pkg.Certification
+// @Success 200 {object} pkg.CertificationResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -79,7 +82,9 @@ func GetCertification(conn *pgx.Conn) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, cert)
+		c.JSON(http.StatusOK, pkg.CertificationResponse{
+			Certification: cert,
+		})
 	}
 }
 
@@ -90,7 +95,7 @@ func GetCertification(conn *pgx.Conn) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param certification body pkg.Certification true "Objeto certificação"
-// @Success 201 {object} pkg.Certification
+// @Success 201 {object} pkg.CertificationResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /certifications [post]
@@ -120,7 +125,9 @@ func CreateCertification(conn *pgx.Conn) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusCreated, cert)
+		c.JSON(http.StatusCreated, pkg.CertificationResponse{
+			Certification: cert,
+		})
 	}
 }
 
@@ -132,7 +139,7 @@ func CreateCertification(conn *pgx.Conn) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID da certificação"
 // @Param certification body pkg.Certification true "Objeto certificação"
-// @Success 200 {object} pkg.Certification
+// @Success 200 {object} pkg.CertificationResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -174,7 +181,9 @@ func UpdateCertification(conn *pgx.Conn) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, cert)
+		c.JSON(http.StatusOK, pkg.CertificationResponse{
+			Certification: cert,
+		})
 	}
 }
 
@@ -223,7 +232,7 @@ func DeleteCertification(conn *pgx.Conn) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do usuário (analista)"
-// @Success 200 {object} map[string]interface{}
+// @Success 200 {object} pkg.CertificationsResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/analyst/certifications [get]
@@ -263,7 +272,10 @@ func GetAnalystCertifications(conn *pgx.Conn) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao iterar certificações: " + err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"certifications": certs, "count": len(certs)})
+		c.JSON(http.StatusOK, pkg.CertificationsResponse{
+			Certifications: certs,
+			Count:          len(certs),
+		})
 	}
 }
 
@@ -275,7 +287,7 @@ func GetAnalystCertifications(conn *pgx.Conn) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário (analista)"
 // @Param certification body pkg.AnalystCertification true "Objeto associação"
-// @Success 201 {object} pkg.AnalystCertification
+// @Success 201 {object} pkg.AnalystCertificationResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/analyst/certifications [post]
@@ -331,7 +343,9 @@ func CreateAnalystCertification(conn *pgx.Conn) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusCreated, ac)
+		c.JSON(http.StatusCreated, pkg.AnalystCertificationResponse{
+			Analyst_certification: ac,
+		})
 	}
 }
 
