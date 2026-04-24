@@ -1,6 +1,6 @@
 import { ReceiptText } from 'lucide-react';
 
-var biografia: string = "Meu nome é terterson testersiano, sou de testersian e tenho 8 semanas de experiência, em testes aleatórios e teste de botões, além do mais sou um guardião da qualidade."
+const biografia: string = "Meu nome é terterson testersiano, sou de testersian e tenho 8 semanas de experiência, em testes aleatórios e teste de botões, além do mais sou um guardião da qualidade."
 
 function BiographyCard({biography}: {biography : string} ) {
     return (
