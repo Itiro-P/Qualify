@@ -9,6 +9,15 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// GetCertifications godoc
+// @Summary Listar certificações
+// @Description Retorna lista de certificações
+// @Tags Certificações
+// @Accept json
+// @Produce json
+// @Success 200 {object} pkg.CertificationsResponse
+// @Failure 500 {object} map[string]string
+// @Router /certifications [get]
 func GetCertifications(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		rows, err := conn.Query(c.Request.Context(),
@@ -33,10 +42,25 @@ func GetCertifications(conn *pgx.Conn) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao iterar certificações: " + err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"certifications": certs, "count": len(certs)})
+		c.JSON(http.StatusOK, pkg.CertificationsResponse{
+			Certifications: certs,
+			Count:          len(certs),
+		})
 	}
 }
 
+// GetCertification godoc
+// @Summary Obter certificação
+// @Description Retorna certificação por ID
+// @Tags Certificações
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da certificação"
+// @Success 200 {object} pkg.CertificationResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /certifications/{id} [get]
 func GetCertification(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -58,10 +82,23 @@ func GetCertification(conn *pgx.Conn) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, cert)
+		c.JSON(http.StatusOK, pkg.CertificationResponse{
+			Certification: cert,
+		})
 	}
 }
 
+// CreateCertification godoc
+// @Summary Criar certificação
+// @Description Cria uma nova certificação
+// @Tags Certificações
+// @Accept json
+// @Produce json
+// @Param certification body pkg.Certification true "Objeto certificação"
+// @Success 201 {object} pkg.CertificationResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /certifications [post]
 func CreateCertification(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var cert pkg.Certification
@@ -88,10 +125,25 @@ func CreateCertification(conn *pgx.Conn) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusCreated, cert)
+		c.JSON(http.StatusCreated, pkg.CertificationResponse{
+			Certification: cert,
+		})
 	}
 }
 
+// UpdateCertification godoc
+// @Summary Atualizar certificação
+// @Description Atualiza uma certificação pelo ID
+// @Tags Certificações
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da certificação"
+// @Param certification body pkg.Certification true "Objeto certificação"
+// @Success 200 {object} pkg.CertificationResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /certifications/{id} [put]
 func UpdateCertification(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -129,10 +181,24 @@ func UpdateCertification(conn *pgx.Conn) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, cert)
+		c.JSON(http.StatusOK, pkg.CertificationResponse{
+			Certification: cert,
+		})
 	}
 }
 
+// DeleteCertification godoc
+// @Summary Excluir certificação
+// @Description Exclui certificação pelo ID
+// @Tags Certificações
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da certificação"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /certifications/{id} [delete]
 func DeleteCertification(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -159,6 +225,17 @@ func DeleteCertification(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// GetAnalystCertifications godoc
+// @Summary Listar certificações do analista
+// @Description Retorna as certificações associadas a um analista
+// @Tags Certificações
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário (analista)"
+// @Success 200 {object} pkg.CertificationsResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/analyst/certifications [get]
 func GetAnalystCertifications(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -195,10 +272,25 @@ func GetAnalystCertifications(conn *pgx.Conn) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao iterar certificações: " + err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"certifications": certs, "count": len(certs)})
+		c.JSON(http.StatusOK, pkg.CertificationsResponse{
+			Certifications: certs,
+			Count:          len(certs),
+		})
 	}
 }
 
+// CreateAnalystCertification godoc
+// @Summary Associar certificação ao analista
+// @Description Associa uma certificação a um analista
+// @Tags Certificações
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário (analista)"
+// @Param certification body pkg.AnalystCertification true "Objeto associação"
+// @Success 201 {object} pkg.AnalystCertificationResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/analyst/certifications [post]
 func CreateAnalystCertification(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -251,10 +343,25 @@ func CreateAnalystCertification(conn *pgx.Conn) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusCreated, ac)
+		c.JSON(http.StatusCreated, pkg.AnalystCertificationResponse{
+			Analyst_certification: ac,
+		})
 	}
 }
 
+// DeleteAnalystCertification godoc
+// @Summary Remover certificação do analista
+// @Description Remove associação de certificação de um analista
+// @Tags Certificações
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário (analista)"
+// @Param certification_id query int true "ID da certificação"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/analyst/certifications [delete]
 func DeleteAnalystCertification(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.Param("id")

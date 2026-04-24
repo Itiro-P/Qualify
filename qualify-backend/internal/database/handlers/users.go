@@ -10,6 +10,18 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// GetUser godoc
+// @Summary Obter usuário
+// @Description Retorna um usuário pelo ID
+// @Tags Usuários
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário"
+// @Success 200 {object} pkg.UserResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id} [get]
 func GetUser(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -29,10 +41,21 @@ func GetUser(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, user)
+		c.JSON(http.StatusOK, pkg.UserResponse{User: user})
 	}
 }
 
+// CreateUser godoc
+// @Summary Criar usuário
+// @Description Cria um novo usuário
+// @Tags Usuários
+// @Accept json
+// @Produce json
+// @Param user body pkg.User true "Objeto do usuário"
+// @Success 201 {object} pkg.UserResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users [post]
 func CreateUser(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var user pkg.User
@@ -62,10 +85,23 @@ func CreateUser(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, user)
+		c.JSON(http.StatusCreated, pkg.UserResponse{User: user})
 	}
 }
 
+// UpdateUser godoc
+// @Summary Atualizar usuário
+// @Description Atualiza um usuário pelo ID
+// @Tags Usuários
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário"
+// @Param user body pkg.User true "Objeto do usuário"
+// @Success 200 {object} pkg.UserResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id} [put]
 func UpdateUser(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -111,10 +147,22 @@ func UpdateUser(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, user)
+		c.JSON(http.StatusOK, pkg.UserResponse{User: user})
 	}
 }
 
+// DeleteUser godoc
+// @Summary Excluir usuário
+// @Description Remove um usuário pelo ID
+// @Tags Usuários
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id} [delete]
 func DeleteUser(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")

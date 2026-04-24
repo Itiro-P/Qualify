@@ -11,3 +11,12 @@ type Service struct {
 	Status             string    `json:"status"`
 	Time_created       time.Time `json:"time_created"`
 }
+
+type ServiceResponse struct {
+	Service Service `json:"service"`
+}
+
+type ServicesResponse struct {
+	Services []Service `json:"services"`
+	Count    int       `json:"count"`
+}

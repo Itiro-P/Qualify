@@ -10,6 +10,23 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// GetReviews godoc
+// @Summary Listar avaliações
+// @Description Retorna avaliações com filtros e paginação
+// @Tags Avaliações
+// @Accept json
+// @Produce json
+// @Param analyst_id query int false "ID do analista"
+// @Param client_id query int false "ID do cliente"
+// @Param service_id query int false "ID do serviço"
+// @Param rating query int false "Avaliação exata"
+// @Param min_rating query int false "Avaliação mínima"
+// @Param max_rating query int false "Avaliação máxima"
+// @Param page query int false "Página"
+// @Param page_size query int false "Tamanho da página"
+// @Success 200 {object} pkg.ReviewsResponse
+// @Failure 500 {object} map[string]string
+// @Router /reviews [get]
 func GetReviews(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Build query with filters
@@ -165,15 +182,27 @@ func GetReviews(conn *pgx.Conn) gin.HandlerFunc {
 		}
 
 		// Return results
-		c.JSON(http.StatusOK, gin.H{
-			"reviews":   reviews,
-			"count":     len(reviews),
-			"page":      page,
-			"page_size": pageSize,
+		c.JSON(http.StatusOK, pkg.ReviewsResponse{
+			Reviews:   reviews,
+			Count:     len(reviews),
+			Page:      page,
+			Page_size: pageSize,
 		})
 	}
 }
 
+// GetReview godoc
+// @Summary Obter avaliação
+// @Description Retorna uma avaliação pelo ID
+// @Tags Avaliações
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da avaliação"
+// @Success 200 {object} pkg.ReviewResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /reviews/{id} [get]
 func GetReview(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -193,10 +222,21 @@ func GetReview(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, review)
+		c.JSON(http.StatusOK, pkg.ReviewResponse{Review: review})
 	}
 }
 
+// CreateReview godoc
+// @Summary Criar avaliação
+// @Description Cria uma nova avaliação para um serviço
+// @Tags Avaliações
+// @Accept json
+// @Produce json
+// @Param review body pkg.Review true "Objeto avaliação"
+// @Success 201 {object} pkg.ReviewResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /reviews [post]
 func CreateReview(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var review pkg.Review
@@ -223,10 +263,23 @@ func CreateReview(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, review)
+		c.JSON(http.StatusCreated, pkg.ReviewResponse{Review: review})
 	}
 }
 
+// UpdateReview godoc
+// @Summary Atualizar avaliação
+// @Description Atualiza uma avaliação pelo ID
+// @Tags Avaliações
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da avaliação"
+// @Param review body pkg.Review true "Objeto avaliação"
+// @Success 200 {object} pkg.ReviewResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /reviews/{id} [put]
 func UpdateReview(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -263,10 +316,22 @@ func UpdateReview(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, review)
+		c.JSON(http.StatusOK, pkg.ReviewResponse{Review: review})
 	}
 }
 
+// DeleteReview godoc
+// @Summary Excluir avaliação
+// @Description Remove uma avaliação pelo ID
+// @Tags Avaliações
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da avaliação"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /reviews/{id} [delete]
 func DeleteReview(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")

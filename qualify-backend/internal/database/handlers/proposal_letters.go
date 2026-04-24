@@ -10,6 +10,17 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// GetProposalLetters godoc
+// @Summary Listar propostas
+// @Description Retorna lista de cartas de proposta (proposals)
+// @Tags Propostas
+// @Accept json
+// @Produce json
+// @Param client_id query int false "ID do cliente"
+// @Param analyst_id query int false "ID do analista"
+// @Success 200 {object} pkg.ProposalLettersResponse
+// @Failure 500 {object} map[string]string
+// @Router /proposals [get]
 func GetProposalLetters(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		query := `SELECT id, client_id, analyst_id, proposed_hourly_rate,
@@ -52,10 +63,22 @@ func GetProposalLetters(conn *pgx.Conn) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"proposals": proposals, "count": len(proposals)})
+		c.JSON(http.StatusOK, pkg.ProposalLettersResponse{Proposal_letters: proposals, Count: len(proposals)})
 	}
 }
 
+// GetProposalLetter godoc
+// @Summary Obter proposta
+// @Description Retorna uma proposta específica pelo ID
+// @Tags Propostas
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da proposta"
+// @Success 200 {object} pkg.ProposalLetterResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /proposals/{id} [get]
 func GetProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -91,6 +114,7 @@ func GetProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 		}
 		defer rows.Close()
 
+		// Precisava disso?
 		var services []pkg.Service
 		for rows.Next() {
 			var s pkg.Service
@@ -106,10 +130,21 @@ func GetProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"proposal": p, "services": services})
+		c.JSON(http.StatusOK, pkg.ProposalLetterResponse{Proposal_letter: p})
 	}
 }
 
+// CreateProposalLetter godoc
+// @Summary Criar proposta
+// @Description Cria uma nova carta de proposta
+// @Tags Propostas
+// @Accept json
+// @Produce json
+// @Param proposal body pkg.ProposalLetter true "Objeto proposta"
+// @Success 201 {object} pkg.ProposalLetterResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /proposals [post]
 func CreateProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var proposal pkg.ProposalLetter
@@ -130,10 +165,23 @@ func CreateProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, proposal)
+		c.JSON(http.StatusCreated, pkg.ProposalLetterResponse{Proposal_letter: proposal})
 	}
 }
 
+// UpdateProposalLetter godoc
+// @Summary Atualizar proposta
+// @Description Atualiza uma proposta existente pelo ID
+// @Tags Propostas
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da proposta"
+// @Param proposal body pkg.ProposalLetter true "Objeto proposta"
+// @Success 200 {object} pkg.ProposalLetterResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /proposals/{id} [put]
 func UpdateProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -164,10 +212,22 @@ func UpdateProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, proposal)
+		c.JSON(http.StatusOK, pkg.ProposalLetterResponse{Proposal_letter: proposal})
 	}
 }
 
+// DeleteProposalLetter godoc
+// @Summary Excluir proposta
+// @Description Remove uma proposta pelo ID
+// @Tags Propostas
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da proposta"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /proposals/{id} [delete]
 func DeleteProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
