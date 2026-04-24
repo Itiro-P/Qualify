@@ -68,16 +68,52 @@ export function RegisterCertifications(){
         >
             <div className="flex flex-col gap-4">
                 <div>
-                <label className="text-sm font-medium">Nome</label>
-                <input
-                    name="name" 
-                    value={form.name}
-                    onChange={(e) => handleChange(e, setForm)}
-                    className="w-full border rounded px-3 py-2 mt-1"
-                />
-                {errors.name && (
-                    <p className="text-red-500 text-sm">{errors.name}</p>
-                )}
+                    <label className="text-sm font-medium">Nome</label>
+                    <input
+                        name="name" 
+                        value={form.name}
+                        onChange={(e) => handleChange(e, setForm)}
+                        className="w-full border rounded px-3 py-2 mt-1"
+                    />
+                    {errors.name && (
+                        <p className="text-red-500 text-sm">{errors.name}</p>
+                    )}
+                </div>
+                <div>
+                    <label className="text-sm font-medium">Descrição</label>
+                    <input
+                        name="description" 
+                        value={form.description}
+                        onChange={(e) => handleChange(e, setForm)}
+                        className="w-full border rounded px-3 py-2 mt-1"
+                    />
+                    {errors.description && (
+                        <p className="text-red-500 text-sm">{errors.description}</p>
+                    )}
+                </div>
+                <div>
+                    <label className="text-sm font-medium">Instituição</label>
+                    <input
+                        name="institution" 
+                        value={form.institution}
+                        onChange={(e) => handleChange(e, setForm)}
+                        className="w-full border rounded px-3 py-2 mt-1"
+                    />
+                    {errors.institution && (
+                        <p className="text-red-500 text-sm">{errors.institution}</p>
+                    )}
+                </div>
+                <div>
+                    <label className="text-sm font-medium">Ano</label>
+                    <input
+                        name="year" 
+                        value={form.year}
+                        onChange={(e) => handleChange(e, setForm)}
+                        className="w-full border rounded px-3 py-2 mt-1"
+                    />
+                    {errors.year && (
+                        <p className="text-red-500 text-sm">{errors.year}</p>
+                    )}
                 </div>
             </div>
         </form>
