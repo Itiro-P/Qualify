@@ -233,7 +233,7 @@ func DeleteSkill(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /analysts/{id}/skills [get]
+// @Router /users/{id}/analyst/skills [get]
 func GetAnalystSkills(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		analystID := c.Param("id")
@@ -282,7 +282,7 @@ func GetAnalystSkills(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /analysts/{id}/skills [post]
+// @Router /users/{id}/analyst/skills [post]
 func CreateAnalystSkill(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var skill pkg.AnalystSkill
@@ -316,7 +316,7 @@ func CreateAnalystSkill(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /analysts/{id}/skills [delete]
+// @Router /users/{id}/analyst/skills [delete]
 func DeleteAnalystSkill(conn *pgx.Conn) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		analystID := c.Param("id")
