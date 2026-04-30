@@ -58,6 +58,30 @@ const docTemplate = `{
                         "description": "Valor máximo por hora",
                         "name": "max_hourly_rate",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Quantidade mínima de avaliações totais",
+                        "name": "min_total_reviews",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Avaliação média mínima",
+                        "name": "min_mean_rating",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Campo para ordenar: name,country_name,city,hourly_rate,total_reviews,mean_rating,time_created",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Direção: ASC ou DESC",
+                        "name": "order",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1964,12 +1988,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "{\\",
-                        "name": "hourly_rate",
+                        "description": "Objeto analista (envie apenas ` + "`" + `hourly_rate` + "`" + `)",
+                        "name": "analyst",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/pkg.Analyst"
                         }
                     }
                 ],

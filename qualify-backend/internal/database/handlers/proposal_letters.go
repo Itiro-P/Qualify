@@ -30,14 +30,18 @@ func GetProposalLetters(conn *pgx.Conn) gin.HandlerFunc {
 		argCounter := 1
 
 		if clientID := c.Query("client_id"); clientID != "" {
-			query += fmt.Sprintf(" AND client_id = $%d", argCounter)
-			args = append(args, clientID)
-			argCounter++
+			if clientIDVal, err := strconv.Atoi(clientID); err == nil {
+				query += fmt.Sprintf(" AND client_id = $%d", argCounter)
+				args = append(args, clientIDVal)
+				argCounter++
+			}
 		}
 		if analystID := c.Query("analyst_id"); analystID != "" {
-			query += fmt.Sprintf(" AND analyst_id = $%d", argCounter)
-			args = append(args, analystID)
-			argCounter++
+			if analystIDVal, err := strconv.Atoi(analystID); err == nil {
+				query += fmt.Sprintf(" AND analyst_id = $%d", argCounter)
+				args = append(args, analystIDVal)
+				argCounter++
+			}
 		}
 
 		query += " ORDER BY time_created DESC"
@@ -100,32 +104,6 @@ func GetProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 				c.JSON(http.StatusNotFound, gin.H{"error": "proposal letter not found"})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		rows, err := conn.Query(c.Request.Context(),
-			`SELECT id, title, content, proposal_letter_id, hourly_rate, status, time_created
-			 FROM service WHERE proposal_letter_id = $1 ORDER BY time_created`, proposalID,
-		)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		defer rows.Close()
-
-		// Precisava disso?
-		var services []pkg.Service
-		for rows.Next() {
-			var s pkg.Service
-			if err := rows.Scan(&s.Id, &s.Title, &s.Content, &s.Proposal_letter_id,
-				&s.Hourly_rate, &s.Status, &s.Time_created); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-			services = append(services, s)
-		}
-		if err = rows.Err(); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -193,6 +171,12 @@ func UpdateProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 		var proposal pkg.ProposalLetter
 		if err := c.BindJSON(&proposal); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		// Validando parâmetros obrigatórios
+		if proposal.Title == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "proposal title is required"})
 			return
 		}
 

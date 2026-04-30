@@ -111,7 +111,7 @@ func GetReviews(conn *pgx.Conn) gin.HandlerFunc {
 
 		// Optional: Add sorting
 		if sortBy := c.Query("sort_by"); sortBy != "" {
-			// Validate sortBy to prevent SQL injection
+			// Validando sortBy para evitar SQL injection - apenas campos permitidos
 			allowedSortFields := map[string]bool{
 				"id": true, "analyst_id": true, "client_id": true, "service_id": true,
 				"rating": true, "time_created": true,
@@ -245,7 +245,7 @@ func CreateReview(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		// Validate rating is between 1-5
+		// Validando que a avaliação esteja entre 1-5
 		if review.Rating < 1 || review.Rating > 5 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Rating must be between 1 and 5"})
 			return
@@ -294,7 +294,7 @@ func UpdateReview(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		// Validate rating is between 1-5
+		// Validando que a avaliação esteja entre 1-5
 		if review.Rating < 1 || review.Rating > 5 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Rating must be between 1 and 5"})
 			return

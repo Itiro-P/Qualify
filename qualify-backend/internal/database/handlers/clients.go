@@ -253,35 +253,59 @@ func UpdateClient(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		// Update user table
-		_, err = conn.Exec(c.Request.Context(),
+		// Validando parâmetros obrigatórios
+		if client.Name == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "user name is required"})
+			return
+		}
+		if client.Email == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "user email is required"})
+			return
+		}
+		if len(client.Country_code) != 2 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "country_code must be exactly 2 characters"})
+			return
+		}
+
+		// Make update atomic across user + client tables
+		tx, err := conn.Begin(c.Request.Context())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to begin transaction: " + err.Error()})
+			return
+		}
+		// ensure rollback on error
+		committed := false
+		defer func() {
+			if !committed {
+				_ = tx.Rollback(c.Request.Context())
+			}
+		}()
+
+		_, err = tx.Exec(c.Request.Context(),
 			`UPDATE "user" SET name = $1, email = $2, phone = $3, country_code = $4, 
 			 country_name = $5, country_state = $6, city = $7, timezone = $8
 			 WHERE id = $9`,
 			client.Name, client.Email, client.Phone, client.Country_code, client.Country_name, client.Country_state,
 			client.City, client.Timezone, clientID)
-
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user: " + err.Error()})
 			return
 		}
 
-		// Update client table
-		_, err = conn.Exec(c.Request.Context(),
+		_, err = tx.Exec(c.Request.Context(),
 			`UPDATE client SET proposed_budget = $1
 			 WHERE id = $2`,
 			client.Proposed_budget, clientID)
-
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update client: " + err.Error()})
 			return
 		}
 
-		// Fetch the updated client
-		err = conn.QueryRow(c.Request.Context(), `
+		// Fetch the updated client within transaction
+		err = tx.QueryRow(c.Request.Context(), `
 			SELECT u.id, u.name, u.email, u.phone, u.time_created, 
-			       u.country_code, u.country_name, u.country_state, u.city, u.timezone,
-			       c.proposed_budget
+				   u.country_code, u.country_name, u.country_state, u.city, u.timezone,
+				   c.proposed_budget
 			FROM "user" u
 			JOIN client c ON c.id = u.id
 			WHERE u.id = $1`, clientID).Scan(
@@ -297,7 +321,6 @@ func UpdateClient(conn *pgx.Conn) gin.HandlerFunc {
 			&client.Timezone,
 			&client.Proposed_budget,
 		)
-
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, gin.H{"error": "client not found"})
@@ -306,6 +329,12 @@ func UpdateClient(conn *pgx.Conn) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch updated client: " + err.Error()})
 			return
 		}
+
+		if err = tx.Commit(c.Request.Context()); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to commit transaction: " + err.Error()})
+			return
+		}
+		committed = true
 
 		c.JSON(http.StatusOK, pkg.ClientResponse{Client: client})
 	}

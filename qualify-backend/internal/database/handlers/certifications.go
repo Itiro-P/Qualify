@@ -107,7 +107,7 @@ func CreateCertification(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		// Validate required fields
+		// Validando parâmetros obrigatórios
 		if cert.Name == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "certification name is required"})
 			return
@@ -159,7 +159,7 @@ func UpdateCertification(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		// Validate required fields
+		// Validando parâmetros obrigatórios
 		if cert.Name == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "certification name is required"})
 			return
@@ -307,7 +307,7 @@ func CreateAnalystCertification(conn *pgx.Conn) gin.HandlerFunc {
 		}
 		ac.Analyst_id = analystID
 
-		// Validate that analyst exists
+		// Validando parâmetros obrigatórios
 		var analystExists bool
 		err = conn.QueryRow(c.Request.Context(),
 			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, ac.Analyst_id,
@@ -321,7 +321,7 @@ func CreateAnalystCertification(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		// Validate that certification exists
+		// Validando parâmetros obrigatórios
 		var certExists bool
 		err = conn.QueryRow(c.Request.Context(),
 			`SELECT EXISTS(SELECT 1 FROM certification WHERE id = $1)`, ac.Certification_id,

@@ -163,6 +163,12 @@ func UpdateSkill(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
+		// Validando parâmetros obrigatórios
+		if skill.Name == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "skill name is required"})
+			return
+		}
+
 		err = conn.QueryRow(c.Request.Context(),
 			`UPDATE skill SET name = $1
 			 WHERE id = $2
@@ -305,7 +311,7 @@ func CreateAnalystSkill(conn *pgx.Conn) gin.HandlerFunc {
 		}
 		as.Analyst_id = analystID
 
-		// Validate that analyst exists
+		// Validando parâmetros obrigatórios
 		var analystExists bool
 		err = conn.QueryRow(c.Request.Context(),
 			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, as.Analyst_id,
@@ -319,7 +325,6 @@ func CreateAnalystSkill(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		// Validate that skill exists
 		var skillExists bool
 		err = conn.QueryRow(c.Request.Context(),
 			`SELECT EXISTS(SELECT 1 FROM skill WHERE id = $1)`, as.Skill_id,

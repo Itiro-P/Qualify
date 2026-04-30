@@ -120,6 +120,12 @@ func UpdateUserProfile(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
+		// Validando parâmetros obrigatórios
+		if profile.Biography == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "biography is required"})
+			return
+		}
+
 		err = conn.QueryRow(c.Request.Context(),
 			`UPDATE user_profile SET biography = $1
 			 WHERE user_id = $2
@@ -289,6 +295,12 @@ func UpdateAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
+		// Validando parâmetros obrigatórios
+		if profile.Biography == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "biography is required"})
+			return
+		}
+
 		err = conn.QueryRow(c.Request.Context(),
 			`UPDATE user_profile SET biography = $1
 			 WHERE user_id = $2
@@ -411,6 +423,12 @@ func CreateClientProfile(conn *pgx.Conn) gin.HandlerFunc {
 		var profile pkg.ClientProfile
 		if err := c.BindJSON(&profile); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		// Validando parâmetros obrigatórios
+		if profile.Biography == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "biography is required"})
 			return
 		}
 		profile.User_id = userID

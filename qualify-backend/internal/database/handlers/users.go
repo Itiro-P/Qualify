@@ -64,7 +64,7 @@ func CreateUser(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		// Validate required fields
+		// Validando parâmetros obrigatórios
 		if user.Name == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "user name is required"})
 			return
@@ -116,7 +116,7 @@ func UpdateUser(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		// Validate required fields
+		// Validando parâmetros obrigatórios
 		if user.Name == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "user name is required"})
 			return

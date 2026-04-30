@@ -34,9 +34,11 @@ func GetServices(conn *pgx.Conn) gin.HandlerFunc {
 			argCounter++
 		}
 		if proposalID := c.Query("proposal_letter_id"); proposalID != "" {
-			query += fmt.Sprintf(" AND proposal_letter_id = $%d", argCounter)
-			args = append(args, proposalID)
-			argCounter++
+			if proposalIDVal, err := strconv.Atoi(proposalID); err == nil {
+				query += fmt.Sprintf(" AND proposal_letter_id = $%d", argCounter)
+				args = append(args, proposalIDVal)
+				argCounter++
+			}
 		}
 
 		query += " ORDER BY time_created DESC"
@@ -98,30 +100,6 @@ func GetService(conn *pgx.Conn) gin.HandlerFunc {
 				c.JSON(http.StatusNotFound, gin.H{"error": "service not found"})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		rows, err := conn.Query(c.Request.Context(),
-			`SELECT id, service_id, rating, comment, time_created
-			 FROM review WHERE service_id = $1 ORDER BY time_created DESC`, serviceID,
-		)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		defer rows.Close()
-
-		var reviews []pkg.Review
-		for rows.Next() {
-			var r pkg.Review
-			if err := rows.Scan(&r.Id, &r.Service_id, &r.Rating, &r.Comment, &r.Time_created); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-			reviews = append(reviews, r)
-		}
-		if err = rows.Err(); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -190,6 +168,16 @@ func UpdateService(conn *pgx.Conn) gin.HandlerFunc {
 		var service pkg.Service
 		if err := c.BindJSON(&service); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		// Validando parâmetros obrigatórios
+		if service.Title == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "service title is required"})
+			return
+		}
+		if service.Hourly_rate < 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "hourly_rate must be non-negative"})
 			return
 		}
 

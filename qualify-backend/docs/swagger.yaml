@@ -350,6 +350,22 @@ paths:
         in: query
         name: max_hourly_rate
         type: number
+      - description: Quantidade mínima de avaliações totais
+        in: query
+        name: min_total_reviews
+        type: integer
+      - description: Avaliação média mínima
+        in: query
+        name: min_mean_rating
+        type: number
+      - description: 'Campo para ordenar: name,country_name,city,hourly_rate,total_reviews,mean_rating,time_created'
+        in: query
+        name: sort_by
+        type: string
+      - description: 'Direção: ASC ou DESC'
+        in: query
+        name: order
+        type: string
       produces:
       - application/json
       responses:
@@ -1607,12 +1623,12 @@ paths:
         name: id
         required: true
         type: integer
-      - description: '{\'
+      - description: Objeto analista (envie apenas `hourly_rate`)
         in: body
-        name: hourly_rate
+        name: analyst
         required: true
         schema:
-          type: object
+          $ref: '#/definitions/pkg.Analyst'
       produces:
       - application/json
       responses:
