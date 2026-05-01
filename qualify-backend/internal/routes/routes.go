@@ -17,6 +17,7 @@ func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
 		user := users.Group("/:id")
 		{
 			user.PUT("", handlers.UpdateUser(conn))
+			user.PATCH("", handlers.UpdateUserPartial(conn))
 			user.DELETE("", handlers.DeleteUser(conn))
 
 			// User-owned profile/sub-resources

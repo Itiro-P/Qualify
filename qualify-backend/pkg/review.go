@@ -12,6 +12,12 @@ type Review struct {
 	Time_created time.Time `json:"time_created"`
 }
 
+// Devemos permitir atualizar a avaliação? Talvez só o comentário, ou nem isso?
+type ReviewUpdateRequest struct {
+	Rating  *int    `json:"rating,omitempty"`
+	Comment *string `json:"comment,omitempty"`
+}
+
 type ReviewResponse struct {
 	Review Review `json:"review"`
 }

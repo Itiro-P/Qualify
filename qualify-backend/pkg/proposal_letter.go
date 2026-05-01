@@ -12,6 +12,12 @@ type ProposalLetter struct {
 	Time_created         time.Time `json:"time_created"`
 }
 
+type ProposalLetterUpdateRequest struct {
+	Title                *string  `json:"title,omitempty"`
+	Content              *string  `json:"content,omitempty"`
+	Proposed_hourly_rate *float64 `json:"proposed_hourly_rate,omitempty"`
+}
+
 type ProposalLetterResponse struct {
 	Proposal_letter ProposalLetter `json:"proposal_letter"`
 }

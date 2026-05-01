@@ -46,3 +46,8 @@ type AnalystSkillsResponse struct {
 type AnalystCertificationResponse struct {
 	Analyst_certification AnalystCertification `json:"analyst_certification"`
 }
+
+type AnalystUpdateRequest struct {
+	UserUpdateRequest
+	Hourly_rate *float64 `json:"hourly_rate,omitempty"`
+}
