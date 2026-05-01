@@ -10,9 +10,6 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	_ "main/docs"
-
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func main() {
@@ -26,6 +23,5 @@ func main() {
 	router := gin.Default()
 
 	routes.SetupRoutes(router, conn)
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	router.Run(":8001")
 }

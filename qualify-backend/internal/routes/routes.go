@@ -5,6 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
@@ -32,7 +34,7 @@ func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
 				analystRole.POST("", handlers.CreateAnalyst(conn))
 				analystRole.GET("", handlers.GetAnalyst(conn))
 				analystRole.PUT("", handlers.UpdateAnalyst(conn))
-                analystRole.PATCH("", handlers.UpdateAnalystPartial(conn))
+				analystRole.PATCH("", handlers.UpdateAnalystPartial(conn))
 				analystRole.DELETE("", handlers.DeleteAnalyst(conn))
 				// Analyst-specific sub-resources
 
@@ -54,7 +56,7 @@ func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
 				clientRole.POST("", handlers.CreateClient(conn))
 				clientRole.GET("", handlers.GetClient(conn))
 				clientRole.PUT("", handlers.UpdateClient(conn))
-                clientRole.PATCH("", handlers.UpdateClientPartial(conn))
+				clientRole.PATCH("", handlers.UpdateClientPartial(conn))
 				clientRole.DELETE("", handlers.DeleteClient(conn))
 
 				// Client-specific sub-resources
@@ -116,4 +118,7 @@ func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
 		certifications.PATCH("/:id", handlers.UpdateCertificationPartial(conn))
 		certifications.DELETE("/:id", handlers.DeleteCertification(conn))
 	}
+
+	// swagger
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
