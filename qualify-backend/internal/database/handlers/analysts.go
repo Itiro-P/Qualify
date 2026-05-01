@@ -6,6 +6,7 @@ import (
 	"main/pkg"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
@@ -208,6 +209,177 @@ func GetAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 		c.JSON(http.StatusOK, pkg.AnalystResponse{
 			Analyst: analyst,
 		})
+	}
+}
+
+// UpdateAnalystPartial godoc
+// @Summary Atualizar parcialmente um analista
+// @Description Atualiza um ou mais campos do usuário/analista
+// @Tags Analistas
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário"
+// @Param analyst body pkg.AnalystUpdateRequest true "Campos opcionais para atualização"
+// @Success 200 {object} pkg.AnalystResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/analyst [patch]
+func UpdateAnalystPartial(conn *pgx.Conn) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		analystID, err := strconv.Atoi(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid analyst id"})
+			return
+		}
+
+		var req pkg.AnalystUpdateRequest
+		if err := c.BindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+			return
+		}
+
+		userSet := []string{}
+		userArgs := []interface{}{}
+		i := 1
+		if req.Name != nil {
+			userSet = append(userSet, fmt.Sprintf("name = $%d", i))
+			userArgs = append(userArgs, *req.Name)
+			i++
+		}
+		if req.Email != nil {
+			userSet = append(userSet, fmt.Sprintf("email = $%d", i))
+			userArgs = append(userArgs, *req.Email)
+			i++
+		}
+		if req.Phone != nil {
+			userSet = append(userSet, fmt.Sprintf("phone = $%d", i))
+			userArgs = append(userArgs, *req.Phone)
+			i++
+		}
+		if req.Country_code != nil {
+			userSet = append(userSet, fmt.Sprintf("country_code = $%d", i))
+			userArgs = append(userArgs, *req.Country_code)
+			i++
+		}
+		if req.Country_name != nil {
+			userSet = append(userSet, fmt.Sprintf("country_name = $%d", i))
+			userArgs = append(userArgs, *req.Country_name)
+			i++
+		}
+		if req.Country_state != nil {
+			userSet = append(userSet, fmt.Sprintf("country_state = $%d", i))
+			userArgs = append(userArgs, *req.Country_state)
+			i++
+		}
+		if req.City != nil {
+			userSet = append(userSet, fmt.Sprintf("city = $%d", i))
+			userArgs = append(userArgs, *req.City)
+			i++
+		}
+		if req.Timezone != nil {
+			userSet = append(userSet, fmt.Sprintf("timezone = $%d", i))
+			userArgs = append(userArgs, *req.Timezone)
+			i++
+		}
+
+		analystSet := []string{}
+		analystArgs := []interface{}{}
+		if req.Hourly_rate != nil {
+			analystSet = append(analystSet, fmt.Sprintf("hourly_rate = $%d", i))
+			analystArgs = append(analystArgs, *req.Hourly_rate)
+			i++
+		}
+		if req.Total_reviews != nil {
+			analystSet = append(analystSet, fmt.Sprintf("total_reviews = $%d", i))
+			analystArgs = append(analystArgs, *req.Total_reviews)
+			i++
+		}
+		if req.Mean_rating != nil {
+			analystSet = append(analystSet, fmt.Sprintf("mean_rating = $%d", i))
+			analystArgs = append(analystArgs, *req.Mean_rating)
+			i++
+		}
+
+		if len(userSet) == 0 && len(analystSet) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "no fields to update"})
+			return
+		}
+
+		tx, err := conn.Begin(c.Request.Context())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to begin transaction: " + err.Error()})
+			return
+		}
+		defer func() {
+			if err != nil {
+				_ = tx.Rollback(c.Request.Context())
+			}
+		}()
+
+		// Update user if needed
+		if len(userSet) > 0 {
+			userArgs = append(userArgs, analystID)
+			userQuery := fmt.Sprintf(`UPDATE "user" SET %s WHERE id = $%d`, strings.Join(userSet, ", "), len(userArgs))
+			if _, err := tx.Exec(c.Request.Context(), userQuery, userArgs...); err != nil {
+				_ = tx.Rollback(c.Request.Context())
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+		}
+
+		// Update analyst if needed
+		if len(analystSet) > 0 {
+			analystArgs = append(userArgs, analystArgs...)
+			// analystArgs currently has userArgs followed by analystArgs; ensure id param at end
+			analystArgs = append(analystArgs, analystID)
+			analystQuery := fmt.Sprintf(`UPDATE analyst SET %s WHERE id = $%d`, strings.Join(analystSet, ", "), len(analystArgs))
+			if _, err := tx.Exec(c.Request.Context(), analystQuery, analystArgs...); err != nil {
+				_ = tx.Rollback(c.Request.Context())
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+		}
+
+		var analyst pkg.Analyst
+		err = tx.QueryRow(c.Request.Context(), `
+			SELECT u.id, u.name, u.email, u.phone, u.time_created, 
+				   u.country_code, u.country_name, u.country_state, u.city, u.timezone,
+				   a.hourly_rate, a.total_reviews, a.mean_rating
+			FROM "user" u
+			JOIN analyst a ON a.id = u.id
+			WHERE u.id = $1`, analystID).Scan(
+			&analyst.Id,
+			&analyst.Name,
+			&analyst.Email,
+			&analyst.Phone,
+			&analyst.Time_created,
+			&analyst.Country_code,
+			&analyst.Country_name,
+			&analyst.Country_state,
+			&analyst.City,
+			&analyst.Timezone,
+			&analyst.Hourly_rate,
+			&analyst.Total_reviews,
+			&analyst.Mean_rating,
+		)
+		if err != nil {
+			_ = tx.Rollback(c.Request.Context())
+			if err == pgx.ErrNoRows {
+				c.JSON(http.StatusNotFound, gin.H{"error": "analyst not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		if err = tx.Commit(c.Request.Context()); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to commit transaction: " + err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, pkg.AnalystResponse{Analyst: analyst})
 	}
 }
 

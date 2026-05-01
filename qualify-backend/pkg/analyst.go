@@ -49,5 +49,7 @@ type AnalystCertificationResponse struct {
 
 type AnalystUpdateRequest struct {
 	UserUpdateRequest
-	Hourly_rate *float64 `json:"hourly_rate,omitempty"`
+	Hourly_rate   *float64 `json:"hourly_rate,omitempty"`
+	Total_reviews *int     `json:"total_reviews,omitempty"`
+	Mean_rating   *float64 `json:"mean_rating,omitempty"`
 }

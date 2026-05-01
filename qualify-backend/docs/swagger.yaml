@@ -78,6 +78,32 @@ definitions:
       count:
         type: integer
     type: object
+  pkg.AnalystUpdateRequest:
+    properties:
+      city:
+        type: string
+      country_code:
+        type: string
+      country_name:
+        type: string
+      country_state:
+        type: string
+      email:
+        type: string
+      hourly_rate:
+        type: number
+      mean_rating:
+        type: number
+      name:
+        description: Devemos deixar mudar o nome/email/telefone?
+        type: string
+      phone:
+        type: string
+      timezone:
+        type: string
+      total_reviews:
+        type: integer
+    type: object
   pkg.AnalystsResponse:
     properties:
       analysts:
@@ -162,6 +188,28 @@ definitions:
     properties:
       client:
         $ref: '#/definitions/pkg.Client'
+    type: object
+  pkg.ClientUpdateRequest:
+    properties:
+      city:
+        type: string
+      country_code:
+        type: string
+      country_name:
+        type: string
+      country_state:
+        type: string
+      email:
+        type: string
+      name:
+        description: Devemos deixar mudar o nome/email/telefone?
+        type: string
+      phone:
+        type: string
+      proposed_budget:
+        type: number
+      timezone:
+        type: string
     type: object
   pkg.ClientsResponse:
     properties:
@@ -1889,6 +1937,50 @@ paths:
       summary: Obter analista
       tags:
       - Analistas
+    patch:
+      consumes:
+      - application/json
+      description: Atualiza um ou mais campos do usuário/analista
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Campos opcionais para atualização
+        in: body
+        name: analyst
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.AnalystUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.AnalystResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Atualizar parcialmente um analista
+      tags:
+      - Analistas
     post:
       consumes:
       - application/json
@@ -2449,6 +2541,50 @@ paths:
               type: string
             type: object
       summary: Obter cliente
+      tags:
+      - Clientes
+    patch:
+      consumes:
+      - application/json
+      description: Atualiza um ou mais campos do usuário/cliente
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Campos opcionais para atualização
+        in: body
+        name: client
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.ClientUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ClientResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Atualizar parcialmente um cliente
       tags:
       - Clientes
     post:

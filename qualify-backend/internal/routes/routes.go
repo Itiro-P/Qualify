@@ -32,6 +32,7 @@ func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
 				analystRole.POST("", handlers.CreateAnalyst(conn))
 				analystRole.GET("", handlers.GetAnalyst(conn))
 				analystRole.PUT("", handlers.UpdateAnalyst(conn))
+                analystRole.PATCH("", handlers.UpdateAnalystPartial(conn))
 				analystRole.DELETE("", handlers.DeleteAnalyst(conn))
 				// Analyst-specific sub-resources
 
@@ -53,6 +54,7 @@ func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
 				clientRole.POST("", handlers.CreateClient(conn))
 				clientRole.GET("", handlers.GetClient(conn))
 				clientRole.PUT("", handlers.UpdateClient(conn))
+                clientRole.PATCH("", handlers.UpdateClientPartial(conn))
 				clientRole.DELETE("", handlers.DeleteClient(conn))
 
 				// Client-specific sub-resources
