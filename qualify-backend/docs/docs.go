@@ -368,6 +368,72 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "patch": {
+                "description": "Atualiza um ou mais campos da certificação pelo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Certificações"
+                ],
+                "summary": "Atualizar certificação parcialmente",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da certificação",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Objeto certificação",
+                        "name": "certification",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/pkg.CertificationUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.CertificationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
             }
         },
         "/clients": {
@@ -722,6 +788,72 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "patch": {
+                "description": "Atualiza um ou mais campos da proposta existente pelo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Propostas"
+                ],
+                "summary": "Atualizar parcialmente proposta",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da proposta",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Objeto proposta",
+                        "name": "proposal",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ProposalLetterUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ProposalLetterResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
             }
         },
         "/reviews": {
@@ -1039,6 +1171,72 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "patch": {
+                "description": "Atualiza um ou mais campos da avaliação pelo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Avaliações"
+                ],
+                "summary": "Atualizar parcialmente avaliação",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da avaliação",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Objeto avaliação",
+                        "name": "review",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ReviewUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ReviewResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
             }
         },
         "/services": {
@@ -1290,6 +1488,72 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Atualiza um ou mais campos do serviço pelo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Serviços"
+                ],
+                "summary": "Atualizar parcialmente um serviço",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do serviço",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Objeto serviço",
+                        "name": "service",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ServiceUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ServiceResponse"
                         }
                     },
                     "400": {
@@ -1811,6 +2075,72 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Atualiza um ou mais dados do usuário pelo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Usuários"
+                ],
+                "summary": "Atualizar parcialmente um ou mais dados do usuário",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do usuário",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Objeto do usuário",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/pkg.UserUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.UserResponse"
                         }
                     },
                     "400": {
@@ -3578,6 +3908,20 @@ const docTemplate = `{
                 }
             }
         },
+        "pkg.CertificationUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
+        },
         "pkg.CertificationsResponse": {
             "type": "object",
             "properties": {
@@ -3705,6 +4049,20 @@ const docTemplate = `{
                 }
             }
         },
+        "pkg.ProposalLetterUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "proposed_hourly_rate": {
+                    "type": "number"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "pkg.ProposalLettersResponse": {
             "type": "object",
             "properties": {
@@ -3750,6 +4108,17 @@ const docTemplate = `{
             "properties": {
                 "review": {
                     "$ref": "#/definitions/pkg.Review"
+                }
+            }
+        },
+        "pkg.ReviewUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "comment": {
+                    "type": "string"
+                },
+                "rating": {
+                    "type": "integer"
                 }
             }
         },
@@ -3804,6 +4173,23 @@ const docTemplate = `{
             "properties": {
                 "service": {
                     "$ref": "#/definitions/pkg.Service"
+                }
+            }
+        },
+        "pkg.ServiceUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "hourly_rate": {
+                    "type": "number"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
                 }
             }
         },
@@ -3913,6 +4299,36 @@ const docTemplate = `{
             "properties": {
                 "user": {
                     "$ref": "#/definitions/pkg.User"
+                }
+            }
+        },
+        "pkg.UserUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string"
+                },
+                "country_code": {
+                    "type": "string"
+                },
+                "country_name": {
+                    "type": "string"
+                },
+                "country_state": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Devemos deixar mudar o nome/email/telefone?",
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "timezone": {
+                    "type": "string"
                 }
             }
         }
