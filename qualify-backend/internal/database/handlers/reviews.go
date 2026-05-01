@@ -5,6 +5,7 @@ import (
 	"main/pkg"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
@@ -317,6 +318,78 @@ func UpdateReview(conn *pgx.Conn) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, pkg.ReviewResponse{Review: review})
+	}
+}
+
+// UpdateReviewPartial godoc
+// @Summary Atualizar parcialmente avaliação
+// @Description Atualiza um ou mais campos da avaliação pelo ID
+// @Tags Avaliações
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da avaliação"
+// @Param review body pkg.ReviewUpdateRequest true "Objeto avaliação"
+// @Success 200 {object} pkg.ReviewResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /reviews/{id} [patch]
+func UpdateReviewPartial(conn *pgx.Conn) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		reviewID, err := strconv.Atoi(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid review id"})
+			return
+		}
+		var review pkg.ReviewUpdateRequest
+		if err := c.BindJSON(&review); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		set := []string{}
+		args := []interface{}{}
+		i := 1
+
+		if review.Comment != nil {
+			set = append(set, fmt.Sprintf("comment = $%d", i))
+			args = append(args, *review.Comment)
+			i++
+		}
+		if review.Rating != nil {
+			if *review.Rating < 1 || *review.Rating > 5 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Rating must be between 1 and 5"})
+				return
+			}
+			set = append(set, fmt.Sprintf("rating = $%d", i))
+			args = append(args, *review.Rating)
+			i++
+		}
+
+		if len(set) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "no fields to update"})
+			return
+		}
+
+		args = append(args, reviewID)
+
+		query := fmt.Sprintf("UPDATE review SET %s WHERE id = $%d RETURNING id, analyst_id, client_id, service_id, rating, comment, time_created",
+			strings.Join(set, ", "), i)
+
+		var updatedReview pkg.Review
+		err = conn.QueryRow(c.Request.Context(), query, args...).Scan(&updatedReview.Id, &updatedReview.Analyst_id, &updatedReview.Client_id, &updatedReview.Service_id, &updatedReview.Rating, &updatedReview.Comment, &updatedReview.Time_created)
+
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				c.JSON(http.StatusNotFound, gin.H{"error": "review not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, pkg.ReviewResponse{Review: updatedReview})
 	}
 }
 

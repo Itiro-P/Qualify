@@ -5,6 +5,7 @@ import (
 	"main/pkg"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
@@ -197,6 +198,81 @@ func UpdateProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, pkg.ProposalLetterResponse{Proposal_letter: proposal})
+	}
+}
+
+// UpdateProposalLetterPartial godoc
+// @Summary Atualizar parcialmente proposta
+// @Description Atualiza um ou mais campos da proposta existente pelo ID
+// @Tags Propostas
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da proposta"
+// @Param proposal body pkg.ProposalLetterUpdateRequest true "Objeto proposta"
+// @Success 200 {object} pkg.ProposalLetterResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /proposals/{id} [patch]
+func UpdateProposalLetterPartial(conn *pgx.Conn) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		proposalID, err := strconv.Atoi(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid proposal id"})
+			return
+		}
+		var proposal pkg.ProposalLetterUpdateRequest
+		if err := c.BindJSON(&proposal); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		set := []string{}
+		args := []interface{}{}
+		i := 1
+
+		if proposal.Title != nil {
+			set = append(set, fmt.Sprintf("title = $%d", i))
+			args = append(args, proposal.Title)
+			i++
+		}
+
+		if proposal.Content != nil {
+			set = append(set, fmt.Sprintf("content = $%d", i))
+			args = append(args, proposal.Content)
+			i++
+		}
+
+		if proposal.Proposed_hourly_rate != nil {
+			set = append(set, fmt.Sprintf("proposed_hourly_rate = $%d", i))
+			args = append(args, proposal.Proposed_hourly_rate)
+			i++
+		}
+
+		if len(set) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "no valid fields to update"})
+			return
+		}
+
+		query := fmt.Sprintf("UPDATE proposal_letter SET %s WHERE id = $%d RETURNING id, title, content, client_id, analyst_id, proposed_hourly_rate, time_created",
+			strings.Join(set, ", "), i)
+		args = append(args, proposalID)
+
+		var updatedProposal pkg.ProposalLetter
+		err = conn.QueryRow(c.Request.Context(), query, args...).
+			Scan(&updatedProposal.Title, &updatedProposal.Content, &updatedProposal.Proposed_hourly_rate)
+
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				c.JSON(http.StatusNotFound, gin.H{"error": "proposal letter not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, pkg.ProposalLetterResponse{Proposal_letter: updatedProposal})
 	}
 }
 

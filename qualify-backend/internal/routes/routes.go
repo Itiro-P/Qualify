@@ -74,6 +74,7 @@ func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
 		reviews.GET("/:id", handlers.GetReview(conn))
 		reviews.POST("", handlers.CreateReview(conn))
 		reviews.PUT("/:id", handlers.UpdateReview(conn))
+		reviews.PATCH("/:id", handlers.UpdateReviewPartial(conn))
 		reviews.DELETE("/:id", handlers.DeleteReview(conn))
 	}
 
@@ -83,6 +84,7 @@ func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
 		proposals.GET("/:id", handlers.GetProposalLetter(conn))
 		proposals.POST("", handlers.CreateProposalLetter(conn))
 		proposals.PUT("/:id", handlers.UpdateProposalLetter(conn))
+		proposals.PATCH("/:id", handlers.UpdateProposalLetterPartial(conn))
 		proposals.DELETE("/:id", handlers.DeleteProposalLetter(conn))
 	}
 
@@ -92,6 +94,7 @@ func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
 		services.GET("/:id", handlers.GetService(conn))
 		services.POST("", handlers.CreateService(conn))
 		services.PUT("/:id", handlers.UpdateService(conn))
+		services.PATCH("/:id", handlers.UpdateServicePartial(conn))
 		services.DELETE("/:id", handlers.DeleteService(conn))
 	}
 
@@ -108,6 +111,7 @@ func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
 		certifications.GET("", handlers.GetCertifications(conn))
 		certifications.POST("", handlers.CreateCertification(conn))
 		certifications.PUT("/:id", handlers.UpdateCertification(conn))
+		certifications.PATCH("/:id", handlers.UpdateCertificationPartial(conn))
 		certifications.DELETE("/:id", handlers.DeleteCertification(conn))
 	}
 }

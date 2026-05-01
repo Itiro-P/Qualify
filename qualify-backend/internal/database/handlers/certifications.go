@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"fmt"
 	"main/pkg"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
@@ -184,6 +186,84 @@ func UpdateCertification(conn *pgx.Conn) gin.HandlerFunc {
 		c.JSON(http.StatusOK, pkg.CertificationResponse{
 			Certification: cert,
 		})
+	}
+}
+
+// UpdateCertificationPartial godoc
+// @Summary Atualizar certificação parcialmente
+// @Description Atualiza um ou mais campos da certificação pelo ID
+// @Tags Certificações
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da certificação"
+// @Param certification body pkg.CertificationUpdateRequest true "Objeto certificação"
+// @Success 200 {object} pkg.CertificationResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /certifications/{id} [patch]
+func UpdateCertificationPartial(conn *pgx.Conn) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		certID, err := strconv.Atoi(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid certification id"})
+			return
+		}
+
+		var cert pkg.CertificationUpdateRequest
+		if err := c.BindJSON(&cert); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		set := []string{}
+		args := []interface{}{}
+		i := 1
+
+		if cert.Name != nil {
+			set = append(set, fmt.Sprintf("name = $%d", i))
+			args = append(args, *cert.Name)
+			i++
+		}
+		if cert.Year != nil {
+			if *cert.Year < 1900 || *cert.Year > 2030 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "certification year must be between 1900 and 2030"})
+				return
+			}
+			set = append(set, fmt.Sprintf("year = $%d", i))
+			args = append(args, *cert.Year)
+			i++
+		}
+		if cert.Description != nil {
+			set = append(set, fmt.Sprintf("description = $%d", i))
+			args = append(args, *cert.Description)
+			i++
+		}
+
+		if len(set) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "no fields to update"})
+			return
+		}
+
+		args = append(args, certID)
+
+		query := fmt.Sprintf("UPDATE certification SET %s WHERE id = $%d RETURNING id, name, year, description",
+			strings.Join(set, ", "), i)
+
+		var updatedCert pkg.Certification
+		err = conn.QueryRow(c.Request.Context(), query, args...).Scan(&updatedCert.Id, &updatedCert.Name, &updatedCert.Year, &updatedCert.Description)
+
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				c.JSON(http.StatusNotFound, gin.H{"error": "certification not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, pkg.CertificationResponse{Certification: updatedCert})
 	}
 }
 
