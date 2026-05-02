@@ -76,6 +76,40 @@ func TestCertifications(t *testing.T) {
 		})
 	}
 
+	// Agora veremos se as listagens estão funcionando
+	t.Run("Listando todos os analistas", func(t *testing.T) {
+		targetURL := "/certifications"
+		req := httptest.NewRequest(http.MethodGet, targetURL, nil)
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		// Verificamos se a certificação foi criada com sucesso
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var certificationResponse pkg.CertificationsResponse
+		json.Unmarshal(w.Body.Bytes(), &certificationResponse)
+		assert.ElementsMatch(t, postCertResponse, certificationResponse.Certifications)
+	})
+
+	// Agora veremos o GET por ID
+	for _, c := range postCertResponse {
+		t.Run("Listando Certificação para "+c.Name, func(t *testing.T) {
+			targetURL := fmt.Sprintf("/certifications/%d", c.Id)
+
+			req := httptest.NewRequest(http.MethodGet, targetURL, nil)
+
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, http.StatusOK, w.Code)
+			var certificationReponse pkg.CertificationResponse
+			json.Unmarshal(w.Body.Bytes(), &certificationReponse)
+			assert.Equal(t, c, certificationReponse.Certification)
+		})
+	}
+
 	// Agora deletaremos as certificações criadas
 	for _, c := range postCertResponse {
 		t.Run("Removendo Certificação para "+c.Name, func(t *testing.T) {
