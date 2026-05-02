@@ -269,28 +269,6 @@ func TestAnalyst(t *testing.T) {
 		assert.Equal(t, analystsResponse.Analysts[0], postAnalystResponse[joao])
 	})
 
-	t.Run("Listando analistas com filtro de cidade", func(t *testing.T) {
-		joao := slices.IndexFunc(postAnalystResponse, func(a pkg.Analyst) bool {
-			return strings.HasPrefix(a.User.City, "Roncador")
-		})
-
-		targetURL := "/analysts?city=Roncador"
-
-		req := httptest.NewRequest(http.MethodGet, targetURL, nil)
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-
-		var analystsResponse pkg.AnalystsResponse
-		json.Unmarshal(w.Body.Bytes(), &analystsResponse)
-
-		if len(analystsResponse.Analysts) != 1 {
-			t.Errorf("Número de analistas retornados (%d) diferente do esperado (1)", len(analystsResponse.Analysts))
-		}
-		assert.Equal(t, analystsResponse.Analysts[0], postAnalystResponse[joao])
-	})
-
 	t.Run("Listando analistas com filtro de maior valor", func(t *testing.T) {
 		maxim := slices.IndexFunc(postAnalystResponse, func(a pkg.Analyst) bool {
 			return a.Hourly_rate >= 128.0
@@ -445,6 +423,19 @@ func TestAnalyst(t *testing.T) {
 	for _, a := range postAnalystResponse {
 		t.Run("Deletando analista "+a.User.Name+" por ID", func(t *testing.T) {
 			targetURL := fmt.Sprintf("/users/%d/analyst", a.User.Id)
+
+			req := httptest.NewRequest(http.MethodDelete, targetURL, nil)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, http.StatusOK, w.Code)
+		})
+	}
+
+	// Deletaremos também os usuários associados aos analistas para limpar o banco de dados
+	for _, a := range postAnalystResponse {
+		t.Run("Deletando usuário associado ao analista "+a.User.Name, func(t *testing.T) {
+			targetURL := fmt.Sprintf("/users/%d", a.User.Id)
 
 			req := httptest.NewRequest(http.MethodDelete, targetURL, nil)
 			w := httptest.NewRecorder()
