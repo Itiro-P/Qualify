@@ -8,6 +8,8 @@ import (
 	"main/pkg"
 	"net/http"
 	"net/http/httptest"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -35,11 +37,11 @@ var analysts = []pkg.Analyst{
 			Name:          "John Xina",
 			Email:         "xina@utfpr.edu.br",
 			Phone:         "41969696969",
-			Country_code:  "BR",
-			Country_name:  "Brazil",
-			Country_state: "PR",
-			City:          "Campo Mourão",
-			Timezone:      "America/Sao_Paulo",
+			Country_code:  "CN",
+			Country_name:  "China",
+			Country_state: "Beijing",
+			City:          "Beijing",
+			Timezone:      "Asia/Shanghai",
 		},
 		Hourly_rate:   69.0,
 		Total_reviews: 5,
@@ -68,7 +70,7 @@ var analysts = []pkg.Analyst{
 			Country_code:  "BR",
 			Country_name:  "Brazil",
 			Country_state: "PR",
-			City:          "Campo Mourão",
+			City:          "Roncador",
 			Timezone:      "America/Sao_Paulo",
 		},
 		Hourly_rate:   57.0,
@@ -97,8 +99,8 @@ var analysts = []pkg.Analyst{
 			Phone:         "44999690000",
 			Country_code:  "BR",
 			Country_name:  "Brazil",
-			Country_state: "PR",
-			City:          "Campo Mourão",
+			Country_state: "GO",
+			City:          "Goiânia",
 			Timezone:      "America/Sao_Paulo",
 		},
 		Hourly_rate:   128.0,
@@ -113,6 +115,9 @@ func TestAnalyst(t *testing.T) {
 
 	routes.SetupRoutes(router, TestPool)
 
+	postAnalystResponse := []pkg.Analyst{}
+
+	// Primeiros testes para criação de analistas, que dependem da criação prévia de usuários
 	for _, a := range analysts {
 		t.Run("Criar Analista para "+a.User.Name, func(t *testing.T) {
 			analyst := a
@@ -154,6 +159,256 @@ func TestAnalyst(t *testing.T) {
 			if analystResponse.Analyst.Id == 0 {
 				t.Error("O ID do analista não deveria ser zero")
 			}
+
+			// Então adicionamos o analista criado à resposta para verificarmos depois se todos foram criados corretamente
+
+			postAnalystResponse = append(postAnalystResponse, analystResponse.Analyst)
 		})
 	}
+
+	// Agora vemos se todos os analistas foram criados corretamente
+	t.Run("Listando todos os analistas", func(t *testing.T) {
+		targetURL := "/analysts"
+
+		req := httptest.NewRequest(http.MethodGet, targetURL, nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var analystsResponse pkg.AnalystsResponse
+		json.Unmarshal(w.Body.Bytes(), &analystsResponse)
+
+		if len(analystsResponse.Analysts) != len(postAnalystResponse) {
+			t.Errorf("Número de analistas retornados (%d) diferente do número de analistas criados (%d)", len(analystsResponse.Analysts), len(postAnalystResponse))
+		}
+		assert.ElementsMatch(t, analystsResponse.Analysts, postAnalystResponse)
+	})
+
+	// Agora pegaremos cada analista em específico para ver se eles estão sendo retornados corretamente
+	for _, a := range postAnalystResponse {
+		t.Run("Pegando analista "+a.User.Name+" por ID", func(t *testing.T) {
+			targetURL := fmt.Sprintf("/users/%d/analyst", a.User.Id)
+
+			req := httptest.NewRequest(http.MethodGet, targetURL, nil)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, http.StatusOK, w.Code)
+
+			var analystResponse pkg.AnalystResponse
+			json.Unmarshal(w.Body.Bytes(), &analystResponse)
+			assert.Equal(t, analystResponse.Analyst, a)
+		})
+	}
+
+	// Agora testaremos os filtros de listagem de analistas, para ver se eles estão funcionando corretamente
+	t.Run("Listando analistas com filtro de nome", func(t *testing.T) {
+		johnXina := slices.IndexFunc(postAnalystResponse, func(a pkg.Analyst) bool {
+			return strings.HasPrefix(a.User.Name, "John Xina")
+		})
+
+		targetURL := "/analysts?name=John"
+
+		req := httptest.NewRequest(http.MethodGet, targetURL, nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var analystsResponse pkg.AnalystsResponse
+		json.Unmarshal(w.Body.Bytes(), &analystsResponse)
+
+		if len(analystsResponse.Analysts) != 1 {
+			t.Errorf("Número de analistas retornados (%d) diferente do esperado (1)", len(analystsResponse.Analysts))
+		}
+		assert.Equal(t, analystsResponse.Analysts[0], postAnalystResponse[johnXina])
+	})
+
+	t.Run("Listando analistas com filtro de país", func(t *testing.T) {
+		johnXina := slices.IndexFunc(postAnalystResponse, func(a pkg.Analyst) bool {
+			return strings.HasPrefix(a.User.Country_name, "China")
+		})
+
+		targetURL := "/analysts?country=China"
+
+		req := httptest.NewRequest(http.MethodGet, targetURL, nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var analystsResponse pkg.AnalystsResponse
+		json.Unmarshal(w.Body.Bytes(), &analystsResponse)
+
+		if len(analystsResponse.Analysts) != 1 {
+			t.Errorf("Número de analistas retornados (%d) diferente do esperado (1)", len(analystsResponse.Analysts))
+		}
+		assert.Equal(t, analystsResponse.Analysts[0], postAnalystResponse[johnXina])
+	})
+
+	t.Run("Listando analistas com filtro de cidade", func(t *testing.T) {
+		joao := slices.IndexFunc(postAnalystResponse, func(a pkg.Analyst) bool {
+			return strings.HasPrefix(a.User.City, "Roncador")
+		})
+
+		targetURL := "/analysts?city=Roncador"
+
+		req := httptest.NewRequest(http.MethodGet, targetURL, nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var analystsResponse pkg.AnalystsResponse
+		json.Unmarshal(w.Body.Bytes(), &analystsResponse)
+
+		if len(analystsResponse.Analysts) != 1 {
+			t.Errorf("Número de analistas retornados (%d) diferente do esperado (1)", len(analystsResponse.Analysts))
+		}
+		assert.Equal(t, analystsResponse.Analysts[0], postAnalystResponse[joao])
+	})
+
+	t.Run("Listando analistas com filtro de cidade", func(t *testing.T) {
+		joao := slices.IndexFunc(postAnalystResponse, func(a pkg.Analyst) bool {
+			return strings.HasPrefix(a.User.City, "Roncador")
+		})
+
+		targetURL := "/analysts?city=Roncador"
+
+		req := httptest.NewRequest(http.MethodGet, targetURL, nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var analystsResponse pkg.AnalystsResponse
+		json.Unmarshal(w.Body.Bytes(), &analystsResponse)
+
+		if len(analystsResponse.Analysts) != 1 {
+			t.Errorf("Número de analistas retornados (%d) diferente do esperado (1)", len(analystsResponse.Analysts))
+		}
+		assert.Equal(t, analystsResponse.Analysts[0], postAnalystResponse[joao])
+	})
+
+	t.Run("Listando analistas com filtro de maior valor", func(t *testing.T) {
+		maxim := slices.IndexFunc(postAnalystResponse, func(a pkg.Analyst) bool {
+			return a.Hourly_rate >= 128.0
+		})
+
+		targetURL := "/analysts?min_hourly_rate=128"
+
+		req := httptest.NewRequest(http.MethodGet, targetURL, nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var analystsResponse pkg.AnalystsResponse
+		json.Unmarshal(w.Body.Bytes(), &analystsResponse)
+
+		if len(analystsResponse.Analysts) != 1 {
+			t.Errorf("Número de analistas retornados (%d) diferente do esperado (1)", len(analystsResponse.Analysts))
+		}
+		assert.Equal(t, analystsResponse.Analysts[0], postAnalystResponse[maxim])
+	})
+
+	t.Run("Listando analistas com filtro de menor valor", func(t *testing.T) {
+		maxim := slices.IndexFunc(postAnalystResponse, func(a pkg.Analyst) bool {
+			return a.Hourly_rate <= 50.0
+		})
+
+		targetURL := "/analysts?max_hourly_rate=50"
+
+		req := httptest.NewRequest(http.MethodGet, targetURL, nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var analystsResponse pkg.AnalystsResponse
+		json.Unmarshal(w.Body.Bytes(), &analystsResponse)
+
+		if len(analystsResponse.Analysts) != 1 {
+			t.Errorf("Número de analistas retornados (%d) diferente do esperado (1)", len(analystsResponse.Analysts))
+		}
+		assert.Equal(t, analystsResponse.Analysts[0], postAnalystResponse[maxim])
+	})
+
+	t.Run("Listando analistas com filtro de mínimo de avaliações", func(t *testing.T) {
+		expected := []pkg.Analyst{}
+		for _, a := range postAnalystResponse {
+			if a.Total_reviews >= 60 {
+				expected = append(expected, a)
+			}
+		}
+
+		targetURL := "/analysts?min_total_reviews=60"
+		req := httptest.NewRequest(http.MethodGet, targetURL, nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var analystsResponse pkg.AnalystsResponse
+		json.Unmarshal(w.Body.Bytes(), &analystsResponse)
+
+		if len(analystsResponse.Analysts) != len(expected) {
+			t.Errorf("Número de analistas retornados (%d) diferente do esperado (%d)", len(analystsResponse.Analysts), len(expected))
+		}
+		if len(expected) > 0 {
+			assert.Equal(t, analystsResponse.Analysts[0], expected[0])
+		}
+	})
+
+	t.Run("Listando analistas com filtro de mínimo de média de avaliações", func(t *testing.T) {
+		expected := []pkg.Analyst{}
+		for _, a := range postAnalystResponse {
+			if a.Mean_rating != nil && *a.Mean_rating >= 4.5 {
+				expected = append(expected, a)
+			}
+		}
+
+		targetURL := "/analysts?min_mean_rating=4.5"
+
+		req := httptest.NewRequest(http.MethodGet, targetURL, nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var analystsResponse pkg.AnalystsResponse
+		json.Unmarshal(w.Body.Bytes(), &analystsResponse)
+
+		if len(analystsResponse.Analysts) != len(expected) {
+			t.Errorf("Número de analistas retornados (%d) diferente do esperado (%d)", len(analystsResponse.Analysts), len(expected))
+		}
+		if len(expected) > 0 {
+			assert.ElementsMatch(t, analystsResponse.Analysts, expected)
+		}
+	})
+
+	t.Run("Listando analistas ordenando do menor para o maior", func(t *testing.T) {
+		arr := postAnalystResponse
+		slices.SortFunc(arr, func(a, b pkg.Analyst) int {
+			// strings.Compare retorna -1 se a < b, 0 se a == b, 1 se a > b
+			return strings.Compare(a.User.Name, b.User.Name)
+		})
+
+		targetURL := "/analysts?sort_by=name&order=ASC"
+
+		req := httptest.NewRequest(http.MethodGet, targetURL, nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var analystsResponse pkg.AnalystsResponse
+		json.Unmarshal(w.Body.Bytes(), &analystsResponse)
+
+		if len(analystsResponse.Analysts) != len(arr) {
+			t.Errorf("Número de analistas retornados (%d) diferente do esperado (%d)", len(analystsResponse.Analysts), len(arr))
+		}
+		assert.Equal(t, analystsResponse.Analysts, arr)
+	})
 }
