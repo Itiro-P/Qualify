@@ -50,7 +50,7 @@ func TestCertifications(t *testing.T) {
 
 	postCertResponse := []pkg.Certification{}
 
-	// Primeiros testes para criação de clientes, que dependem da criação prévia de usuários
+	// Primeiros testes para criação de certificações
 	for _, c := range certifications {
 		t.Run("Criar Certificação para "+c.Name, func(t *testing.T) {
 			certification := c
