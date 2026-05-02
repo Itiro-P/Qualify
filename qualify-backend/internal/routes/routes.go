@@ -4,12 +4,12 @@ import (
 	"main/internal/database/handlers"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
+func SetupRoutes(router *gin.Engine, conn *pgxpool.Pool) {
 	// Users are the base entity. Roles are assigned as nested sub-resources.
 	users := router.Group("/users")
 	{

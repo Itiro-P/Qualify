@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // GetServices godoc
@@ -22,7 +23,7 @@ import (
 // @Success 200 {object} pkg.ServicesResponse
 // @Failure 500 {object} map[string]string
 // @Router /services [get]
-func GetServices(conn *pgx.Conn) gin.HandlerFunc {
+func GetServices(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		query := `SELECT id, title, content, proposal_letter_id, hourly_rate, status, time_created
 		          FROM service WHERE 1=1`
@@ -81,7 +82,7 @@ func GetServices(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /services/{id} [get]
-func GetService(conn *pgx.Conn) gin.HandlerFunc {
+func GetService(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		serviceID, err := strconv.Atoi(id)
@@ -120,7 +121,7 @@ func GetService(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /services [post]
-func CreateService(conn *pgx.Conn) gin.HandlerFunc {
+func CreateService(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var service pkg.Service
 		if err := c.BindJSON(&service); err != nil {
@@ -157,7 +158,7 @@ func CreateService(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /services/{id} [put]
-func UpdateService(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateService(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		serviceID, err := strconv.Atoi(id)
@@ -215,7 +216,7 @@ func UpdateService(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /services/{id} [patch]
-func UpdateServicePartial(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateServicePartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		serviceID, err := strconv.Atoi(id)
@@ -299,7 +300,7 @@ func UpdateServicePartial(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /services/{id} [delete]
-func DeleteService(conn *pgx.Conn) gin.HandlerFunc {
+func DeleteService(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		serviceID, err := strconv.Atoi(id)

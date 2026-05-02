@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // GetProposalLetters godoc
@@ -22,7 +23,7 @@ import (
 // @Success 200 {object} pkg.ProposalLettersResponse
 // @Failure 500 {object} map[string]string
 // @Router /proposals [get]
-func GetProposalLetters(conn *pgx.Conn) gin.HandlerFunc {
+func GetProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		query := `SELECT id, client_id, analyst_id, proposed_hourly_rate,
 		                 title, content, time_created
@@ -84,7 +85,7 @@ func GetProposalLetters(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /proposals/{id} [get]
-func GetProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
+func GetProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		proposalID, err := strconv.Atoi(id)
@@ -124,7 +125,7 @@ func GetProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /proposals [post]
-func CreateProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
+func CreateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var proposal pkg.ProposalLetter
 		if err := c.BindJSON(&proposal); err != nil {
@@ -161,7 +162,7 @@ func CreateProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /proposals/{id} [put]
-func UpdateProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		proposalID, err := strconv.Atoi(id)
@@ -214,7 +215,7 @@ func UpdateProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /proposals/{id} [patch]
-func UpdateProposalLetterPartial(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateProposalLetterPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		proposalID, err := strconv.Atoi(id)
@@ -288,7 +289,7 @@ func UpdateProposalLetterPartial(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /proposals/{id} [delete]
-func DeleteProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
+func DeleteProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		proposalID, err := strconv.Atoi(id)

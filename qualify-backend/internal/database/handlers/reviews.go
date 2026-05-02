@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // GetReviews godoc
@@ -28,7 +29,7 @@ import (
 // @Success 200 {object} pkg.ReviewsResponse
 // @Failure 500 {object} map[string]string
 // @Router /reviews [get]
-func GetReviews(conn *pgx.Conn) gin.HandlerFunc {
+func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Build query with filters
 		query := `SELECT id, analyst_id, client_id, service_id, rating, comment, time_created 
@@ -204,7 +205,7 @@ func GetReviews(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /reviews/{id} [get]
-func GetReview(conn *pgx.Conn) gin.HandlerFunc {
+func GetReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		reviewID, err := strconv.Atoi(id)
@@ -238,7 +239,7 @@ func GetReview(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /reviews [post]
-func CreateReview(conn *pgx.Conn) gin.HandlerFunc {
+func CreateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var review pkg.Review
 		if err := c.BindJSON(&review); err != nil {
@@ -281,7 +282,7 @@ func CreateReview(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /reviews/{id} [put]
-func UpdateReview(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		reviewID, err := strconv.Atoi(id)
@@ -334,7 +335,7 @@ func UpdateReview(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /reviews/{id} [patch]
-func UpdateReviewPartial(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		reviewID, err := strconv.Atoi(id)
@@ -405,7 +406,7 @@ func UpdateReviewPartial(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /reviews/{id} [delete]
-func DeleteReview(conn *pgx.Conn) gin.HandlerFunc {
+func DeleteReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		reviewID, err := strconv.Atoi(id)

@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // GetClients godoc
@@ -27,7 +28,7 @@ import (
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /clients [get]
-func GetClients(conn *pgx.Conn) gin.HandlerFunc {
+func GetClients(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		query := `
 			SELECT u.id, u.name, u.email, u.phone, u.time_created,
@@ -143,7 +144,7 @@ func GetClients(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/client [get]
-func GetClient(conn *pgx.Conn) gin.HandlerFunc {
+func GetClient(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		clientID, err := strconv.Atoi(id)
@@ -196,7 +197,7 @@ func GetClient(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/client [post]
-func CreateClient(conn *pgx.Conn) gin.HandlerFunc {
+func CreateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userIDParam := c.Param("id")
 		userID, err := strconv.Atoi(userIDParam)
@@ -240,7 +241,7 @@ func CreateClient(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/client [put]
-func UpdateClient(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		clientID, err := strconv.Atoi(id)
@@ -353,7 +354,7 @@ func UpdateClient(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/client [delete]
-func DeleteClient(conn *pgx.Conn) gin.HandlerFunc {
+func DeleteClient(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		clientID, err := strconv.Atoi(id)
@@ -390,7 +391,7 @@ func DeleteClient(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/client [patch]
-func UpdateClientPartial(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateClientPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		clientID, err := strconv.Atoi(id)
@@ -409,34 +410,52 @@ func UpdateClientPartial(conn *pgx.Conn) gin.HandlerFunc {
 		userArgs := []interface{}{}
 		i := 1
 		if req.Name != nil {
-			userSet = append(userSet, fmt.Sprintf("name = $%d", i)); userArgs = append(userArgs, *req.Name); i++
+			userSet = append(userSet, fmt.Sprintf("name = $%d", i))
+			userArgs = append(userArgs, *req.Name)
+			i++
 		}
 		if req.Email != nil {
-			userSet = append(userSet, fmt.Sprintf("email = $%d", i)); userArgs = append(userArgs, *req.Email); i++
+			userSet = append(userSet, fmt.Sprintf("email = $%d", i))
+			userArgs = append(userArgs, *req.Email)
+			i++
 		}
 		if req.Phone != nil {
-			userSet = append(userSet, fmt.Sprintf("phone = $%d", i)); userArgs = append(userArgs, *req.Phone); i++
+			userSet = append(userSet, fmt.Sprintf("phone = $%d", i))
+			userArgs = append(userArgs, *req.Phone)
+			i++
 		}
 		if req.Country_code != nil {
-			userSet = append(userSet, fmt.Sprintf("country_code = $%d", i)); userArgs = append(userArgs, *req.Country_code); i++
+			userSet = append(userSet, fmt.Sprintf("country_code = $%d", i))
+			userArgs = append(userArgs, *req.Country_code)
+			i++
 		}
 		if req.Country_name != nil {
-			userSet = append(userSet, fmt.Sprintf("country_name = $%d", i)); userArgs = append(userArgs, *req.Country_name); i++
+			userSet = append(userSet, fmt.Sprintf("country_name = $%d", i))
+			userArgs = append(userArgs, *req.Country_name)
+			i++
 		}
 		if req.Country_state != nil {
-			userSet = append(userSet, fmt.Sprintf("country_state = $%d", i)); userArgs = append(userArgs, *req.Country_state); i++
+			userSet = append(userSet, fmt.Sprintf("country_state = $%d", i))
+			userArgs = append(userArgs, *req.Country_state)
+			i++
 		}
 		if req.City != nil {
-			userSet = append(userSet, fmt.Sprintf("city = $%d", i)); userArgs = append(userArgs, *req.City); i++
+			userSet = append(userSet, fmt.Sprintf("city = $%d", i))
+			userArgs = append(userArgs, *req.City)
+			i++
 		}
 		if req.Timezone != nil {
-			userSet = append(userSet, fmt.Sprintf("timezone = $%d", i)); userArgs = append(userArgs, *req.Timezone); i++
+			userSet = append(userSet, fmt.Sprintf("timezone = $%d", i))
+			userArgs = append(userArgs, *req.Timezone)
+			i++
 		}
 
 		clientSet := []string{}
 		clientArgs := []interface{}{}
 		if req.Proposed_budget != nil {
-			clientSet = append(clientSet, fmt.Sprintf("proposed_budget = $%d", i)); clientArgs = append(clientArgs, *req.Proposed_budget); i++
+			clientSet = append(clientSet, fmt.Sprintf("proposed_budget = $%d", i))
+			clientArgs = append(clientArgs, *req.Proposed_budget)
+			i++
 		}
 
 		if len(userSet) == 0 && len(clientSet) == 0 {
@@ -449,7 +468,11 @@ func UpdateClientPartial(conn *pgx.Conn) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to begin transaction: " + err.Error()})
 			return
 		}
-		defer func() { if err != nil { _ = tx.Rollback(c.Request.Context()) } }()
+		defer func() {
+			if err != nil {
+				_ = tx.Rollback(c.Request.Context())
+			}
+		}()
 
 		if len(userSet) > 0 {
 			userArgs = append(userArgs, clientID)

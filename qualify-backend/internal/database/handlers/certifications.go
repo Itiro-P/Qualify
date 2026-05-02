@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // GetCertifications godoc
@@ -20,7 +21,7 @@ import (
 // @Success 200 {object} pkg.CertificationsResponse
 // @Failure 500 {object} map[string]string
 // @Router /certifications [get]
-func GetCertifications(conn *pgx.Conn) gin.HandlerFunc {
+func GetCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		rows, err := conn.Query(c.Request.Context(),
 			`SELECT id, name, year, description FROM certification ORDER BY year DESC`,
@@ -63,7 +64,7 @@ func GetCertifications(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /certifications/{id} [get]
-func GetCertification(conn *pgx.Conn) gin.HandlerFunc {
+func GetCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		certID, err := strconv.Atoi(id)
@@ -101,7 +102,7 @@ func GetCertification(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /certifications [post]
-func CreateCertification(conn *pgx.Conn) gin.HandlerFunc {
+func CreateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var cert pkg.Certification
 		if err := c.BindJSON(&cert); err != nil {
@@ -146,7 +147,7 @@ func CreateCertification(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /certifications/{id} [put]
-func UpdateCertification(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		certID, err := strconv.Atoi(id)
@@ -202,7 +203,7 @@ func UpdateCertification(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /certifications/{id} [patch]
-func UpdateCertificationPartial(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateCertificationPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		certID, err := strconv.Atoi(id)
@@ -279,7 +280,7 @@ func UpdateCertificationPartial(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /certifications/{id} [delete]
-func DeleteCertification(conn *pgx.Conn) gin.HandlerFunc {
+func DeleteCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		certID, err := strconv.Atoi(id)
@@ -316,7 +317,7 @@ func DeleteCertification(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/analyst/certifications [get]
-func GetAnalystCertifications(conn *pgx.Conn) gin.HandlerFunc {
+func GetAnalystCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
@@ -371,7 +372,7 @@ func GetAnalystCertifications(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/analyst/certifications [post]
-func CreateAnalystCertification(conn *pgx.Conn) gin.HandlerFunc {
+func CreateAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		analystID, err := strconv.Atoi(id)
@@ -442,7 +443,7 @@ func CreateAnalystCertification(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/analyst/certifications [delete]
-func DeleteAnalystCertification(conn *pgx.Conn) gin.HandlerFunc {
+func DeleteAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.Param("id")
 		userIDVal, err := strconv.Atoi(userID)

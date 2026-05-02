@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // GetAnalysts godoc
@@ -30,7 +31,7 @@ import (
 // @Success 200 {object} pkg.AnalystsResponse
 // @Failure 500 {object} map[string]string
 // @Router /analysts [get]
-func GetAnalysts(conn *pgx.Conn) gin.HandlerFunc {
+func GetAnalysts(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		query := `
 			SELECT u.id, u.name, u.email, u.phone, u.time_created,
@@ -166,7 +167,7 @@ func GetAnalysts(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/analyst [get]
-func GetAnalyst(conn *pgx.Conn) gin.HandlerFunc {
+func GetAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		analystID, err := strconv.Atoi(id)
@@ -225,7 +226,7 @@ func GetAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/analyst [patch]
-func UpdateAnalystPartial(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		analystID, err := strconv.Atoi(id)
@@ -395,7 +396,7 @@ func UpdateAnalystPartial(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/analyst [post]
-func CreateAnalyst(conn *pgx.Conn) gin.HandlerFunc {
+func CreateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userIDParam := c.Param("id")
 		userID, err := strconv.Atoi(userIDParam)
@@ -441,7 +442,7 @@ func CreateAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/analyst [put]
-func UpdateAnalyst(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		analystID, err := strconv.Atoi(id)
@@ -555,7 +556,7 @@ func UpdateAnalyst(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/analyst [delete]
-func DeleteAnalyst(conn *pgx.Conn) gin.HandlerFunc {
+func DeleteAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		analystID, err := strconv.Atoi(id)

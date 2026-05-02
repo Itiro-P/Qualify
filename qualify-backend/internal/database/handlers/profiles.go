@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // User Profile Handlers
@@ -23,7 +24,7 @@ import (
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/profile [get]
-func GetUserProfile(conn *pgx.Conn) gin.HandlerFunc {
+func GetUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
@@ -61,7 +62,7 @@ func GetUserProfile(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/profile [post]
-func CreateUserProfile(conn *pgx.Conn) gin.HandlerFunc {
+func CreateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
@@ -106,7 +107,7 @@ func CreateUserProfile(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/profile [put]
-func UpdateUserProfile(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
@@ -158,7 +159,7 @@ func UpdateUserProfile(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/profile [delete]
-func DeleteUserProfile(conn *pgx.Conn) gin.HandlerFunc {
+func DeleteUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
@@ -198,7 +199,7 @@ func DeleteUserProfile(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/analyst/profile [get]
-func GetAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
+func GetAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
@@ -236,7 +237,7 @@ func GetAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/analyst/profile [post]
-func CreateAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
+func CreateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
@@ -281,7 +282,7 @@ func CreateAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/analyst/profile [put]
-func UpdateAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
@@ -333,7 +334,7 @@ func UpdateAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/analyst/profile [delete]
-func DeleteAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
+func DeleteAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
@@ -373,7 +374,7 @@ func DeleteAnalystProfile(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/client/profile [get]
-func GetClientProfile(conn *pgx.Conn) gin.HandlerFunc {
+func GetClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
@@ -411,7 +412,7 @@ func GetClientProfile(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/client/profile [post]
-func CreateClientProfile(conn *pgx.Conn) gin.HandlerFunc {
+func CreateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
@@ -462,7 +463,7 @@ func CreateClientProfile(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/client/profile [put]
-func UpdateClientProfile(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
@@ -508,7 +509,7 @@ func UpdateClientProfile(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/client/profile [delete]
-func DeleteClientProfile(conn *pgx.Conn) gin.HandlerFunc {
+func DeleteClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)

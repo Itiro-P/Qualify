@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // GetUser godoc
@@ -24,7 +25,7 @@ import (
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id} [get]
-func GetUser(conn *pgx.Conn) gin.HandlerFunc {
+func GetUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
@@ -58,7 +59,7 @@ func GetUser(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users [post]
-func CreateUser(conn *pgx.Conn) gin.HandlerFunc {
+func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var user pkg.User
 		if err := c.BindJSON(&user); err != nil {
@@ -104,7 +105,7 @@ func CreateUser(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id} [put]
-func UpdateUser(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
@@ -166,7 +167,7 @@ func UpdateUser(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id} [patch]
-func UpdateUserPartial(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
@@ -266,7 +267,7 @@ func UpdateUserPartial(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id} [delete]
-func DeleteUser(conn *pgx.Conn) gin.HandlerFunc {
+func DeleteUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
