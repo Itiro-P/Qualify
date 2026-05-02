@@ -411,4 +411,46 @@ func TestAnalyst(t *testing.T) {
 		}
 		assert.Equal(t, analystsResponse.Analysts, arr)
 	})
+
+	/**
+	 * 'Ah mas e o PUT?' Foda-se o PUT, QUEM RAIOS VAI QUERER ATUALIZAR UM ANALISTA INTEIRO?
+	 */
+
+	// Agora modificaremos um analista para ver se a atualização está funcionando corretamente
+	t.Run("Atualizando analista "+postAnalystResponse[0].User.Name, func(t *testing.T) {
+		analyst := postAnalystResponse[0]
+		patchBody := map[string]interface{}{
+			"hourly_rate": 150.0,
+		}
+		body, _ := json.Marshal(patchBody)
+		targetURL := fmt.Sprintf("/users/%d/analyst", analyst.User.Id)
+
+		req := httptest.NewRequest(http.MethodPatch, targetURL, bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var analystResponse pkg.AnalystResponse
+		json.Unmarshal(w.Body.Bytes(), &analystResponse)
+
+		if analystResponse.Analyst.Hourly_rate != 150.0 {
+			t.Errorf("Valor do campo 'hourly_rate' diferente do esperado (150.0), obtemos %f", analystResponse.Analyst.Hourly_rate)
+		}
+	})
+
+	// Agora deletaremos cada analista em específico para ver se eles estão sendo deletados corretamente
+	for _, a := range postAnalystResponse {
+		t.Run("Deletando analista "+a.User.Name+" por ID", func(t *testing.T) {
+			targetURL := fmt.Sprintf("/users/%d/analyst", a.User.Id)
+
+			req := httptest.NewRequest(http.MethodDelete, targetURL, nil)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, http.StatusOK, w.Code)
+		})
+	}
 }
