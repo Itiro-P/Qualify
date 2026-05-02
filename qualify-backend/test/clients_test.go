@@ -19,9 +19,9 @@ import (
 var clients = []pkg.Client{
 	{
 		User: pkg.User{
-			Name:          "Reginaldo Ré",
-			Email:         "reginaldo@utfpr.edu.br",
-			Phone:         "41999999999",
+			Name:          "Marcos Calvaro",
+			Email:         "markos@utfpr.edu.br",
+			Phone:         "41999999989",
 			Country_code:  "BR",
 			Country_name:  "Brazil",
 			Country_state: "PR",
@@ -32,68 +32,16 @@ var clients = []pkg.Client{
 	},
 	{
 		User: pkg.User{
-			Name:          "John Xina",
-			Email:         "xina@utfpr.edu.br",
+			Name:          "Frank",
+			Email:         "frank@utfpr.edu.br",
 			Phone:         "41969696969",
-			Country_code:  "CN",
-			Country_name:  "China",
-			Country_state: "Beijing",
-			City:          "Beijing",
-			Timezone:      "Asia/Shanghai",
+			Country_code:  "RO",
+			Country_name:  "Romania",
+			Country_state: "AA",
+			City:          "Bucareste",
+			Timezone:      "America/Sao_Paulo",
 		},
 		Proposed_budget: 69.0,
-	},
-	{
-		User: pkg.User{
-			Name:          "Ivanilton Pelado",
-			Email:         "nudismo@utfpr.edu.br",
-			Phone:         "44999999999",
-			Country_code:  "BR",
-			Country_name:  "Brazil",
-			Country_state: "PR",
-			City:          "Campo Mourão",
-			Timezone:      "America/Sao_Paulo",
-		},
-		Proposed_budget: 67.0,
-	},
-	{
-		User: pkg.User{
-			Name:          "João Paumolence",
-			Email:         "joaum@utfpr.edu.br",
-			Phone:         "44999990000",
-			Country_code:  "BR",
-			Country_name:  "Brazil",
-			Country_state: "PR",
-			City:          "Roncador",
-			Timezone:      "America/Sao_Paulo",
-		},
-		Proposed_budget: 57.0,
-	},
-	{
-		User: pkg.User{
-			Name:          "Alex do Durex",
-			Email:         "alex@utfpr.edu.br",
-			Phone:         "44999690000",
-			Country_code:  "BR",
-			Country_name:  "Brazil",
-			Country_state: "PR",
-			City:          "Campo Mourão",
-			Timezone:      "America/Sao_Paulo",
-		},
-		Proposed_budget: 50.0,
-	},
-	{
-		User: pkg.User{
-			Name:          "Rodrigo do Piolho",
-			Email:         "rodrigo@utfpr.edu.br",
-			Phone:         "44999690000",
-			Country_code:  "BR",
-			Country_name:  "Brazil",
-			Country_state: "GO",
-			City:          "Goiânia",
-			Timezone:      "America/Sao_Paulo",
-		},
-		Proposed_budget: 128.0,
 	},
 }
 
@@ -192,11 +140,11 @@ func TestClient(t *testing.T) {
 
 	// Agora testaremos os filtros de listagem de clientes, para ver se eles estão funcionando corretamente
 	t.Run("Listando clientes com filtro de nome", func(t *testing.T) {
-		johnXina := slices.IndexFunc(postClientResponse, func(a pkg.Client) bool {
-			return strings.HasPrefix(a.User.Name, "John Xina")
+		frank := slices.IndexFunc(postClientResponse, func(a pkg.Client) bool {
+			return strings.HasPrefix(a.User.Name, "Frank")
 		})
 
-		targetURL := "/clients?name=John"
+		targetURL := "/clients?name=Frank"
 
 		req := httptest.NewRequest(http.MethodGet, targetURL, nil)
 		w := httptest.NewRecorder()
@@ -210,15 +158,15 @@ func TestClient(t *testing.T) {
 		if len(clientsResponse.Clients) != 1 {
 			t.Errorf("Número de clientes retornados (%d) diferente do esperado (1)", len(clientsResponse.Clients))
 		}
-		assert.Equal(t, clientsResponse.Clients[0], postClientResponse[johnXina])
+		assert.Equal(t, clientsResponse.Clients[0], postClientResponse[frank])
 	})
 
 	t.Run("Listando clientes com filtro de país", func(t *testing.T) {
-		johnXina := slices.IndexFunc(postClientResponse, func(a pkg.Client) bool {
-			return strings.HasPrefix(a.User.Country_name, "China")
+		frank := slices.IndexFunc(postClientResponse, func(a pkg.Client) bool {
+			return strings.HasPrefix(a.User.Country_name, "Romania")
 		})
 
-		targetURL := "/clients?country=China"
+		targetURL := "/clients?country=Romania"
 
 		req := httptest.NewRequest(http.MethodGet, targetURL, nil)
 		w := httptest.NewRecorder()
@@ -232,15 +180,15 @@ func TestClient(t *testing.T) {
 		if len(clientsResponse.Clients) != 1 {
 			t.Errorf("Número de clientes retornados (%d) diferente do esperado (1)", len(clientsResponse.Clients))
 		}
-		assert.Equal(t, clientsResponse.Clients[0], postClientResponse[johnXina])
+		assert.Equal(t, clientsResponse.Clients[0], postClientResponse[frank])
 	})
 
 	t.Run("Listando clientes com filtro de cidade", func(t *testing.T) {
-		joao := slices.IndexFunc(postClientResponse, func(a pkg.Client) bool {
-			return strings.HasPrefix(a.User.City, "Roncador")
+		client := slices.IndexFunc(postClientResponse, func(a pkg.Client) bool {
+			return strings.HasPrefix(a.User.City, "Campo Mourão")
 		})
 
-		targetURL := "/clients?city=Roncador"
+		targetURL := "/clients?city=Campo"
 
 		req := httptest.NewRequest(http.MethodGet, targetURL, nil)
 		w := httptest.NewRecorder()
@@ -254,15 +202,15 @@ func TestClient(t *testing.T) {
 		if len(clientsResponse.Clients) != 1 {
 			t.Errorf("Número de clientes retornados (%d) diferente do esperado (1)", len(clientsResponse.Clients))
 		}
-		assert.Equal(t, clientsResponse.Clients[0], postClientResponse[joao])
+		assert.Equal(t, clientsResponse.Clients[0], postClientResponse[client])
 	})
 
 	t.Run("Listando clientes com filtro de maior valor", func(t *testing.T) {
 		maxim := slices.IndexFunc(postClientResponse, func(a pkg.Client) bool {
-			return a.Proposed_budget >= 128.0
+			return a.Proposed_budget >= 100.0
 		})
 
-		targetURL := "/clients?min_proposed_budget=128"
+		targetURL := "/clients?min_proposed_budget=100"
 
 		req := httptest.NewRequest(http.MethodGet, targetURL, nil)
 		w := httptest.NewRecorder()
@@ -281,10 +229,10 @@ func TestClient(t *testing.T) {
 
 	t.Run("Listando clientes com filtro de menor valor", func(t *testing.T) {
 		maxim := slices.IndexFunc(postClientResponse, func(a pkg.Client) bool {
-			return a.Proposed_budget <= 50.0
+			return a.Proposed_budget <= 69.0
 		})
 
-		targetURL := "/clients?max_proposed_budget=50"
+		targetURL := "/clients?max_proposed_budget=69"
 
 		req := httptest.NewRequest(http.MethodGet, targetURL, nil)
 		w := httptest.NewRecorder()

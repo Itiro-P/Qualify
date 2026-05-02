@@ -113,6 +113,7 @@ func SetupRoutes(router *gin.Engine, conn *pgxpool.Pool) {
 	certifications := router.Group("/certifications")
 	{
 		certifications.GET("", handlers.GetCertifications(conn))
+		certifications.GET("/:id", handlers.GetCertification(conn))
 		certifications.POST("", handlers.CreateCertification(conn))
 		certifications.PUT("/:id", handlers.UpdateCertification(conn))
 		certifications.PATCH("/:id", handlers.UpdateCertificationPartial(conn))
