@@ -107,7 +107,7 @@ var analysts = []pkg.Analyst{
 	},
 }
 
-func TestPOSTAnalyst(t *testing.T) {
+func TestAnalyst(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 
