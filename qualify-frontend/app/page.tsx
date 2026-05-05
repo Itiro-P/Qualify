@@ -5,10 +5,7 @@ import {
   TestingTiers,
 } from "@/components/landing";
 
-import {
-    Footer,
-    Header
-} from '@/components';
+import { Footer, Header } from "@/components";
 
 export default function Home() {
   return (

@@ -43,7 +43,10 @@ const tiers: TierCardProps[] = [
     title: "Engenharia de automação",
     description:
       "Construa pipelines robustos de CI/CD com Selenium, Playwright e Appium. Reduza o trabalho manual.",
-    features: ["Configuração de framework personalizado", "Scripting de regressão"],
+    features: [
+      "Configuração de framework personalizado",
+      "Scripting de regressão",
+    ],
   },
   {
     icon: <ShieldCheck className="w-10 h-10" />,
@@ -64,7 +67,9 @@ export function TestingTiers() {
           </h2>
           <div className="h-1 w-20 bg-accent mb-6" />
           <p className="text-neutral-slate max-w-2xl">
-            Soluções personalizadas para cada etapa do seu ciclo de desenvolvimento de software, desde a auditoria inicial até a entrega contínua.
+            Soluções personalizadas para cada etapa do seu ciclo de
+            desenvolvimento de software, desde a auditoria inicial até a entrega
+            contínua.
           </p>
         </div>
         <div className="grid md:grid-cols-3 gap-8">

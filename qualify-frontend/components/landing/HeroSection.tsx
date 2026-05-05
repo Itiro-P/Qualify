@@ -21,8 +21,8 @@ export function HeroSection() {
           </h1>
           <p className="text-lg text-neutral-slate max-w-lg leading-relaxed">
             Conecte-se com os profissionais de QA mais experientes do mundo para
-            testes exploratórios, automação e segurança. Implemente com 100%
-            de confiança.
+            testes exploratórios, automação e segurança. Implemente com 100% de
+            confiança.
           </p>
           <div className="flex flex-wrap gap-4">
             <button className="bg-primary hover:scale-105 transition-transform px-8 py-4 font-bold rounded-lg flex items-center gap-2 cursor-pointer">
@@ -46,7 +46,8 @@ export function HeroSection() {
           </div>
           {/* Floating metrics */}
           <div className="absolute -bottom-6 -left-6 glass-panel p-6 rounded-xl border-accent/30 mint-glow">
-            <p className="text-accent font-bold text-3xl">2.5k+</p> {/* TODO: fetch real data */}
+            <p className="text-accent font-bold text-3xl">2.5k+</p>{" "}
+            {/* TODO: fetch real data */}
             <p className="text-xs uppercase tracking-wider text-neutral-slate">
               Especialistas ativos
             </p>

@@ -1,4 +1,4 @@
-export { ImageProfile } from './ImageProfile';
+export { ImageProfile } from "./ImageProfile";
 export { StatisticProfile } from "./StatisticProfile";
 export { About } from "./About";
 export { Informations } from "./Informations";
