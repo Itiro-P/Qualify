@@ -5,9 +5,11 @@ import (
 	"main/pkg"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // GetServices godoc
@@ -21,7 +23,7 @@ import (
 // @Success 200 {object} pkg.ServicesResponse
 // @Failure 500 {object} map[string]string
 // @Router /services [get]
-func GetServices(conn *pgx.Conn) gin.HandlerFunc {
+func GetServices(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		query := `SELECT id, title, content, proposal_letter_id, hourly_rate, status, time_created
 		          FROM service WHERE 1=1`
@@ -34,9 +36,11 @@ func GetServices(conn *pgx.Conn) gin.HandlerFunc {
 			argCounter++
 		}
 		if proposalID := c.Query("proposal_letter_id"); proposalID != "" {
-			query += fmt.Sprintf(" AND proposal_letter_id = $%d", argCounter)
-			args = append(args, proposalID)
-			argCounter++
+			if proposalIDVal, err := strconv.Atoi(proposalID); err == nil {
+				query += fmt.Sprintf(" AND proposal_letter_id = $%d", argCounter)
+				args = append(args, proposalIDVal)
+				argCounter++
+			}
 		}
 
 		query += " ORDER BY time_created DESC"
@@ -78,7 +82,7 @@ func GetServices(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /services/{id} [get]
-func GetService(conn *pgx.Conn) gin.HandlerFunc {
+func GetService(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		serviceID, err := strconv.Atoi(id)
@@ -102,30 +106,6 @@ func GetService(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		rows, err := conn.Query(c.Request.Context(),
-			`SELECT id, service_id, rating, comment, time_created
-			 FROM review WHERE service_id = $1 ORDER BY time_created DESC`, serviceID,
-		)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		defer rows.Close()
-
-		var reviews []pkg.Review
-		for rows.Next() {
-			var r pkg.Review
-			if err := rows.Scan(&r.Id, &r.Service_id, &r.Rating, &r.Comment, &r.Time_created); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-			reviews = append(reviews, r)
-		}
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
 		c.JSON(http.StatusOK, pkg.ServiceResponse{Service: s})
 	}
 }
@@ -141,7 +121,7 @@ func GetService(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /services [post]
-func CreateService(conn *pgx.Conn) gin.HandlerFunc {
+func CreateService(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var service pkg.Service
 		if err := c.BindJSON(&service); err != nil {
@@ -178,7 +158,7 @@ func CreateService(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /services/{id} [put]
-func UpdateService(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateService(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		serviceID, err := strconv.Atoi(id)
@@ -190,6 +170,16 @@ func UpdateService(conn *pgx.Conn) gin.HandlerFunc {
 		var service pkg.Service
 		if err := c.BindJSON(&service); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		// Validando parâmetros obrigatórios
+		if service.Title == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "service title is required"})
+			return
+		}
+		if service.Hourly_rate < 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "hourly_rate must be non-negative"})
 			return
 		}
 
@@ -213,6 +203,91 @@ func UpdateService(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// UpdateServicePartial godoc
+// @Summary Atualizar parcialmente um serviço
+// @Description Atualiza um ou mais campos do serviço pelo ID
+// @Tags Serviços
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do serviço"
+// @Param service body pkg.ServiceUpdateRequest true "Objeto serviço"
+// @Success 200 {object} pkg.ServiceResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /services/{id} [patch]
+func UpdateServicePartial(conn *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		serviceID, err := strconv.Atoi(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid service id"})
+			return
+		}
+
+		var service pkg.ServiceUpdateRequest
+		if err := c.BindJSON(&service); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		set := []string{}
+		args := []interface{}{}
+		i := 1
+
+		if service.Content != nil {
+			set = append(set, fmt.Sprintf("content = $%d", i))
+			args = append(args, *service.Content)
+			i++
+		}
+		if service.Hourly_rate != nil {
+			if *service.Hourly_rate < 0 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "hourly_rate must be non-negative"})
+				return
+			}
+			set = append(set, fmt.Sprintf("hourly_rate = $%d", i))
+			args = append(args, *service.Hourly_rate)
+			i++
+		}
+		if service.Status != nil {
+			set = append(set, fmt.Sprintf("status = $%d", i))
+			args = append(args, *service.Status)
+			i++
+		}
+		if service.Title != nil {
+			set = append(set, fmt.Sprintf("title = $%d", i))
+			args = append(args, *service.Title)
+			i++
+		}
+
+		if len(set) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "no fields to update"})
+			return
+		}
+
+		args = append(args, serviceID)
+
+		query := fmt.Sprintf("UPDATE service SET %s WHERE id = $%d RETURNING id, proposal_letter_id, title, content, hourly_rate, status, time_created",
+			strings.Join(set, ", "), i)
+
+		var updatedService pkg.Service
+		err = conn.QueryRow(c.Request.Context(), query, args...).Scan(&updatedService.Id, &updatedService.Proposal_letter_id,
+			&updatedService.Title, &updatedService.Content, &updatedService.Hourly_rate,
+			&updatedService.Status, &updatedService.Time_created)
+
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				c.JSON(http.StatusNotFound, gin.H{"error": "service not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, pkg.ServiceResponse{Service: updatedService})
+	}
+}
+
 // DeleteService godoc
 // @Summary Excluir serviço
 // @Description Remove um serviço pelo ID
@@ -225,7 +300,7 @@ func UpdateService(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /services/{id} [delete]
-func DeleteService(conn *pgx.Conn) gin.HandlerFunc {
+func DeleteService(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		serviceID, err := strconv.Atoi(id)

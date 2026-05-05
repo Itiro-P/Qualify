@@ -5,9 +5,11 @@ import (
 	"main/pkg"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // GetReviews godoc
@@ -27,7 +29,7 @@ import (
 // @Success 200 {object} pkg.ReviewsResponse
 // @Failure 500 {object} map[string]string
 // @Router /reviews [get]
-func GetReviews(conn *pgx.Conn) gin.HandlerFunc {
+func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Build query with filters
 		query := `SELECT id, analyst_id, client_id, service_id, rating, comment, time_created 
@@ -111,7 +113,7 @@ func GetReviews(conn *pgx.Conn) gin.HandlerFunc {
 
 		// Optional: Add sorting
 		if sortBy := c.Query("sort_by"); sortBy != "" {
-			// Validate sortBy to prevent SQL injection
+			// Validando sortBy para evitar SQL injection - apenas campos permitidos
 			allowedSortFields := map[string]bool{
 				"id": true, "analyst_id": true, "client_id": true, "service_id": true,
 				"rating": true, "time_created": true,
@@ -203,7 +205,7 @@ func GetReviews(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /reviews/{id} [get]
-func GetReview(conn *pgx.Conn) gin.HandlerFunc {
+func GetReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		reviewID, err := strconv.Atoi(id)
@@ -237,7 +239,7 @@ func GetReview(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /reviews [post]
-func CreateReview(conn *pgx.Conn) gin.HandlerFunc {
+func CreateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var review pkg.Review
 		if err := c.BindJSON(&review); err != nil {
@@ -245,7 +247,7 @@ func CreateReview(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		// Validate rating is between 1-5
+		// Validando que a avaliação esteja entre 1-5
 		if review.Rating < 1 || review.Rating > 5 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Rating must be between 1 and 5"})
 			return
@@ -280,7 +282,7 @@ func CreateReview(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /reviews/{id} [put]
-func UpdateReview(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		reviewID, err := strconv.Atoi(id)
@@ -294,7 +296,7 @@ func UpdateReview(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		// Validate rating is between 1-5
+		// Validando que a avaliação esteja entre 1-5
 		if review.Rating < 1 || review.Rating > 5 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Rating must be between 1 and 5"})
 			return
@@ -320,6 +322,78 @@ func UpdateReview(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// UpdateReviewPartial godoc
+// @Summary Atualizar parcialmente avaliação
+// @Description Atualiza um ou mais campos da avaliação pelo ID
+// @Tags Avaliações
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da avaliação"
+// @Param review body pkg.ReviewUpdateRequest true "Objeto avaliação"
+// @Success 200 {object} pkg.ReviewResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /reviews/{id} [patch]
+func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		reviewID, err := strconv.Atoi(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid review id"})
+			return
+		}
+		var review pkg.ReviewUpdateRequest
+		if err := c.BindJSON(&review); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		set := []string{}
+		args := []interface{}{}
+		i := 1
+
+		if review.Comment != nil {
+			set = append(set, fmt.Sprintf("comment = $%d", i))
+			args = append(args, *review.Comment)
+			i++
+		}
+		if review.Rating != nil {
+			if *review.Rating < 1 || *review.Rating > 5 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Rating must be between 1 and 5"})
+				return
+			}
+			set = append(set, fmt.Sprintf("rating = $%d", i))
+			args = append(args, *review.Rating)
+			i++
+		}
+
+		if len(set) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "no fields to update"})
+			return
+		}
+
+		args = append(args, reviewID)
+
+		query := fmt.Sprintf("UPDATE review SET %s WHERE id = $%d RETURNING id, analyst_id, client_id, service_id, rating, comment, time_created",
+			strings.Join(set, ", "), i)
+
+		var updatedReview pkg.Review
+		err = conn.QueryRow(c.Request.Context(), query, args...).Scan(&updatedReview.Id, &updatedReview.Analyst_id, &updatedReview.Client_id, &updatedReview.Service_id, &updatedReview.Rating, &updatedReview.Comment, &updatedReview.Time_created)
+
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				c.JSON(http.StatusNotFound, gin.H{"error": "review not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, pkg.ReviewResponse{Review: updatedReview})
+	}
+}
+
 // DeleteReview godoc
 // @Summary Excluir avaliação
 // @Description Remove uma avaliação pelo ID
@@ -332,7 +406,7 @@ func UpdateReview(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /reviews/{id} [delete]
-func DeleteReview(conn *pgx.Conn) gin.HandlerFunc {
+func DeleteReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		reviewID, err := strconv.Atoi(id)

@@ -1,13 +1,16 @@
 package handlers
 
 import (
+	"fmt"
 	"main/internal/database/services"
 	"main/pkg"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // GetUser godoc
@@ -22,7 +25,7 @@ import (
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id} [get]
-func GetUser(conn *pgx.Conn) gin.HandlerFunc {
+func GetUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
@@ -56,7 +59,7 @@ func GetUser(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users [post]
-func CreateUser(conn *pgx.Conn) gin.HandlerFunc {
+func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var user pkg.User
 		if err := c.BindJSON(&user); err != nil {
@@ -64,7 +67,7 @@ func CreateUser(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		// Validate required fields
+		// Validando parâmetros obrigatórios
 		if user.Name == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "user name is required"})
 			return
@@ -102,7 +105,7 @@ func CreateUser(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id} [put]
-func UpdateUser(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
@@ -116,7 +119,7 @@ func UpdateUser(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		// Validate required fields
+		// Validando parâmetros obrigatórios
 		if user.Name == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "user name is required"})
 			return
@@ -151,6 +154,107 @@ func UpdateUser(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// UpdateUserPartial godoc
+// @Summary Atualizar parcialmente um ou mais dados do usuário
+// @Description Atualiza um ou mais dados do usuário pelo ID
+// @Tags Usuários
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do usuário"
+// @Param user body pkg.UserUpdateRequest true "Objeto do usuário"
+// @Success 200 {object} pkg.UserResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id} [patch]
+func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		userID, err := strconv.Atoi(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			return
+		}
+
+		var req pkg.UserUpdateRequest
+		if err := c.BindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+			return
+		}
+
+		set := []string{}
+		args := []interface{}{}
+		i := 1
+
+		if req.Name != nil {
+			set = append(set, fmt.Sprintf("name = $%d", i))
+			args = append(args, *req.Name)
+			i++
+		}
+		if req.Email != nil {
+			set = append(set, fmt.Sprintf("email = $%d", i))
+			args = append(args, *req.Email)
+			i++
+		}
+		if req.Phone != nil {
+			set = append(set, fmt.Sprintf("phone = $%d", i))
+			args = append(args, *req.Phone)
+			i++
+		}
+		if req.Country_code != nil {
+			set = append(set, fmt.Sprintf("country_code = $%d", i))
+			args = append(args, *req.Country_code)
+			i++
+		}
+		if req.Country_name != nil {
+			set = append(set, fmt.Sprintf("country_name = $%d", i))
+			args = append(args, *req.Country_name)
+			i++
+		}
+		if req.Country_state != nil {
+			set = append(set, fmt.Sprintf("country_state = $%d", i))
+			args = append(args, *req.Country_state)
+			i++
+		}
+		if req.City != nil {
+			set = append(set, fmt.Sprintf("city = $%d", i))
+			args = append(args, *req.City)
+			i++
+		}
+		if req.Timezone != nil {
+			set = append(set, fmt.Sprintf("timezone = $%d", i))
+			args = append(args, *req.Timezone)
+			i++
+		}
+
+		if len(set) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "no fields to update"})
+			return
+		}
+
+		args = append(args, userID)
+		query := fmt.Sprintf(
+			`UPDATE "user" SET %s WHERE id = $%d RETURNING id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone`,
+			strings.Join(set, ", "), i,
+		)
+
+		var user pkg.User
+		if err := conn.QueryRow(c.Request.Context(), query, args...).Scan(
+			&user.Id, &user.Name, &user.Email, &user.Phone, &user.Time_created,
+			&user.Country_code, &user.Country_name, &user.Country_state, &user.City, &user.Timezone,
+		); err != nil {
+			if err == pgx.ErrNoRows {
+				c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, pkg.UserResponse{User: user})
+	}
+}
+
 // DeleteUser godoc
 // @Summary Excluir usuário
 // @Description Remove um usuário pelo ID
@@ -163,7 +267,7 @@ func UpdateUser(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id} [delete]
-func DeleteUser(conn *pgx.Conn) gin.HandlerFunc {
+func DeleteUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)

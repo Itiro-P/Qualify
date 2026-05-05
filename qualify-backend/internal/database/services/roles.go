@@ -4,10 +4,10 @@ import (
 	"context"
 	"main/pkg"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func CreateUser(ctx context.Context, conn *pgx.Conn, user *pkg.User) error {
+func CreateUser(ctx context.Context, conn *pgxpool.Pool, user *pkg.User) error {
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return err
@@ -38,7 +38,7 @@ func CreateUser(ctx context.Context, conn *pgx.Conn, user *pkg.User) error {
 // @Success 200 {object} pkg.User
 // @Failure 500 {object} map[string]string
 
-func AssignAnalystRole(ctx context.Context, conn *pgx.Conn, userID int, hourlyRate float64) (*pkg.Analyst, error) {
+func AssignAnalystRole(ctx context.Context, conn *pgxpool.Pool, userID int, hourlyRate float64) (*pkg.Analyst, error) {
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -99,7 +99,7 @@ func AssignAnalystRole(ctx context.Context, conn *pgx.Conn, userID int, hourlyRa
 // @Success 200 {object} pkg.Analyst
 // @Failure 500 {object} map[string]string
 
-func AssignClientRole(ctx context.Context, conn *pgx.Conn, userID int, proposedBudget float64) (*pkg.Client, error) {
+func AssignClientRole(ctx context.Context, conn *pgxpool.Pool, userID int, proposedBudget float64) (*pkg.Client, error) {
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return nil, err

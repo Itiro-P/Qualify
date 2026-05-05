@@ -78,6 +78,32 @@ definitions:
       count:
         type: integer
     type: object
+  pkg.AnalystUpdateRequest:
+    properties:
+      city:
+        type: string
+      country_code:
+        type: string
+      country_name:
+        type: string
+      country_state:
+        type: string
+      email:
+        type: string
+      hourly_rate:
+        type: number
+      mean_rating:
+        type: number
+      name:
+        description: Devemos deixar mudar o nome/email/telefone?
+        type: string
+      phone:
+        type: string
+      timezone:
+        type: string
+      total_reviews:
+        type: integer
+    type: object
   pkg.AnalystsResponse:
     properties:
       analysts:
@@ -102,6 +128,15 @@ definitions:
     properties:
       certification:
         $ref: '#/definitions/pkg.Certification'
+    type: object
+  pkg.CertificationUpdateRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+      year:
+        type: integer
     type: object
   pkg.CertificationsResponse:
     properties:
@@ -154,6 +189,28 @@ definitions:
       client:
         $ref: '#/definitions/pkg.Client'
     type: object
+  pkg.ClientUpdateRequest:
+    properties:
+      city:
+        type: string
+      country_code:
+        type: string
+      country_name:
+        type: string
+      country_state:
+        type: string
+      email:
+        type: string
+      name:
+        description: Devemos deixar mudar o nome/email/telefone?
+        type: string
+      phone:
+        type: string
+      proposed_budget:
+        type: number
+      timezone:
+        type: string
+    type: object
   pkg.ClientsResponse:
     properties:
       clients:
@@ -185,6 +242,15 @@ definitions:
       proposal_letter:
         $ref: '#/definitions/pkg.ProposalLetter'
     type: object
+  pkg.ProposalLetterUpdateRequest:
+    properties:
+      content:
+        type: string
+      proposed_hourly_rate:
+        type: number
+      title:
+        type: string
+    type: object
   pkg.ProposalLettersResponse:
     properties:
       count:
@@ -215,6 +281,13 @@ definitions:
     properties:
       review:
         $ref: '#/definitions/pkg.Review'
+    type: object
+  pkg.ReviewUpdateRequest:
+    properties:
+      comment:
+        type: string
+      rating:
+        type: integer
     type: object
   pkg.ReviewsResponse:
     properties:
@@ -250,6 +323,17 @@ definitions:
     properties:
       service:
         $ref: '#/definitions/pkg.Service'
+    type: object
+  pkg.ServiceUpdateRequest:
+    properties:
+      content:
+        type: string
+      hourly_rate:
+        type: number
+      status:
+        type: string
+      title:
+        type: string
     type: object
   pkg.ServicesResponse:
     properties:
@@ -321,6 +405,26 @@ definitions:
       user:
         $ref: '#/definitions/pkg.User'
     type: object
+  pkg.UserUpdateRequest:
+    properties:
+      city:
+        type: string
+      country_code:
+        type: string
+      country_name:
+        type: string
+      country_state:
+        type: string
+      email:
+        type: string
+      name:
+        description: Devemos deixar mudar o nome/email/telefone?
+        type: string
+      phone:
+        type: string
+      timezone:
+        type: string
+    type: object
 info:
   contact: {}
 paths:
@@ -350,6 +454,22 @@ paths:
         in: query
         name: max_hourly_rate
         type: number
+      - description: Quantidade mínima de avaliações totais
+        in: query
+        name: min_total_reviews
+        type: integer
+      - description: Avaliação média mínima
+        in: query
+        name: min_mean_rating
+        type: number
+      - description: 'Campo para ordenar: name,country_name,city,hourly_rate,total_reviews,mean_rating,time_created'
+        in: query
+        name: sort_by
+        type: string
+      - description: 'Direção: ASC ou DESC'
+        in: query
+        name: order
+        type: string
       produces:
       - application/json
       responses:
@@ -497,6 +617,50 @@ paths:
               type: string
             type: object
       summary: Obter certificação
+      tags:
+      - Certificações
+    patch:
+      consumes:
+      - application/json
+      description: Atualiza um ou mais campos da certificação pelo ID
+      parameters:
+      - description: ID da certificação
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto certificação
+        in: body
+        name: certification
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.CertificationUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.CertificationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Atualizar certificação parcialmente
       tags:
       - Certificações
     put:
@@ -733,6 +897,50 @@ paths:
       summary: Obter proposta
       tags:
       - Propostas
+    patch:
+      consumes:
+      - application/json
+      description: Atualiza um ou mais campos da proposta existente pelo ID
+      parameters:
+      - description: ID da proposta
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto proposta
+        in: body
+        name: proposal
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.ProposalLetterUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ProposalLetterResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Atualizar parcialmente proposta
+      tags:
+      - Propostas
     put:
       consumes:
       - application/json
@@ -943,6 +1151,50 @@ paths:
       summary: Obter avaliação
       tags:
       - Avaliações
+    patch:
+      consumes:
+      - application/json
+      description: Atualiza um ou mais campos da avaliação pelo ID
+      parameters:
+      - description: ID da avaliação
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto avaliação
+        in: body
+        name: review
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.ReviewUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ReviewResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Atualizar parcialmente avaliação
+      tags:
+      - Avaliações
     put:
       consumes:
       - application/json
@@ -1127,6 +1379,50 @@ paths:
               type: string
             type: object
       summary: Obter serviço
+      tags:
+      - Serviços
+    patch:
+      consumes:
+      - application/json
+      description: Atualiza um ou mais campos do serviço pelo ID
+      parameters:
+      - description: ID do serviço
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto serviço
+        in: body
+        name: service
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.ServiceUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ServiceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Atualizar parcialmente um serviço
       tags:
       - Serviços
     put:
@@ -1474,6 +1770,50 @@ paths:
       summary: Obter usuário
       tags:
       - Usuários
+    patch:
+      consumes:
+      - application/json
+      description: Atualiza um ou mais dados do usuário pelo ID
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto do usuário
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.UserUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Atualizar parcialmente um ou mais dados do usuário
+      tags:
+      - Usuários
     put:
       consumes:
       - application/json
@@ -1597,6 +1937,50 @@ paths:
       summary: Obter analista
       tags:
       - Analistas
+    patch:
+      consumes:
+      - application/json
+      description: Atualiza um ou mais campos do usuário/analista
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Campos opcionais para atualização
+        in: body
+        name: analyst
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.AnalystUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.AnalystResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Atualizar parcialmente um analista
+      tags:
+      - Analistas
     post:
       consumes:
       - application/json
@@ -1607,12 +1991,12 @@ paths:
         name: id
         required: true
         type: integer
-      - description: '{\'
+      - description: Objeto analista (envie apenas `hourly_rate`)
         in: body
-        name: hourly_rate
+        name: analyst
         required: true
         schema:
-          type: object
+          $ref: '#/definitions/pkg.Analyst'
       produces:
       - application/json
       responses:
@@ -2157,6 +2541,50 @@ paths:
               type: string
             type: object
       summary: Obter cliente
+      tags:
+      - Clientes
+    patch:
+      consumes:
+      - application/json
+      description: Atualiza um ou mais campos do usuário/cliente
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Campos opcionais para atualização
+        in: body
+        name: client
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.ClientUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ClientResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Atualizar parcialmente um cliente
       tags:
       - Clientes
     post:

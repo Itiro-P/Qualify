@@ -5,9 +5,11 @@ import (
 	"main/pkg"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // GetProposalLetters godoc
@@ -21,7 +23,7 @@ import (
 // @Success 200 {object} pkg.ProposalLettersResponse
 // @Failure 500 {object} map[string]string
 // @Router /proposals [get]
-func GetProposalLetters(conn *pgx.Conn) gin.HandlerFunc {
+func GetProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		query := `SELECT id, client_id, analyst_id, proposed_hourly_rate,
 		                 title, content, time_created
@@ -30,14 +32,18 @@ func GetProposalLetters(conn *pgx.Conn) gin.HandlerFunc {
 		argCounter := 1
 
 		if clientID := c.Query("client_id"); clientID != "" {
-			query += fmt.Sprintf(" AND client_id = $%d", argCounter)
-			args = append(args, clientID)
-			argCounter++
+			if clientIDVal, err := strconv.Atoi(clientID); err == nil {
+				query += fmt.Sprintf(" AND client_id = $%d", argCounter)
+				args = append(args, clientIDVal)
+				argCounter++
+			}
 		}
 		if analystID := c.Query("analyst_id"); analystID != "" {
-			query += fmt.Sprintf(" AND analyst_id = $%d", argCounter)
-			args = append(args, analystID)
-			argCounter++
+			if analystIDVal, err := strconv.Atoi(analystID); err == nil {
+				query += fmt.Sprintf(" AND analyst_id = $%d", argCounter)
+				args = append(args, analystIDVal)
+				argCounter++
+			}
 		}
 
 		query += " ORDER BY time_created DESC"
@@ -79,7 +85,7 @@ func GetProposalLetters(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /proposals/{id} [get]
-func GetProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
+func GetProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		proposalID, err := strconv.Atoi(id)
@@ -104,32 +110,6 @@ func GetProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		rows, err := conn.Query(c.Request.Context(),
-			`SELECT id, title, content, proposal_letter_id, hourly_rate, status, time_created
-			 FROM service WHERE proposal_letter_id = $1 ORDER BY time_created`, proposalID,
-		)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		defer rows.Close()
-
-		// Precisava disso?
-		var services []pkg.Service
-		for rows.Next() {
-			var s pkg.Service
-			if err := rows.Scan(&s.Id, &s.Title, &s.Content, &s.Proposal_letter_id,
-				&s.Hourly_rate, &s.Status, &s.Time_created); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-			services = append(services, s)
-		}
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
 		c.JSON(http.StatusOK, pkg.ProposalLetterResponse{Proposal_letter: p})
 	}
 }
@@ -145,7 +125,7 @@ func GetProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /proposals [post]
-func CreateProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
+func CreateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var proposal pkg.ProposalLetter
 		if err := c.BindJSON(&proposal); err != nil {
@@ -182,7 +162,7 @@ func CreateProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /proposals/{id} [put]
-func UpdateProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		proposalID, err := strconv.Atoi(id)
@@ -193,6 +173,12 @@ func UpdateProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 		var proposal pkg.ProposalLetter
 		if err := c.BindJSON(&proposal); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		// Validando parâmetros obrigatórios
+		if proposal.Title == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "proposal title is required"})
 			return
 		}
 
@@ -216,6 +202,81 @@ func UpdateProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 	}
 }
 
+// UpdateProposalLetterPartial godoc
+// @Summary Atualizar parcialmente proposta
+// @Description Atualiza um ou mais campos da proposta existente pelo ID
+// @Tags Propostas
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da proposta"
+// @Param proposal body pkg.ProposalLetterUpdateRequest true "Objeto proposta"
+// @Success 200 {object} pkg.ProposalLetterResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /proposals/{id} [patch]
+func UpdateProposalLetterPartial(conn *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		proposalID, err := strconv.Atoi(id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid proposal id"})
+			return
+		}
+		var proposal pkg.ProposalLetterUpdateRequest
+		if err := c.BindJSON(&proposal); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		set := []string{}
+		args := []interface{}{}
+		i := 1
+
+		if proposal.Title != nil {
+			set = append(set, fmt.Sprintf("title = $%d", i))
+			args = append(args, proposal.Title)
+			i++
+		}
+
+		if proposal.Content != nil {
+			set = append(set, fmt.Sprintf("content = $%d", i))
+			args = append(args, proposal.Content)
+			i++
+		}
+
+		if proposal.Proposed_hourly_rate != nil {
+			set = append(set, fmt.Sprintf("proposed_hourly_rate = $%d", i))
+			args = append(args, proposal.Proposed_hourly_rate)
+			i++
+		}
+
+		if len(set) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "no valid fields to update"})
+			return
+		}
+
+		query := fmt.Sprintf("UPDATE proposal_letter SET %s WHERE id = $%d RETURNING id, title, content, client_id, analyst_id, proposed_hourly_rate, time_created",
+			strings.Join(set, ", "), i)
+		args = append(args, proposalID)
+
+		var updatedProposal pkg.ProposalLetter
+		err = conn.QueryRow(c.Request.Context(), query, args...).
+			Scan(&updatedProposal.Title, &updatedProposal.Content, &updatedProposal.Proposed_hourly_rate)
+
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				c.JSON(http.StatusNotFound, gin.H{"error": "proposal letter not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, pkg.ProposalLetterResponse{Proposal_letter: updatedProposal})
+	}
+}
+
 // DeleteProposalLetter godoc
 // @Summary Excluir proposta
 // @Description Remove uma proposta pelo ID
@@ -228,7 +289,7 @@ func UpdateProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /proposals/{id} [delete]
-func DeleteProposalLetter(conn *pgx.Conn) gin.HandlerFunc {
+func DeleteProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		proposalID, err := strconv.Atoi(id)

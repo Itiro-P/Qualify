@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Skill Handlers
@@ -23,7 +24,7 @@ import (
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /skills [get]
-func GetSkills(conn *pgx.Conn) gin.HandlerFunc {
+func GetSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		query := `SELECT id, name FROM skill WHERE 1=1`
 		args := []interface{}{}
@@ -75,7 +76,7 @@ func GetSkills(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /skills/{id} [get]
-func GetSkill(conn *pgx.Conn) gin.HandlerFunc {
+func GetSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		skillID, err := strconv.Atoi(id)
@@ -112,7 +113,7 @@ func GetSkill(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /skills [post]
-func CreateSkill(conn *pgx.Conn) gin.HandlerFunc {
+func CreateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var skill pkg.Skill
 		if err := c.BindJSON(&skill); err != nil {
@@ -149,7 +150,7 @@ func CreateSkill(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /skills/{id} [put]
-func UpdateSkill(conn *pgx.Conn) gin.HandlerFunc {
+func UpdateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		skillID, err := strconv.Atoi(id)
@@ -160,6 +161,12 @@ func UpdateSkill(conn *pgx.Conn) gin.HandlerFunc {
 		var skill pkg.Skill
 		if err := c.BindJSON(&skill); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		// Validando parâmetros obrigatórios
+		if skill.Name == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "skill name is required"})
 			return
 		}
 
@@ -195,7 +202,7 @@ func UpdateSkill(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /skills/{id} [delete]
-func DeleteSkill(conn *pgx.Conn) gin.HandlerFunc {
+func DeleteSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		skillID, err := strconv.Atoi(id)
@@ -234,7 +241,7 @@ func DeleteSkill(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/analyst/skills [get]
-func GetAnalystSkills(conn *pgx.Conn) gin.HandlerFunc {
+func GetAnalystSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		analystID := c.Param("id")
 		analystIDVal, err := strconv.Atoi(analystID)
@@ -289,7 +296,7 @@ func GetAnalystSkills(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/analyst/skills/ [post]
-func CreateAnalystSkill(conn *pgx.Conn) gin.HandlerFunc {
+func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		analystID, err := strconv.Atoi(id)
@@ -305,7 +312,7 @@ func CreateAnalystSkill(conn *pgx.Conn) gin.HandlerFunc {
 		}
 		as.Analyst_id = analystID
 
-		// Validate that analyst exists
+		// Validando parâmetros obrigatórios
 		var analystExists bool
 		err = conn.QueryRow(c.Request.Context(),
 			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, as.Analyst_id,
@@ -319,7 +326,6 @@ func CreateAnalystSkill(conn *pgx.Conn) gin.HandlerFunc {
 			return
 		}
 
-		// Validate that skill exists
 		var skillExists bool
 		err = conn.QueryRow(c.Request.Context(),
 			`SELECT EXISTS(SELECT 1 FROM skill WHERE id = $1)`, as.Skill_id,
@@ -357,7 +363,7 @@ func CreateAnalystSkill(conn *pgx.Conn) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/{id}/analyst/skills/ [delete]
-func DeleteAnalystSkill(conn *pgx.Conn) gin.HandlerFunc {
+func DeleteAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.Param("id")
 		userIDVal, err := strconv.Atoi(userID)

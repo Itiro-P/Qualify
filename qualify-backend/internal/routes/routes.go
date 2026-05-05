@@ -4,10 +4,12 @@ import (
 	"main/internal/database/handlers"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
+func SetupRoutes(router *gin.Engine, conn *pgxpool.Pool) {
 	// Users are the base entity. Roles are assigned as nested sub-resources.
 	users := router.Group("/users")
 	{
@@ -17,6 +19,7 @@ func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
 		user := users.Group("/:id")
 		{
 			user.PUT("", handlers.UpdateUser(conn))
+			user.PATCH("", handlers.UpdateUserPartial(conn))
 			user.DELETE("", handlers.DeleteUser(conn))
 
 			// User-owned profile/sub-resources
@@ -31,6 +34,7 @@ func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
 				analystRole.POST("", handlers.CreateAnalyst(conn))
 				analystRole.GET("", handlers.GetAnalyst(conn))
 				analystRole.PUT("", handlers.UpdateAnalyst(conn))
+				analystRole.PATCH("", handlers.UpdateAnalystPartial(conn))
 				analystRole.DELETE("", handlers.DeleteAnalyst(conn))
 				// Analyst-specific sub-resources
 
@@ -52,6 +56,7 @@ func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
 				clientRole.POST("", handlers.CreateClient(conn))
 				clientRole.GET("", handlers.GetClient(conn))
 				clientRole.PUT("", handlers.UpdateClient(conn))
+				clientRole.PATCH("", handlers.UpdateClientPartial(conn))
 				clientRole.DELETE("", handlers.DeleteClient(conn))
 
 				// Client-specific sub-resources
@@ -73,6 +78,7 @@ func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
 		reviews.GET("/:id", handlers.GetReview(conn))
 		reviews.POST("", handlers.CreateReview(conn))
 		reviews.PUT("/:id", handlers.UpdateReview(conn))
+		reviews.PATCH("/:id", handlers.UpdateReviewPartial(conn))
 		reviews.DELETE("/:id", handlers.DeleteReview(conn))
 	}
 
@@ -82,6 +88,7 @@ func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
 		proposals.GET("/:id", handlers.GetProposalLetter(conn))
 		proposals.POST("", handlers.CreateProposalLetter(conn))
 		proposals.PUT("/:id", handlers.UpdateProposalLetter(conn))
+		proposals.PATCH("/:id", handlers.UpdateProposalLetterPartial(conn))
 		proposals.DELETE("/:id", handlers.DeleteProposalLetter(conn))
 	}
 
@@ -91,6 +98,7 @@ func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
 		services.GET("/:id", handlers.GetService(conn))
 		services.POST("", handlers.CreateService(conn))
 		services.PUT("/:id", handlers.UpdateService(conn))
+		services.PATCH("/:id", handlers.UpdateServicePartial(conn))
 		services.DELETE("/:id", handlers.DeleteService(conn))
 	}
 
@@ -105,8 +113,13 @@ func SetupRoutes(router *gin.Engine, conn *pgx.Conn) {
 	certifications := router.Group("/certifications")
 	{
 		certifications.GET("", handlers.GetCertifications(conn))
+		certifications.GET("/:id", handlers.GetCertification(conn))
 		certifications.POST("", handlers.CreateCertification(conn))
 		certifications.PUT("/:id", handlers.UpdateCertification(conn))
+		certifications.PATCH("/:id", handlers.UpdateCertificationPartial(conn))
 		certifications.DELETE("/:id", handlers.DeleteCertification(conn))
 	}
+
+	// swagger
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
