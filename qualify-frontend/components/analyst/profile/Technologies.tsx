@@ -1,5 +1,5 @@
 import { Settings } from "lucide-react";
-import { ITechnology } from "@/types/analyst/technology";
+import { ITechnology } from "@/types/analyst/profile/technology";
 
 const technologiesCardsVector: ITechnology[] = [
   {
