@@ -7,6 +7,15 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// CreateUser godoc
+// @Summary Criar usuário (serviço)
+// @Description Insere um novo usuário no banco de dados. Função de serviço usada pelos handlers.
+// @Tags Serviços
+// @Accept json
+// @Produce json
+// @Param user body pkg.User true "Objeto do usuário"
+// @Success 200 {object} pkg.User
+// @Failure 500 {object} map[string]string
 func CreateUser(ctx context.Context, conn *pgxpool.Pool, user *pkg.User) error {
 	tx, err := conn.Begin(ctx)
 	if err != nil {
@@ -28,16 +37,16 @@ func CreateUser(ctx context.Context, conn *pgxpool.Pool, user *pkg.User) error {
 	return tx.Commit(ctx)
 }
 
-// CreateUser godoc
-// @Summary Criar usuário (serviço)
-// @Description Insere um novo usuário no banco de dados. Função de serviço usada pelos handlers.
+// AssignAnalystRole godoc
+// @Summary Atribuir papel de analista (serviço)
+// @Description Atribui o papel de analista a um usuário existente e retorna o registro do analista.
 // @Tags Serviços
 // @Accept json
 // @Produce json
-// @Param user body pkg.User true "Objeto do usuário"
-// @Success 200 {object} pkg.User
+// @Param userID path int true "ID do usuário"
+// @Param hourlyRate query number true "Valor por hora"
+// @Success 200 {object} pkg.Analyst
 // @Failure 500 {object} map[string]string
-
 func AssignAnalystRole(ctx context.Context, conn *pgxpool.Pool, userID int, hourlyRate float64) (*pkg.Analyst, error) {
 	tx, err := conn.Begin(ctx)
 	if err != nil {
@@ -88,17 +97,16 @@ func AssignAnalystRole(ctx context.Context, conn *pgxpool.Pool, userID int, hour
 	return &analyst, nil
 }
 
-// AssignAnalystRole godoc
-// @Summary Atribuir papel de analista (serviço)
-// @Description Atribui o papel de analista a um usuário existente e retorna o registro do analista.
+// AssignClientRole godoc
+// @Summary Atribuir papel de cliente (serviço)
+// @Description Atribui o papel de cliente a um usuário existente e retorna o registro do cliente.
 // @Tags Serviços
 // @Accept json
 // @Produce json
 // @Param userID path int true "ID do usuário"
-// @Param hourlyRate query number true "Valor por hora"
-// @Success 200 {object} pkg.Analyst
+// @Param proposedBudget query number true "Orçamento proposto"
+// @Success 200 {object} pkg.Client
 // @Failure 500 {object} map[string]string
-
 func AssignClientRole(ctx context.Context, conn *pgxpool.Pool, userID int, proposedBudget float64) (*pkg.Client, error) {
 	tx, err := conn.Begin(ctx)
 	if err != nil {
@@ -146,14 +154,3 @@ func AssignClientRole(ctx context.Context, conn *pgxpool.Pool, userID int, propo
 
 	return &client, nil
 }
-
-// AssignClientRole godoc
-// @Summary Atribuir papel de cliente (serviço)
-// @Description Atribui o papel de cliente a um usuário existente e retorna o registro do cliente.
-// @Tags Serviços
-// @Accept json
-// @Produce json
-// @Param userID path int true "ID do usuário"
-// @Param proposedBudget query number true "Orçamento proposto"
-// @Success 200 {object} pkg.Client
-// @Failure 500 {object} map[string]string
