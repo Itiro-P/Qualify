@@ -362,7 +362,7 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /users/{id}/analyst/skills/ [delete]
+// @Router /users/{id}/analyst/skills [delete]
 func DeleteAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.Param("id")

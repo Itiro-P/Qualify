@@ -223,32 +223,31 @@ func UpdateProposalLetterPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid proposal id"})
 			return
 		}
-		var proposal pkg.ProposalLetterUpdateRequest
-		if err := c.BindJSON(&proposal); err != nil {
+
+		var req pkg.ProposalLetterUpdateRequest
+		if err := c.BindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			return
 		}
 
 		set := []string{}
 		args := []interface{}{}
-		i := 1
+		argID := 1
 
-		if proposal.Title != nil {
-			set = append(set, fmt.Sprintf("title = $%d", i))
-			args = append(args, proposal.Title)
-			i++
+		if req.Title != nil {
+			set = append(set, fmt.Sprintf("title = $%d", argID))
+			args = append(args, *req.Title)
+			argID++
 		}
-
-		if proposal.Content != nil {
-			set = append(set, fmt.Sprintf("content = $%d", i))
-			args = append(args, proposal.Content)
-			i++
+		if req.Content != nil {
+			set = append(set, fmt.Sprintf("content = $%d", argID))
+			args = append(args, *req.Content)
+			argID++
 		}
-
-		if proposal.Proposed_hourly_rate != nil {
-			set = append(set, fmt.Sprintf("proposed_hourly_rate = $%d", i))
-			args = append(args, proposal.Proposed_hourly_rate)
-			i++
+		if req.Proposed_hourly_rate != nil {
+			set = append(set, fmt.Sprintf("proposed_hourly_rate = $%d", argID))
+			args = append(args, *req.Proposed_hourly_rate)
+			argID++
 		}
 
 		if len(set) == 0 {
@@ -256,24 +255,34 @@ func UpdateProposalLetterPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		query := fmt.Sprintf("UPDATE proposal_letter SET %s WHERE id = $%d RETURNING id, title, content, client_id, analyst_id, proposed_hourly_rate, time_created",
-			strings.Join(set, ", "), i)
+		// Adiciona o ID como último argumento
 		args = append(args, proposalID)
+		query := fmt.Sprintf(
+			"UPDATE proposal_letter SET %s WHERE id = $%d RETURNING id, title, content, client_id, analyst_id, proposed_hourly_rate, time_created",
+			strings.Join(set, ", "), argID,
+		)
 
-		var updatedProposal pkg.ProposalLetter
-		err = conn.QueryRow(c.Request.Context(), query, args...).
-			Scan(&updatedProposal.Title, &updatedProposal.Content, &updatedProposal.Proposed_hourly_rate)
+		var p pkg.ProposalLetter
+		err = conn.QueryRow(c.Request.Context(), query, args...).Scan(
+			&p.Id,
+			&p.Title,
+			&p.Content,
+			&p.Client_id,
+			&p.Analyst_id,
+			&p.Proposed_hourly_rate,
+			&p.Time_created,
+		)
 
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, gin.H{"error": "proposal letter not found"})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
 			return
 		}
 
-		c.JSON(http.StatusOK, pkg.ProposalLetterResponse{Proposal_letter: updatedProposal})
+		c.JSON(http.StatusOK, gin.H{"proposal_letter": p})
 	}
 }
 

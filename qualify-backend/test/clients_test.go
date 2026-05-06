@@ -16,36 +16,36 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var clients = []pkg.Client{
-	{
-		User: pkg.User{
-			Name:          "Marcos Calvaro",
-			Email:         "markos@utfpr.edu.br",
-			Phone:         "41999999989",
-			Country_code:  "BR",
-			Country_name:  "Brazil",
-			Country_state: "PR",
-			City:          "Campo Mourão",
-			Timezone:      "America/Sao_Paulo",
-		},
-		Proposed_budget: 100.0,
-	},
-	{
-		User: pkg.User{
-			Name:          "Frank",
-			Email:         "frank@utfpr.edu.br",
-			Phone:         "41969696969",
-			Country_code:  "RO",
-			Country_name:  "Romania",
-			Country_state: "AA",
-			City:          "Bucareste",
-			Timezone:      "America/Sao_Paulo",
-		},
-		Proposed_budget: 69.0,
-	},
-}
-
 func TestClient(t *testing.T) {
+	var clients = []pkg.Client{
+		{
+			User: pkg.User{
+				Name:          "Marcos Calvaro",
+				Email:         "markos@utfpr.edu.br",
+				Phone:         "41999999989",
+				Country_code:  "BR",
+				Country_name:  "Brazil",
+				Country_state: "PR",
+				City:          "Campo Mourão",
+				Timezone:      "America/Sao_Paulo",
+			},
+			Proposed_budget: 100.0,
+		},
+		{
+			User: pkg.User{
+				Name:          "Frank do Tank",
+				Email:         "frank@utfpr.edu.br",
+				Phone:         "41969696969",
+				Country_code:  "RO",
+				Country_name:  "Romania",
+				Country_state: "AA",
+				City:          "Bucareste",
+				Timezone:      "America/Sao_Paulo",
+			},
+			Proposed_budget: 69.0,
+		},
+	}
+
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 

@@ -16,100 +16,100 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var analysts = []pkg.Analyst{
-	{
-		User: pkg.User{
-			Name:          "Reginaldo Ré",
-			Email:         "reginaldo@utfpr.edu.br",
-			Phone:         "41999999999",
-			Country_code:  "BR",
-			Country_name:  "Brazil",
-			Country_state: "PR",
-			City:          "Campo Mourão",
-			Timezone:      "America/Sao_Paulo",
-		},
-		Hourly_rate:   100.0,
-		Total_reviews: 10,
-		Mean_rating:   ToPtrFloat64(4.5),
-	},
-	{
-		User: pkg.User{
-			Name:          "John Xina",
-			Email:         "xina@utfpr.edu.br",
-			Phone:         "41969696969",
-			Country_code:  "CN",
-			Country_name:  "China",
-			Country_state: "Beijing",
-			City:          "Beijing",
-			Timezone:      "Asia/Shanghai",
-		},
-		Hourly_rate:   69.0,
-		Total_reviews: 5,
-		Mean_rating:   ToPtrFloat64(4.2),
-	},
-	{
-		User: pkg.User{
-			Name:          "Ivanilton Pelado",
-			Email:         "nudismo@utfpr.edu.br",
-			Phone:         "44999999999",
-			Country_code:  "BR",
-			Country_name:  "Brazil",
-			Country_state: "PR",
-			City:          "Campo Mourão",
-			Timezone:      "America/Sao_Paulo",
-		},
-		Hourly_rate:   67.0,
-		Total_reviews: 60,
-		Mean_rating:   ToPtrFloat64(3.9),
-	},
-	{
-		User: pkg.User{
-			Name:          "João Paumolence",
-			Email:         "joaum@utfpr.edu.br",
-			Phone:         "44999990000",
-			Country_code:  "BR",
-			Country_name:  "Brazil",
-			Country_state: "PR",
-			City:          "Roncador",
-			Timezone:      "America/Sao_Paulo",
-		},
-		Hourly_rate:   57.0,
-		Total_reviews: 30,
-		Mean_rating:   ToPtrFloat64(4.0),
-	},
-	{
-		User: pkg.User{
-			Name:          "Alex do Durex",
-			Email:         "alex@utfpr.edu.br",
-			Phone:         "44999690000",
-			Country_code:  "BR",
-			Country_name:  "Brazil",
-			Country_state: "PR",
-			City:          "Campo Mourão",
-			Timezone:      "America/Sao_Paulo",
-		},
-		Hourly_rate:   50.0,
-		Total_reviews: 25,
-		Mean_rating:   ToPtrFloat64(4.0),
-	},
-	{
-		User: pkg.User{
-			Name:          "Rodrigo do Piolho",
-			Email:         "rodrigo@utfpr.edu.br",
-			Phone:         "44999690000",
-			Country_code:  "BR",
-			Country_name:  "Brazil",
-			Country_state: "GO",
-			City:          "Goiânia",
-			Timezone:      "America/Sao_Paulo",
-		},
-		Hourly_rate:   128.0,
-		Total_reviews: 28,
-		Mean_rating:   ToPtrFloat64(1.6),
-	},
-}
-
 func TestAnalyst(t *testing.T) {
+	var analysts = []pkg.Analyst{
+		{
+			User: pkg.User{
+				Name:          "Reginaldo Ré",
+				Email:         "reginaldo@utfpr.edu.br",
+				Phone:         "41999999999",
+				Country_code:  "BR",
+				Country_name:  "Brazil",
+				Country_state: "PR",
+				City:          "Campo Mourão",
+				Timezone:      "America/Sao_Paulo",
+			},
+			Hourly_rate:   100.0,
+			Total_reviews: 10,
+			Mean_rating:   ToPtrFloat64(4.5),
+		},
+		{
+			User: pkg.User{
+				Name:          "John Xina",
+				Email:         "xina@utfpr.edu.br",
+				Phone:         "41969696969",
+				Country_code:  "CN",
+				Country_name:  "China",
+				Country_state: "Beijing",
+				City:          "Beijing",
+				Timezone:      "Asia/Shanghai",
+			},
+			Hourly_rate:   69.0,
+			Total_reviews: 5,
+			Mean_rating:   ToPtrFloat64(4.2),
+		},
+		{
+			User: pkg.User{
+				Name:          "Ivanilton Pelado",
+				Email:         "nudismo@utfpr.edu.br",
+				Phone:         "44999999999",
+				Country_code:  "BR",
+				Country_name:  "Brazil",
+				Country_state: "PR",
+				City:          "Campo Mourão",
+				Timezone:      "America/Sao_Paulo",
+			},
+			Hourly_rate:   67.0,
+			Total_reviews: 60,
+			Mean_rating:   ToPtrFloat64(3.9),
+		},
+		{
+			User: pkg.User{
+				Name:          "João Paumolence",
+				Email:         "joaum@utfpr.edu.br",
+				Phone:         "44999990000",
+				Country_code:  "BR",
+				Country_name:  "Brazil",
+				Country_state: "PR",
+				City:          "Roncador",
+				Timezone:      "America/Sao_Paulo",
+			},
+			Hourly_rate:   57.0,
+			Total_reviews: 30,
+			Mean_rating:   ToPtrFloat64(4.0),
+		},
+		{
+			User: pkg.User{
+				Name:          "Alex do Durex",
+				Email:         "alex@utfpr.edu.br",
+				Phone:         "44999690000",
+				Country_code:  "BR",
+				Country_name:  "Brazil",
+				Country_state: "PR",
+				City:          "Campo Mourão",
+				Timezone:      "America/Sao_Paulo",
+			},
+			Hourly_rate:   50.0,
+			Total_reviews: 25,
+			Mean_rating:   ToPtrFloat64(4.0),
+		},
+		{
+			User: pkg.User{
+				Name:          "Rodrigo do Piolho",
+				Email:         "rodrigo@utfpr.edu.br",
+				Phone:         "44999690000",
+				Country_code:  "BR",
+				Country_name:  "Brazil",
+				Country_state: "GO",
+				City:          "Goiânia",
+				Timezone:      "America/Sao_Paulo",
+			},
+			Hourly_rate:   128.0,
+			Total_reviews: 28,
+			Mean_rating:   ToPtrFloat64(1.6),
+		},
+	}
+
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 

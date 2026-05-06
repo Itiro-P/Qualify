@@ -14,35 +14,35 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var certifications = []pkg.Certification{
-	{
-		Name:        "Mestrado em Teste Baseado em Aspectos",
-		Description: "Que aspectos?",
-		Year:        1900,
-	},
-	{
-		Name:        "Certificado de Sobrevivência em Reuniões Infinitas",
-		Description: "Participou e saiu vivo de uma maratona de reuniões.",
-		Year:        2024,
-	},
-	{
-		Name:        "Especialista em Copiar/Colar Estratégico",
-		Description: "Domina o Ctrl+C/Ctrl+V com elegância.",
-		Year:        2023,
-	},
-	{
-		Name:        "Mestre em Café e Debug",
-		Description: "Resolve bugs consistentemente após a terceira xícara.",
-		Year:        2025,
-	},
-	{
-		Name:        "Ninja do Merge sem Conflito",
-		Description: "Resolve conflitos de git com silêncio e honra.",
-		Year:        2022,
-	},
-}
-
 func TestCertifications(t *testing.T) {
+	var certifications = []pkg.Certification{
+		{
+			Name:        "Mestrado em Teste Baseado em Aspectos",
+			Description: "Que aspectos?",
+			Year:        1900,
+		},
+		{
+			Name:        "Certificado de Sobrevivência em Reuniões Infinitas",
+			Description: "Participou e saiu vivo de uma maratona de reuniões.",
+			Year:        2024,
+		},
+		{
+			Name:        "Especialista em Copiar/Colar Estratégico",
+			Description: "Domina o Ctrl+C/Ctrl+V com elegância.",
+			Year:        2023,
+		},
+		{
+			Name:        "Mestre em Café e Debug",
+			Description: "Resolve bugs consistentemente após a terceira xícara.",
+			Year:        2025,
+		},
+		{
+			Name:        "Ninja do Merge sem Conflito",
+			Description: "Resolve conflitos de git com silêncio e honra.",
+			Year:        2022,
+		},
+	}
+
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 
