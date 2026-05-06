@@ -856,6 +856,58 @@ const docTemplate = `{
                 }
             }
         },
+        "/register": {
+            "post": {
+                "description": "Registra e cria um novo usuário",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Usuários"
+                ],
+                "summary": "Criar usuário",
+                "parameters": [
+                    {
+                        "description": "Objeto do usuário",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/pkg.UserRegister"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.UserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/reviews": {
             "get": {
                 "description": "Retorna avaliações com filtros e paginação",
@@ -1851,58 +1903,6 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/users": {
-            "post": {
-                "description": "Cria um novo usuário",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Usuários"
-                ],
-                "summary": "Criar usuário",
-                "parameters": [
-                    {
-                        "description": "Objeto do usuário",
-                        "name": "user",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/pkg.User"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.UserResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -2954,9 +2954,7 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/users/{id}/analyst/skills/": {
+            },
             "post": {
                 "description": "Cria uma nova habilidade para um analista pelo ID e ID da habilidade",
                 "consumes": [
@@ -4063,6 +4061,9 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "institution": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -4083,6 +4084,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "description": {
+                    "type": "string"
+                },
+                "institution": {
                     "type": "string"
                 },
                 "name": {
@@ -4479,6 +4483,21 @@ const docTemplate = `{
                 }
             }
         },
+        "pkg.UserLogin": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
         "pkg.UserProfile": {
             "type": "object",
             "properties": {
@@ -4495,6 +4514,49 @@ const docTemplate = `{
             "properties": {
                 "user_profile": {
                     "$ref": "#/definitions/pkg.UserProfile"
+                }
+            }
+        },
+        "pkg.UserRegister": {
+            "type": "object",
+            "required": [
+                "city",
+                "country_code",
+                "country_name",
+                "country_state",
+                "email",
+                "name",
+                "password",
+                "phone",
+                "timezone"
+            ],
+            "properties": {
+                "city": {
+                    "type": "string"
+                },
+                "country_code": {
+                    "type": "string"
+                },
+                "country_name": {
+                    "type": "string"
+                },
+                "country_state": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "timezone": {
+                    "type": "string"
                 }
             }
         },
