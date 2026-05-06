@@ -5,12 +5,14 @@ type Certification struct {
 	Name        string `json:"name"`
 	Year        int    `json:"year"`
 	Description string `json:"description"`
+	Institution string `json:"institution"`
 }
 
 type CertificationUpdateRequest struct {
 	Name        *string `json:"name,omitempty"`
 	Year        *int    `json:"year,omitempty"`
 	Description *string `json:"description,omitempty"`
+	Institution *string `json:"institution,omitempty"`
 }
 
 type CertificationsResponse struct {

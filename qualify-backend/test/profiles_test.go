@@ -15,33 +15,39 @@ import (
 )
 
 func TestProfile(t *testing.T) {
+	var analystUser = pkg.UserRegister{
+		Name:          "Reginaldo Ré",
+		Email:         "reginaldo@utfpr.edu.br",
+		Password:      "aabbccddee",
+		Phone:         "41999999999",
+		Country_code:  "BR",
+		Country_name:  "Brazil",
+		Country_state: "PR",
+		City:          "Campo Mourão",
+		Timezone:      "America/Sao_Paulo",
+	}
+
 	var analyst = pkg.Analyst{
-		User: pkg.User{
-			Name:          "Reginaldo Ré",
-			Email:         "reginaldo@utfpr.edu.br",
-			Phone:         "41999999999",
-			Country_code:  "BR",
-			Country_name:  "Brazil",
-			Country_state: "PR",
-			City:          "Campo Mourão",
-			Timezone:      "America/Sao_Paulo",
-		},
+		User:          pkg.User{},
 		Hourly_rate:   100.0,
 		Total_reviews: 10,
 		Mean_rating:   ToPtrFloat64(4.5),
 	}
 
+	var clientUser = pkg.UserRegister{
+		Name:          "Marcos Calvaro",
+		Email:         "markos@utfpr.edu.br",
+		Password:      "aabbccddee",
+		Phone:         "41999999989",
+		Country_code:  "BR",
+		Country_name:  "Brazil",
+		Country_state: "PR",
+		City:          "Campo Mourão",
+		Timezone:      "America/Sao_Paulo",
+	}
+
 	var client = pkg.Client{
-		User: pkg.User{
-			Name:          "Marcos Calvaro",
-			Email:         "markos@utfpr.edu.br",
-			Phone:         "41999999989",
-			Country_code:  "BR",
-			Country_name:  "Brazil",
-			Country_state: "PR",
-			City:          "Campo Mourão",
-			Timezone:      "America/Sao_Paulo",
-		},
+		User:            pkg.User{},
 		Proposed_budget: 100.0,
 	}
 
@@ -66,8 +72,8 @@ func TestProfile(t *testing.T) {
 
 	t.Run("Criando perfil de analista", func(t *testing.T) {
 		// Primeiro, criamos o usuário associado ao analista
-		body, _ := json.Marshal(analyst.User)
-		targetURL := "/users"
+		body, _ := json.Marshal(analystUser)
+		targetURL := "/register"
 
 		req := httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
@@ -161,8 +167,8 @@ func TestProfile(t *testing.T) {
 
 	t.Run("Criando perfil de cliente", func(t *testing.T) {
 		// Primeiro, criamos o usuário associado ao cliente
-		body, _ := json.Marshal(client.User)
-		targetURL := "/users"
+		body, _ := json.Marshal(clientUser)
+		targetURL := "/register"
 
 		req := httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")

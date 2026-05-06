@@ -15,17 +15,19 @@ import (
 )
 
 func TestSkill(t *testing.T) {
+	var analystUser = pkg.UserRegister{
+		Name:          "Reginaldo Rézinho ain",
+		Email:         "reginald0o@utfpr.edu.br",
+		Password:      "aabbccddee",
+		Phone:         "41999956799",
+		Country_code:  "BR",
+		Country_name:  "Brazil",
+		Country_state: "PR",
+		City:          "Campo Mourão",
+		Timezone:      "America/Sao_Paulo",
+	}
 	var analyst = pkg.Analyst{
-		User: pkg.User{
-			Name:          "Reginaldo Rézinho ain",
-			Email:         "reginald0o@utfpr.edu.br",
-			Phone:         "41999956799",
-			Country_code:  "BR",
-			Country_name:  "Brazil",
-			Country_state: "PR",
-			City:          "Campo Mourão",
-			Timezone:      "America/Sao_Paulo",
-		},
+		User:          pkg.User{},
 		Hourly_rate:   100.0,
 		Total_reviews: 10,
 		Mean_rating:   ToPtrFloat64(4.5),
@@ -46,8 +48,8 @@ func TestSkill(t *testing.T) {
 
 	t.Run("Criando perfil de analista", func(t *testing.T) {
 		// Primeiro, criamos o usuário associado ao analista
-		body, _ := json.Marshal(analyst.User)
-		targetURL := "/users"
+		body, _ := json.Marshal(analystUser)
+		targetURL := "/register"
 
 		req := httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")

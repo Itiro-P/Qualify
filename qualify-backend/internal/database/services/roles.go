@@ -14,7 +14,7 @@ import (
 // @Accept json
 // @Produce json
 // @Param user body pkg.User true "Objeto do usuário"
-// @Success 200 {object} pkg.User
+// @Success 200 {object} pkg.UserRegister
 // @Failure 500 {object} map[string]string
 func CreateUser(ctx context.Context, conn *pgxpool.Pool, user *pkg.User) error {
 	tx, err := conn.Begin(ctx)
@@ -25,12 +25,28 @@ func CreateUser(ctx context.Context, conn *pgxpool.Pool, user *pkg.User) error {
 		_ = tx.Rollback(ctx)
 	}()
 
-	if err := tx.QueryRow(ctx,
-		`INSERT INTO "user" (name, email, phone, country_code, country_name, country_state, city, timezone)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		 RETURNING id, time_created`,
-		user.Name, user.Email, user.Phone, user.Country_code, user.Country_name, user.Country_state, user.City, user.Timezone).
-		Scan(&user.Id, &user.Time_created); err != nil {
+	// Adicionamos password_hash na lista de colunas e no VALUES ($9)
+	query := `
+        INSERT INTO "user" (
+            name, email, phone, country_code, country_name, 
+            country_state, city, timezone, password_hash
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING id, time_created`
+
+	err = tx.QueryRow(ctx, query,
+		user.Name,
+		user.Email,
+		user.Phone,
+		user.Country_code,
+		user.Country_name,
+		user.Country_state,
+		user.City,
+		user.Timezone,
+		user.Password_hash,
+	).Scan(&user.Id, &user.Time_created)
+
+	if err != nil {
 		return err
 	}
 

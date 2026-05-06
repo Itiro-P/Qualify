@@ -15,33 +15,38 @@ import (
 )
 
 func TestService(t *testing.T) {
+	var analystUser = pkg.UserRegister{
+		Name:          "Reginaldo Caminhos 8=D",
+		Email:         "reginaldo00@utfpr.edu.br",
+		Password:      "aabbccddee",
+		Phone:         "41239999999",
+		Country_code:  "BR",
+		Country_name:  "Brazil",
+		Country_state: "PR",
+		City:          "Campo Mourão",
+		Timezone:      "America/Sao_Paulo",
+	}
+
+	var clientUser = pkg.UserRegister{
+		Name:          "Alyssa Min Ha Lynguissa",
+		Email:         "alyssaaa@utfpr.edu.br",
+		Password:      "aabbccddee",
+		Phone:         "41965999556",
+		Country_code:  "BR",
+		Country_name:  "Brazil",
+		Country_state: "PR",
+		City:          "Campo Mourão",
+		Timezone:      "America/Sao_Paulo",
+	}
 	var analyst = pkg.Analyst{
-		User: pkg.User{
-			Name:          "Reginaldo Caminhos 8=D",
-			Email:         "reginaldo00@utfpr.edu.br",
-			Phone:         "41239999999",
-			Country_code:  "BR",
-			Country_name:  "Brazil",
-			Country_state: "PR",
-			City:          "Campo Mourão",
-			Timezone:      "America/Sao_Paulo",
-		},
+		User:          pkg.User{},
 		Hourly_rate:   100.0,
 		Total_reviews: 10,
 		Mean_rating:   ToPtrFloat64(4.5),
 	}
 
 	var client = pkg.Client{
-		User: pkg.User{
-			Name:          "Alyssa Lynguissa",
-			Email:         "alyssaaa@utfpr.edu.br",
-			Phone:         "41965999556",
-			Country_code:  "BR",
-			Country_name:  "Brazil",
-			Country_state: "PR",
-			City:          "Campo Mourão",
-			Timezone:      "America/Sao_Paulo",
-		},
+		User:            pkg.User{},
 		Proposed_budget: 112.0,
 	}
 
@@ -64,8 +69,8 @@ func TestService(t *testing.T) {
 
 	t.Run("Criando serviço", func(t *testing.T) {
 		// Primeiro, criamos o usuário associado ao analista
-		body, _ := json.Marshal(analyst.User)
-		targetURL := "/users"
+		body, _ := json.Marshal(analystUser)
+		targetURL := "/register"
 
 		req := httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
@@ -105,7 +110,7 @@ func TestService(t *testing.T) {
 		analyst = analystResponse.Analyst
 
 		// Criamos o usuário associado ao cliente
-		body, _ = json.Marshal(client.User)
+		body, _ = json.Marshal(clientUser)
 		targetURL = "/users"
 
 		req = httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))

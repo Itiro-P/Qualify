@@ -24,7 +24,7 @@ import (
 func GetCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		rows, err := conn.Query(c.Request.Context(),
-			`SELECT id, name, year, description FROM certification ORDER BY year DESC`,
+			`SELECT id, name, year, description, institution FROM certification ORDER BY year DESC`,
 		)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -35,7 +35,7 @@ func GetCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 		var certs []pkg.Certification
 		for rows.Next() {
 			var cert pkg.Certification
-			if err := rows.Scan(&cert.Id, &cert.Name, &cert.Year, &cert.Description); err != nil {
+			if err := rows.Scan(&cert.Id, &cert.Name, &cert.Year, &cert.Description, &cert.Institution); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao escanear certificação: " + err.Error()})
 				return
 			}
@@ -75,8 +75,8 @@ func GetCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		var cert pkg.Certification
 		err = conn.QueryRow(c.Request.Context(),
-			`SELECT id, name, year, description FROM certification WHERE id = $1`, certID,
-		).Scan(&cert.Id, &cert.Name, &cert.Year, &cert.Description)
+			`SELECT id, name, year, description, institution FROM certification WHERE id = $1`, certID,
+		).Scan(&cert.Id, &cert.Name, &cert.Year, &cert.Description, &cert.Institution)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, gin.H{"error": "certification not found"})
@@ -115,14 +115,25 @@ func CreateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "certification name is required"})
 			return
 		}
+
+		if cert.Description == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "certification description is required"})
+			return
+		}
+
+		if cert.Institution == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "certification institution is required"})
+			return
+		}
+
 		if cert.Year < 1900 || cert.Year > 2030 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "certification year must be between 1900 and 2030"})
 			return
 		}
 
 		err := conn.QueryRow(c.Request.Context(),
-			`INSERT INTO certification (name, year, description) VALUES ($1, $2, $3) RETURNING id`,
-			cert.Name, cert.Year, cert.Description,
+			`INSERT INTO certification (name, year, description, institution) VALUES ($1, $2, $3, $4) RETURNING id`,
+			cert.Name, cert.Year, cert.Description, cert.Institution,
 		).Scan(&cert.Id)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -167,15 +178,26 @@ func UpdateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "certification name is required"})
 			return
 		}
+
+		if cert.Description == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "certification description is required"})
+			return
+		}
+
+		if cert.Institution == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "certification institution is required"})
+			return
+		}
+
 		if cert.Year < 1900 || cert.Year > 2030 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "certification year must be between 1900 and 2030"})
 			return
 		}
 
 		err = conn.QueryRow(c.Request.Context(),
-			`UPDATE certification SET name = $1, year = $2, description = $3 WHERE id = $4 RETURNING id, name, year, description`,
-			cert.Name, cert.Year, cert.Description, certID,
-		).Scan(&cert.Id, &cert.Name, &cert.Year, &cert.Description)
+			`UPDATE certification SET name = $1, year = $2, description = $3, institution = $4 WHERE id = $5 RETURNING id, name, year, description, institution`,
+			cert.Name, cert.Year, cert.Description, cert.Institution, certID,
+		).Scan(&cert.Id, &cert.Name, &cert.Year, &cert.Description, &cert.Institution)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, gin.H{"error": "certification not found"})
@@ -241,6 +263,11 @@ func UpdateCertificationPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			args = append(args, *cert.Description)
 			i++
 		}
+		if cert.Institution != nil {
+			set = append(set, fmt.Sprintf("institution = $%d", i))
+			args = append(args, *cert.Institution)
+			i++
+		}
 
 		if len(set) == 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "no fields to update"})
@@ -249,11 +276,11 @@ func UpdateCertificationPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		args = append(args, certID)
 
-		query := fmt.Sprintf("UPDATE certification SET %s WHERE id = $%d RETURNING id, name, year, description",
+		query := fmt.Sprintf("UPDATE certification SET %s WHERE id = $%d RETURNING id, name, year, description, institution",
 			strings.Join(set, ", "), i)
 
 		var updatedCert pkg.Certification
-		err = conn.QueryRow(c.Request.Context(), query, args...).Scan(&updatedCert.Id, &updatedCert.Name, &updatedCert.Year, &updatedCert.Description)
+		err = conn.QueryRow(c.Request.Context(), query, args...).Scan(&updatedCert.Id, &updatedCert.Name, &updatedCert.Year, &updatedCert.Description, &updatedCert.Institution)
 
 		if err != nil {
 			if err == pgx.ErrNoRows {
@@ -327,7 +354,7 @@ func GetAnalystCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		rows, err := conn.Query(c.Request.Context(),
-			`SELECT c.id, c.name, c.year, c.description 
+			`SELECT c.id, c.name, c.year, c.description, c.institution 
 			 FROM certification c 
 			 JOIN analyst_certification ac ON c.id = ac.certification_id 
 			 WHERE ac.analyst_id = $1 
@@ -343,7 +370,7 @@ func GetAnalystCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 		var certs []pkg.Certification
 		for rows.Next() {
 			var cert pkg.Certification
-			if err := rows.Scan(&cert.Id, &cert.Name, &cert.Year, &cert.Description); err != nil {
+			if err := rows.Scan(&cert.Id, &cert.Name, &cert.Year, &cert.Description, &cert.Institution); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao escanear certificação: " + err.Error()})
 				return
 			}

@@ -15,37 +15,39 @@ import (
 )
 
 func TestReview(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-	routes.SetupRoutes(router, TestPool)
+	var analystUser = pkg.UserRegister{
+		Name:          "Reginaldo Caminhos 8=D",
+		Email:         "reginald0@utfpr.edu.br",
+		Password:      "aabbccddee",
+		Phone:         "41999999999",
+		Country_code:  "BR",
+		Country_name:  "Brazil",
+		Country_state: "PR",
+		City:          "Campo Mourão",
+		Timezone:      "America/Sao_Paulo",
+	}
+
+	var clientUser = pkg.UserRegister{
+		Name:          "Elma Maria Aquino Pinto",
+		Email:         "elma@utfpr.edu.br",
+		Password:      "aabbccddee",
+		Phone:         "41965899556",
+		Country_code:  "BR",
+		Country_name:  "Brazil",
+		Country_state: "PR",
+		City:          "Campo Mourão",
+		Timezone:      "America/Sao_Paulo",
+	}
 
 	var analyst = pkg.Analyst{
-		User: pkg.User{
-			Name:          "Reginaldo Caminhos 8=D",
-			Email:         "reginald0@utfpr.edu.br",
-			Phone:         "41999999999",
-			Country_code:  "BR",
-			Country_name:  "Brazil",
-			Country_state: "PR",
-			City:          "Campo Mourão",
-			Timezone:      "America/Sao_Paulo",
-		},
+		User:          pkg.User{},
 		Hourly_rate:   100.0,
 		Total_reviews: 10,
 		Mean_rating:   ToPtrFloat64(4.5),
 	}
 
 	var client = pkg.Client{
-		User: pkg.User{
-			Name:          "Alyssa Lynguissa",
-			Email:         "alyss4@utfpr.edu.br",
-			Phone:         "41965899556",
-			Country_code:  "BR",
-			Country_name:  "Brazil",
-			Country_state: "PR",
-			City:          "Campo Mourão",
-			Timezone:      "America/Sao_Paulo",
-		},
+		User:            pkg.User{},
 		Proposed_budget: 112.0,
 	}
 
@@ -67,10 +69,14 @@ func TestReview(t *testing.T) {
 		Comment: "Arrumaram muito bem minha traseira",
 	}
 
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	routes.SetupRoutes(router, TestPool)
+
 	t.Run("Criando review", func(t *testing.T) {
 		// Primeiro, criamos o usuário associado ao analista
-		body, _ := json.Marshal(analyst.User)
-		targetURL := "/users"
+		body, _ := json.Marshal(analystUser)
+		targetURL := "/register"
 
 		req := httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
@@ -110,7 +116,7 @@ func TestReview(t *testing.T) {
 		analyst = analystResponse.Analyst
 
 		// Criamos o usuário associado ao cliente
-		body, _ = json.Marshal(client.User)
+		body, _ = json.Marshal(clientUser)
 		targetURL = "/users"
 
 		req = httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
@@ -124,7 +130,7 @@ func TestReview(t *testing.T) {
 		json.Unmarshal(w.Body.Bytes(), &userResponse)
 
 		if userResponse.User.Id == 0 {
-			t.Error("O ID do cliente não deveria ser zero")
+			t.Error("O ID do usuário não deveria ser zero")
 		}
 
 		// Agora criamos o cliente usando o ID do usuário criado

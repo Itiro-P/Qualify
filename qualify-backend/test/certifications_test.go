@@ -18,28 +18,45 @@ func TestCertifications(t *testing.T) {
 	var certifications = []pkg.Certification{
 		{
 			Name:        "Mestrado em Teste Baseado em Aspectos",
+			Institution: "UTFPR",
 			Description: "Que aspectos?",
 			Year:        1900,
 		},
 		{
 			Name:        "Certificado de Sobrevivência em Reuniões Infinitas",
+			Institution: "UTFPR",
 			Description: "Participou e saiu vivo de uma maratona de reuniões.",
 			Year:        2024,
 		},
 		{
 			Name:        "Especialista em Copiar/Colar Estratégico",
+			Institution: "UTFPR",
 			Description: "Domina o Ctrl+C/Ctrl+V com elegância.",
 			Year:        2023,
 		},
 		{
 			Name:        "Mestre em Café e Debug",
+			Institution: "UTFPR",
 			Description: "Resolve bugs consistentemente após a terceira xícara.",
 			Year:        2025,
 		},
 		{
+			Name:        "Técnico em Computaria",
+			Institution: "UTFPR",
+			Description: "Possui habilidades extraordinárias em computaria.",
+			Year:        1960,
+		},
+		{
 			Name:        "Ninja do Merge sem Conflito",
+			Institution: "UTFPR",
 			Description: "Resolve conflitos de git com silêncio e honra.",
 			Year:        2022,
+		},
+		{
+			Name:        "Especialista em Javanês",
+			Institution: "UTFPR",
+			Description: "Sabe muito Java.",
+			Year:        2019,
 		},
 	}
 
@@ -155,7 +172,7 @@ func TestCertifications(t *testing.T) {
 		t.Run("Criar Analista para "+analyst.User.Name, func(t *testing.T) {
 			// Primeiro, criamos o usuário associado ao analista
 			body, _ := json.Marshal(analyst.User)
-			targetURL := "/users"
+			targetURL := "/register"
 
 			req := httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")
