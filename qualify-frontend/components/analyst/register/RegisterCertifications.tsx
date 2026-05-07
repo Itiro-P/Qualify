@@ -110,7 +110,9 @@ function handleSubmit(
 }
 
 function removeCertification(
-  setCertificationsAnalyst: React.Dispatch<React.SetStateAction<ICertification[]>>,
+  setCertificationsAnalyst: React.Dispatch<
+    React.SetStateAction<ICertification[]>
+  >,
   certification: ICertification,
 ) {
   setCertificationsAnalyst((prev) => [
@@ -126,7 +128,9 @@ function CertificationSaves({
     <FormButton
       variant="outline"
       fullWidth={false}
-      onClick={() => removeCertification(setCertificationsAnalyst, certification)}
+      onClick={() =>
+        removeCertification(setCertificationsAnalyst, certification)
+      }
       className="m-1 !py-2 !px-4 text-sm"
       type="button"
     >
@@ -135,7 +139,10 @@ function CertificationSaves({
   );
 }
 
-export function RegisterCertifications({certificationsAnalyst, setCertificationsAnalyst} : IRegisterCertifications) {
+export function RegisterCertifications({
+  certificationsAnalyst,
+  setCertificationsAnalyst,
+}: IRegisterCertifications) {
   const [certification, setCertification] = useState<ICertification>({
     name: "",
     description: "",
@@ -205,7 +212,9 @@ export function RegisterCertifications({certificationsAnalyst, setCertifications
           Adicionar
         </FormButton>
         {certificationsAnalyst.length > 0 && (
-          <p className="m-2 text-sm text-neutral-slate">Certificações salvas:</p>
+          <p className="m-2 text-sm text-neutral-slate">
+            Certificações salvas:
+          </p>
         )}
         <div className="flex flex-row justify-start flex-wrap">
           {certificationsAnalyst.map((certification) => (

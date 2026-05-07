@@ -86,7 +86,10 @@ function TechnologySaves({
   );
 }
 
-export function RegisterTechnologies({technologiesAnalyst, setTechnologiesAnalyst}:IRegisterTechnology) {
+export function RegisterTechnologies({
+  technologiesAnalyst,
+  setTechnologiesAnalyst,
+}: IRegisterTechnology) {
   const [errors, setErrors] = useState<string>("");
   const [technology, setTechnology] = useState<ITechnology>({
     technology: "",

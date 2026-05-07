@@ -7,13 +7,21 @@ import {
   RegisterHourlyRate,
   RegisterTechnologies,
 } from "@/components/analyst/register";
-import { analystService, certificationService, skillService } from "@/libs/services";
+import {
+  analystService,
+  certificationService,
+  skillService,
+} from "@/libs/services";
 import type { ApiError } from "@/libs/api";
 import { FormButton, FormPanel, Alert } from "@/components/ui";
 
 export function RegisterAnalyst() {
-  const [certificationsAnalyst, setCertificationsAnalyst] = useState<ICertification[]>([]);
-  const [technologiesAnalyst, setTechnologiesAnalyst] = useState<ITechnology[]>([]);
+  const [certificationsAnalyst, setCertificationsAnalyst] = useState<
+    ICertification[]
+  >([]);
+  const [technologiesAnalyst, setTechnologiesAnalyst] = useState<ITechnology[]>(
+    [],
+  );
   const [hourlyRateAnalyst, setHourlyRateAnalyst] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -22,7 +30,9 @@ export function RegisterAnalyst() {
   // TODO: pegar o userId da sessão/auth (ex: useSession do NextAuth)
   const userId = 1;
 
-  async function getOrCreateCertification(cert: ICertification): Promise<number> {
+  async function getOrCreateCertification(
+    cert: ICertification,
+  ): Promise<number> {
     const searchData = await certificationService.list(cert.name);
 
     if (searchData.count > 0) {
@@ -60,24 +70,24 @@ export function RegisterAnalyst() {
 
       // 2. Certificações: busca ou cria, depois vincula ao analista
       const certIds = await Promise.all(
-        certificationsAnalyst.map(getOrCreateCertification)
+        certificationsAnalyst.map(getOrCreateCertification),
       );
 
       await Promise.all(
         certIds.map((certId) =>
-          analystService.addCertification(userId, { certification_id: certId })
-        )
+          analystService.addCertification(userId, { certification_id: certId }),
+        ),
       );
 
       // 3. Skills: busca ou cria, depois vincula ao analista
       const skillIds = await Promise.all(
-        technologiesAnalyst.map(getOrCreateSkill)
+        technologiesAnalyst.map(getOrCreateSkill),
       );
 
       await Promise.all(
         skillIds.map((skillId) =>
-          analystService.addSkill(userId, { skill_id: skillId })
-        )
+          analystService.addSkill(userId, { skill_id: skillId }),
+        ),
       );
 
       setSuccess("Cadastro de analista realizado com sucesso!");
@@ -85,10 +95,17 @@ export function RegisterAnalyst() {
       const apiError = err as ApiError;
       if (apiError.status) {
         switch (apiError.status) {
-          case 400: setError(apiError.message || "Dados inválidos"); break;
-          case 401: setError("Não autorizado"); break;
-          case 422: setError("Dados mal formatados"); break;
-          default:  setError("Erro no servidor. Tente novamente.");
+          case 400:
+            setError(apiError.message || "Dados inválidos");
+            break;
+          case 401:
+            setError("Não autorizado");
+            break;
+          case 422:
+            setError("Dados mal formatados");
+            break;
+          default:
+            setError("Erro no servidor. Tente novamente.");
         }
       } else {
         console.error(err);
@@ -100,7 +117,11 @@ export function RegisterAnalyst() {
   }
 
   return (
-    <FormPanel title="Cadastro de Analista" description="Preencha suas certificações, tecnologias e valor por hora." maxWidth="max-w-2xl">
+    <FormPanel
+      title="Cadastro de Analista"
+      description="Preencha suas certificações, tecnologias e valor por hora."
+      maxWidth="max-w-2xl"
+    >
       {error && <Alert variant="error">{error}</Alert>}
       {success && <Alert variant="success">{success}</Alert>}
       <RegisterCertifications

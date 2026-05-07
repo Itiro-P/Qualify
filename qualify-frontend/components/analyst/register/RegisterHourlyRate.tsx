@@ -41,8 +41,10 @@ function handleSubmit(
   }
 }
 
-export function RegisterHourlyRate({hourlyRateAnalyst, setHourlyRateAnalyst}:IRegisterHourlyRate) {
-
+export function RegisterHourlyRate({
+  hourlyRateAnalyst,
+  setHourlyRateAnalyst,
+}: IRegisterHourlyRate) {
   const [errors, setErrors] = useState<string>("");
 
   return (
