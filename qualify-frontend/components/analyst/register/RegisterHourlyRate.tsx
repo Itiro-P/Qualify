@@ -5,20 +5,20 @@ import { IRegisterHourlyRate } from "@/types/analyst/register/registerHourlyRate
 
 function handleChange(
   e: React.ChangeEvent<HTMLInputElement>,
-  setForm: React.Dispatch<React.SetStateAction<string>>,
+  setForm: React.Dispatch<React.SetStateAction<number>>,
 ) {
   const { value } = e.target;
 
-  setForm(value);
+  setForm(Number(value));
 }
 
-function validate(data: string): string {
+function validate(data: number): string {
   let newErrors: string = "";
 
   if (!data) {
     newErrors = "Valor por hora é obrigatório";
   }
-  if (Number.isNaN(Number(data))) {
+  if (Number.isNaN(data)) {
     newErrors = "Apenas números são aceitos";
   }
 
@@ -28,7 +28,7 @@ function validate(data: string): string {
 function handleSubmit(
   e: React.FormEvent,
   setErrors: React.Dispatch<React.SetStateAction<string>>,
-  hourlyRateAnalyst: string,
+  hourlyRateAnalyst: number,
 ) {
   e.preventDefault();
 
@@ -54,6 +54,7 @@ export function RegisterHourlyRate({hourlyRateAnalyst, setHourlyRateAnalyst}:IRe
           <label className="text-sm font-medium">Valor por hora ($)</label>
           <input
             name="name"
+            type="number"
             value={hourlyRateAnalyst}
             onChange={(e) => handleChange(e, setHourlyRateAnalyst)}
             className="w-full border rounded px-3 py-2 mt-1"

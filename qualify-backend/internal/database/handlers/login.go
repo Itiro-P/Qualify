@@ -21,7 +21,7 @@ import (
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /register [post]
+// @Router /login [get]
 func Login(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var credentials pkg.UserLogin

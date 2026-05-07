@@ -1,4 +1,4 @@
 export interface IRegisterHourlyRate {
-  hourlyRateAnalyst: string;
-  setHourlyRateAnalyst: React.Dispatch<React.SetStateAction<string>>;
+  hourlyRateAnalyst: number;
+  setHourlyRateAnalyst: React.Dispatch<React.SetStateAction<number>>;
 }
