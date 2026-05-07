@@ -2,31 +2,6 @@
 
 Esta documentação explica o fluxo de `docker-compose` para o backend Qualify (PostgreSQL + migrações + app).
 
-## Estrutura do `docker-compose.yml`
-
-- `db`:
-  - Imagem: `postgres:17-alpine`
-  - Usuário: `gouser`
-  - Senha: `gopassword`
-  - DB: `godb`
-  - Porta: `5432`
-  - Volume: `pgdata` (persistência do banco)
-
-- `migrate`:
-  - Imagem: `migrate/migrate:v4.16.0`
-  - Dependência: `db`
-  - Monta migrations do host: `./internal/database/migrations:/migrations`
-  - Comando default: `migrate -path /migrations -database "postgres://gouser:gopassword@db:5432/godb?sslmode=disable" up`
-
-- `app`:
-  - Build: `.` (diretório `qualify-backend`)
-  - Porta: `8001`
-  - Dependência: `migrate` (garante migrações aplicadas antes)
-  - Ambiente: `DATABASE_URL=postgres://gouser:gopassword@db:5432/godb?sslmode=disable`
-
-- `volumes`:
-  - `pgdata`: volume nomeado para dados do postgres.
-
 ## O que acontece em `docker compose up --build`
 
 1. Inicia `db`.
@@ -40,12 +15,12 @@ Esta documentação explica o fluxo de `docker-compose` para o backend Qualify (
 - Iniciar (build + run):
   - `docker compose up --build`
 - Ver logs:
-  - `docker compose logs -f app`
+  - `docker compose run logs -f app`
 - Parar/remover:
   - `docker compose down`
 - Resetar migrações (dev):
-  - `docker compose run --rm migrate down` (rollback último batch)
-  - `docker compose run --rm migrate force <version>` (forçar versão)
+  - `docker compose --profile tools run --rm migrate down <número de migrations>` (rollback último batch)
+  - `docker compose --profile tools run --rm migrate force <version>` (forçar versão)
 
 ## Migrations
 
