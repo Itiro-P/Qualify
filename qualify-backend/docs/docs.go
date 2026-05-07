@@ -116,6 +116,14 @@ const docTemplate = `{
                     "Certificações"
                 ],
                 "summary": "Listar certificações",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Nome parcial",
+                        "name": "name",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",

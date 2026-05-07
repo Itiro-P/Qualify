@@ -18,14 +18,25 @@ import (
 // @Tags Certificações
 // @Accept json
 // @Produce json
+// @Param name query string false "Nome parcial"
 // @Success 200 {object} pkg.CertificationsResponse
 // @Failure 500 {object} map[string]string
 // @Router /certifications [get]
 func GetCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		rows, err := conn.Query(c.Request.Context(),
-			`SELECT id, name, year, description, institution FROM certification ORDER BY year DESC`,
-		)
+		query := `SELECT id, name, year, description, institution FROM certification WHERE 1=1`
+		args := []interface{}{}
+		argCounter := 1
+
+		if name := c.Query("name"); name != "" {
+			query += fmt.Sprintf(" AND name ILIKE $%d", argCounter)
+			args = append(args, "%"+name+"%")
+			argCounter++
+		}
+
+		query += " ORDER BY year DESC"
+
+		rows, err := conn.Query(c.Request.Context(), query, args...)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -41,10 +52,12 @@ func GetCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 			}
 			certs = append(certs, cert)
 		}
+
 		if err = rows.Err(); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao iterar certificações: " + err.Error()})
 			return
 		}
+
 		c.JSON(http.StatusOK, pkg.CertificationsResponse{
 			Certifications: certs,
 			Count:          len(certs),

@@ -536,6 +536,11 @@ paths:
       consumes:
       - application/json
       description: Retorna lista de certificações
+      parameters:
+      - description: Nome parcial
+        in: query
+        name: name
+        type: string
       produces:
       - application/json
       responses:
