@@ -21,12 +21,12 @@ cd qualify-backend
 docker build --tag qualify-backend .
 ```
 
-4. Rode o docker (ele foi configurado na porta `8001`):
+4. Rode o docker (ele foi configurado na porta `3001`):
 ```
-docker run -p 8001:8001 qualify-backend
+docker run -p 3001:3001 qualify-backend
 ```
 
 Alterações no projeto requerem que o comando do passo `2` seja executado novamente após as mudanças. O projeto vai estar rodando em:
 ```
-http://localhost:8001/
+http://localhost:3001/
 ```
