@@ -11,9 +11,10 @@ import (
 
 func SetupRoutes(router *gin.Engine, conn *pgxpool.Pool) {
 	// Users are the base entity. Roles are assigned as nested sub-resources.
+	router.POST("/register", handlers.CreateUser(conn))
+	router.POST("/login", handlers.Login(conn))
 	users := router.Group("/users")
 	{
-		users.POST("", handlers.CreateUser(conn))
 		users.GET("/:id", handlers.GetUser(conn))
 
 		user := users.Group("/:id")

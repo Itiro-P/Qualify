@@ -16,11 +16,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var analysts = []pkg.Analyst{
-	{
-		User: pkg.User{
+func TestAnalyst(t *testing.T) {
+	var userRegisters = []pkg.UserRegister{
+		{
 			Name:          "Reginaldo Ré",
 			Email:         "reginaldo@utfpr.edu.br",
+			Password:      "aabbccddee",
 			Phone:         "41999999999",
 			Country_code:  "BR",
 			Country_name:  "Brazil",
@@ -28,14 +29,10 @@ var analysts = []pkg.Analyst{
 			City:          "Campo Mourão",
 			Timezone:      "America/Sao_Paulo",
 		},
-		Hourly_rate:   100.0,
-		Total_reviews: 10,
-		Mean_rating:   ToPtrFloat64(4.5),
-	},
-	{
-		User: pkg.User{
+		{
 			Name:          "John Xina",
 			Email:         "xina@utfpr.edu.br",
+			Password:      "aabbccddee",
 			Phone:         "41969696969",
 			Country_code:  "CN",
 			Country_name:  "China",
@@ -43,14 +40,10 @@ var analysts = []pkg.Analyst{
 			City:          "Beijing",
 			Timezone:      "Asia/Shanghai",
 		},
-		Hourly_rate:   69.0,
-		Total_reviews: 5,
-		Mean_rating:   ToPtrFloat64(4.2),
-	},
-	{
-		User: pkg.User{
+		{
 			Name:          "Ivanilton Pelado",
 			Email:         "nudismo@utfpr.edu.br",
+			Password:      "aabbccddee",
 			Phone:         "44999999999",
 			Country_code:  "BR",
 			Country_name:  "Brazil",
@@ -58,14 +51,10 @@ var analysts = []pkg.Analyst{
 			City:          "Campo Mourão",
 			Timezone:      "America/Sao_Paulo",
 		},
-		Hourly_rate:   67.0,
-		Total_reviews: 60,
-		Mean_rating:   ToPtrFloat64(3.9),
-	},
-	{
-		User: pkg.User{
+		{
 			Name:          "João Paumolence",
 			Email:         "joaum@utfpr.edu.br",
+			Password:      "aabbccddee",
 			Phone:         "44999990000",
 			Country_code:  "BR",
 			Country_name:  "Brazil",
@@ -73,14 +62,10 @@ var analysts = []pkg.Analyst{
 			City:          "Roncador",
 			Timezone:      "America/Sao_Paulo",
 		},
-		Hourly_rate:   57.0,
-		Total_reviews: 30,
-		Mean_rating:   ToPtrFloat64(4.0),
-	},
-	{
-		User: pkg.User{
+		{
 			Name:          "Alex do Durex",
 			Email:         "alex@utfpr.edu.br",
+			Password:      "aabbccddee",
 			Phone:         "44999690000",
 			Country_code:  "BR",
 			Country_name:  "Brazil",
@@ -88,14 +73,10 @@ var analysts = []pkg.Analyst{
 			City:          "Campo Mourão",
 			Timezone:      "America/Sao_Paulo",
 		},
-		Hourly_rate:   50.0,
-		Total_reviews: 25,
-		Mean_rating:   ToPtrFloat64(4.0),
-	},
-	{
-		User: pkg.User{
+		{
 			Name:          "Rodrigo do Piolho",
 			Email:         "rodrigo@utfpr.edu.br",
+			Password:      "aabbccddee",
 			Phone:         "44999690000",
 			Country_code:  "BR",
 			Country_name:  "Brazil",
@@ -103,13 +84,47 @@ var analysts = []pkg.Analyst{
 			City:          "Goiânia",
 			Timezone:      "America/Sao_Paulo",
 		},
-		Hourly_rate:   128.0,
-		Total_reviews: 28,
-		Mean_rating:   ToPtrFloat64(1.6),
-	},
-}
+	}
 
-func TestAnalyst(t *testing.T) {
+	var analysts = []pkg.Analyst{
+		{
+			User:          pkg.User{},
+			Hourly_rate:   100.0,
+			Total_reviews: 10,
+			Mean_rating:   ToPtrFloat64(4.5),
+		},
+		{
+			User:          pkg.User{},
+			Hourly_rate:   69.0,
+			Total_reviews: 5,
+			Mean_rating:   ToPtrFloat64(4.2),
+		},
+		{
+			User:          pkg.User{},
+			Hourly_rate:   67.0,
+			Total_reviews: 60,
+			Mean_rating:   ToPtrFloat64(3.9),
+		},
+		{
+			User:          pkg.User{},
+			Hourly_rate:   57.0,
+			Total_reviews: 30,
+			Mean_rating:   ToPtrFloat64(4.0),
+		},
+		{
+			User:          pkg.User{},
+			Hourly_rate:   50.0,
+			Total_reviews: 25,
+			Mean_rating:   ToPtrFloat64(4.0),
+		},
+		{
+			User:          pkg.User{},
+			Hourly_rate:   128.0,
+			Total_reviews: 28,
+			Mean_rating:   ToPtrFloat64(1.6),
+		},
+	}
+
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 
@@ -118,12 +133,11 @@ func TestAnalyst(t *testing.T) {
 	postAnalystResponse := []pkg.Analyst{}
 
 	// Primeiros testes para criação de analistas, que dependem da criação prévia de usuários
-	for _, a := range analysts {
-		t.Run("Criar Analista para "+a.User.Name, func(t *testing.T) {
-			analyst := a
+	for i := range len(analysts) {
+		t.Run("Criar Analista para "+userRegisters[i].Name, func(t *testing.T) {
 			// Primeiro, criamos o usuário associado ao analista
-			body, _ := json.Marshal(analyst.User)
-			targetURL := "/users"
+			body, _ := json.Marshal(userRegisters[i])
+			targetURL := "/register"
 
 			req := httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")
@@ -141,9 +155,9 @@ func TestAnalyst(t *testing.T) {
 			}
 
 			// Agora criamos o analista usando o ID do usuário criado
-			analyst.User = userResponse.User
-			body, _ = json.Marshal(analyst)
-			targetURL = fmt.Sprintf("/users/%d/analyst", analyst.User.Id)
+			analysts[i].User = userResponse.User
+			body, _ = json.Marshal(analysts[i])
+			targetURL = fmt.Sprintf("/users/%d/analyst", analysts[i].User.Id)
 
 			req = httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")

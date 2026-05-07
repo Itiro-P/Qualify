@@ -16,11 +16,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var clients = []pkg.Client{
-	{
-		User: pkg.User{
+func TestClient(t *testing.T) {
+	var userRegisters = []pkg.UserRegister{
+		{
 			Name:          "Marcos Calvaro",
 			Email:         "markos@utfpr.edu.br",
+			Password:      "aabbccddee",
 			Phone:         "41999999989",
 			Country_code:  "BR",
 			Country_name:  "Brazil",
@@ -28,12 +29,10 @@ var clients = []pkg.Client{
 			City:          "Campo Mourão",
 			Timezone:      "America/Sao_Paulo",
 		},
-		Proposed_budget: 100.0,
-	},
-	{
-		User: pkg.User{
-			Name:          "Frank",
+		{
+			Name:          "Frank do Tank",
 			Email:         "frank@utfpr.edu.br",
+			Password:      "aabbccddee",
 			Phone:         "41969696969",
 			Country_code:  "RO",
 			Country_name:  "Romania",
@@ -41,11 +40,18 @@ var clients = []pkg.Client{
 			City:          "Bucareste",
 			Timezone:      "America/Sao_Paulo",
 		},
-		Proposed_budget: 69.0,
-	},
-}
+	}
+	var clients = []pkg.Client{
+		{
+			User:            pkg.User{},
+			Proposed_budget: 100.0,
+		},
+		{
+			User:            pkg.User{},
+			Proposed_budget: 69.0,
+		},
+	}
 
-func TestClient(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 
@@ -54,12 +60,11 @@ func TestClient(t *testing.T) {
 	postClientResponse := []pkg.Client{}
 
 	// Primeiros testes para criação de clientes, que dependem da criação prévia de usuários
-	for _, c := range clients {
-		t.Run("Criar Cliente para "+c.User.Name, func(t *testing.T) {
-			client := c
+	for i := range len(userRegisters) {
+		t.Run("Criar Cliente para "+userRegisters[i].Name, func(t *testing.T) {
 			// Primeiro, criamos o usuário associado ao cliente
-			body, _ := json.Marshal(client.User)
-			targetURL := "/users"
+			body, _ := json.Marshal(userRegisters[i])
+			targetURL := "/register"
 
 			req := httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")
@@ -77,9 +82,9 @@ func TestClient(t *testing.T) {
 			}
 
 			// Agora criamos o cliente usando o ID do usuário criado
-			client.User = userResponse.User
-			body, _ = json.Marshal(client)
-			targetURL = fmt.Sprintf("/users/%d/client", client.User.Id)
+			clients[i].User = userResponse.User
+			body, _ = json.Marshal(clients[i])
+			targetURL = fmt.Sprintf("/users/%d/client", clients[i].User.Id)
 
 			req = httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")
