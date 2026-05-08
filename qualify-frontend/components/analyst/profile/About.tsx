@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Review } from "@/components/analyst/profile/Review";
+import { Reviews } from "@/components/analyst/profile/Reviews";
 import { Biography } from "@/components/analyst/profile/Biography";
 import { Technologies } from "@/components/analyst/profile/Technologies";
 import { Certifications } from "@/components/analyst/profile/Certifications";
@@ -55,7 +55,7 @@ function TabsSystem(analyst: Analyst) {
       <div className="mt-4">
         {abaAtiva === "biography" && <Biography />}
 
-        {abaAtiva === "reviews" && <Review />}
+        {abaAtiva === "reviews" && <Reviews />}
 
         {abaAtiva === "technologies" && <Technologies technologiesCardsVector={technologiesCardsVector}/>}
 

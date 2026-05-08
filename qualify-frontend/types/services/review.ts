@@ -1,11 +1,11 @@
 export interface Review {
-  id?: number;
-  analyst_id?: number;
-  client_id?: number;
-  service_id?: number;
-  rating?: number;
-  comment?: string;
-  time_created?: string;
+  id: number;
+  analyst_id: number;
+  client_id: number;
+  service_id: number;
+  rating: number;
+  comment: string;
+  time_created: string;
 }
 
 export interface ReviewResponse {
