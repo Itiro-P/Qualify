@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { IRegisterHourlyRate } from "@/types/analyst/register/registerHourlyRate";
+import { FormInput, FormButton } from "@/components/ui";
 
 function handleChange(
   e: React.ChangeEvent<HTMLInputElement>,
@@ -47,28 +48,22 @@ export function RegisterHourlyRate({hourlyRateAnalyst, setHourlyRateAnalyst}:IRe
   return (
     <form
       onSubmit={(e) => handleSubmit(e, setErrors, hourlyRateAnalyst)}
-      className="my-8 p-5 pt-3 border border-solid rounded-xl"
+      className="my-8 p-5 pt-3 border border-white/10 rounded-xl"
     >
       <div className="flex flex-col gap-4">
-        <div>
-          <label className="text-sm font-medium">Valor por hora ($)</label>
-          <input
-            name="name"
-            type="number"
-            value={hourlyRateAnalyst}
-            onChange={(e) => handleChange(e, setHourlyRateAnalyst)}
-            className="w-full border rounded px-3 py-2 mt-1"
-          />
-          {errors && <p className="text-red-500 text-sm">{errors}</p>}
-        </div>
+        <FormInput
+          label="Valor por hora ($)"
+          name="hourlyRate"
+          type="number"
+          value={hourlyRateAnalyst}
+          onChange={(e) => handleChange(e, setHourlyRateAnalyst)}
+          error={errors}
+          required
+        />
       </div>
-      <button
-        type="submit"
-        className="mt-4 bg-blue-600 text-white font-medium px-5 py-2 rounded-lg 
-             hover:bg-blue-700 active:scale-95 transition-all duration-200"
-      >
+      <FormButton type="submit" fullWidth={false} className="mt-4 px-6">
         Salvar
-      </button>
+      </FormButton>
     </form>
   );
 }

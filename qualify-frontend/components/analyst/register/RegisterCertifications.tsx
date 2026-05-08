@@ -4,6 +4,7 @@ import { ICertification } from "@/types/analyst/profile/certification";
 import { ICertificationSavesProps } from "@/types/analyst/register/certificationSavesProps";
 import { IRegisterCertifications } from "@/types/analyst/register/registerCertification";
 import { useState } from "react";
+import { FormInput, FormButton, Alert } from "@/components/ui";
 
 function handleChange(
   e: React.ChangeEvent<HTMLInputElement>,
@@ -108,11 +109,11 @@ function handleSubmit(
   }
 }
 
-function removeTehnology(
-  setTecnologiesAnalyst: React.Dispatch<React.SetStateAction<ICertification[]>>,
+function removeCertification(
+  setCertificationsAnalyst: React.Dispatch<React.SetStateAction<ICertification[]>>,
   certification: ICertification,
 ) {
-  setTecnologiesAnalyst((prev) => [
+  setCertificationsAnalyst((prev) => [
     ...prev.filter((item) => !isEqualCertification(item, certification)),
   ]);
 }
@@ -122,12 +123,15 @@ function CertificationSaves({
   setCertificationsAnalyst,
 }: ICertificationSavesProps) {
   return (
-    <button
-      onClick={() => removeTehnology(setCertificationsAnalyst, certification)}
-      className="px-4 py-2 m-2 rounded-xl bg-blue-600"
+    <FormButton
+      variant="outline"
+      fullWidth={false}
+      onClick={() => removeCertification(setCertificationsAnalyst, certification)}
+      className="m-1 !py-2 !px-4 text-sm"
+      type="button"
     >
-      {certification.name}/{certification.year}
-    </button>
+      {certification.name}/{certification.year} ✕
+    </FormButton>
   );
 }
 
@@ -147,7 +151,7 @@ export function RegisterCertifications({certificationsAnalyst, setCertifications
 
   return (
     <div>
-      <p className="text-sm font-medium">Certificações</p>
+      <p className="text-sm font-medium text-white/80 mb-2">Certificações</p>
       <form
         onSubmit={(e) =>
           handleSubmit(
@@ -160,72 +164,48 @@ export function RegisterCertifications({certificationsAnalyst, setCertifications
             certification,
           )
         }
-        className="mb-8 mt-2 p-5 pt-3 border border-solid rounded-xl"
+        className="mb-8 mt-2 p-5 pt-3 border border-white/10 rounded-xl"
       >
         <div className="flex flex-col gap-4">
-          <div>
-            <label className="text-sm font-medium">Nome</label>
-            <input
-              name="name"
-              value={certification.name}
-              onChange={(e) => handleChange(e, setCertification)}
-              className="w-full border rounded px-3 py-2 mt-1"
-            />
-            {errorsCertification.name && (
-              <p className="text-red-500 text-sm">{errorsCertification.name}</p>
-            )}
-          </div>
-          <div>
-            <label className="text-sm font-medium">Descrição</label>
-            <input
-              name="description"
-              value={certification.description}
-              onChange={(e) => handleChange(e, setCertification)}
-              className="w-full border rounded px-3 py-2 mt-1"
-            />
-            {errorsCertification.description && (
-              <p className="text-red-500 text-sm">
-                {errorsCertification.description}
-              </p>
-            )}
-          </div>
-          <div>
-            <label className="text-sm font-medium">Instituição</label>
-            <input
-              name="institution"
-              value={certification.institution}
-              onChange={(e) => handleChange(e, setCertification)}
-              className="w-full border rounded px-3 py-2 mt-1"
-            />
-            {errorsCertification.institution && (
-              <p className="text-red-500 text-sm">
-                {errorsCertification.institution}
-              </p>
-            )}
-          </div>
-          <div>
-            <label className="text-sm font-medium">Ano</label>
-            <input
-              name="year"
-              value={certification.year}
-              onChange={(e) => handleChange(e, setCertification)}
-              className="w-full border rounded px-3 py-2 mt-1"
-            />
-            {errorsCertification.year && (
-              <p className="text-red-500 text-sm">{errorsCertification.year}</p>
-            )}
-          </div>
+          <FormInput
+            label="Nome"
+            name="name"
+            value={certification.name}
+            onChange={(e) => handleChange(e, setCertification)}
+            error={errorsCertification.name}
+            required
+          />
+          <FormInput
+            label="Descrição"
+            name="description"
+            value={certification.description}
+            onChange={(e) => handleChange(e, setCertification)}
+            error={errorsCertification.description}
+            required
+          />
+          <FormInput
+            label="Instituição"
+            name="institution"
+            value={certification.institution}
+            onChange={(e) => handleChange(e, setCertification)}
+            error={errorsCertification.institution}
+            required
+          />
+          <FormInput
+            label="Ano"
+            name="year"
+            value={certification.year}
+            onChange={(e) => handleChange(e, setCertification)}
+            error={errorsCertification.year}
+            required
+          />
         </div>
-        {error && <p className="text-red-500 text-sm">{error}</p>}
-        <button
-          type="submit"
-          className="mt-4 bg-blue-600 text-white font-medium px-5 py-2 rounded-lg 
-              hover:bg-blue-700 active:scale-95 transition-all duration-200"
-        >
+        {error && <Alert variant="error">{error}</Alert>}
+        <FormButton type="submit" fullWidth={false} className="mt-4 px-6">
           Adicionar
-        </button>
+        </FormButton>
         {certificationsAnalyst.length > 0 && (
-          <p className="m-2">Certificações salvas:</p>
+          <p className="m-2 text-sm text-neutral-slate">Certificações salvas:</p>
         )}
         <div className="flex flex-row justify-start flex-wrap">
           {certificationsAnalyst.map((certification) => (

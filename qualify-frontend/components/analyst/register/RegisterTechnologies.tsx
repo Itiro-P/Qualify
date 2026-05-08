@@ -4,6 +4,7 @@ import { ITechnology } from "@/types/analyst/profile/technology";
 import { ITechnologySavesProps } from "@/types/analyst/register/technologySavesProps";
 import { IRegisterTechnology } from "@/types/analyst/register/registerTechnology";
 import { useState } from "react";
+import { FormInput, FormButton, Alert } from "@/components/ui";
 
 function handleChange(
   e: React.ChangeEvent<HTMLInputElement>,
@@ -73,12 +74,15 @@ function TechnologySaves({
   setTechnologiesAnalyst,
 }: ITechnologySavesProps) {
   return (
-    <button
+    <FormButton
+      variant="outline"
+      fullWidth={false}
       onClick={() => removeTechnology(setTechnologiesAnalyst, technology)}
-      className="px-4 py-2 m-2 rounded-xl bg-blue-600"
+      className="m-1 !py-2 !px-4 text-sm"
+      type="button"
     >
-      {technology.technology}
-    </button>
+      {technology.technology} ✕
+    </FormButton>
   );
 }
 
@@ -100,28 +104,23 @@ export function RegisterTechnologies({technologiesAnalyst, setTechnologiesAnalys
           setTechnology,
         )
       }
-      className="my-4 p-5 pt-3 border border-solid rounded-xl"
+      className="my-4 p-5 pt-3 border border-white/10 rounded-xl"
     >
       <div className="flex flex-col gap-4">
-        <div>
-          <label className="text-sm mx-3 font-medium">Tecnologia</label>
-          <input
-            name="technology"
-            value={technology.technology}
-            onChange={(e) => handleChange(e, setTechnology)}
-            className="w-full border rounded px-3 py-2 mt-1"
-          />
-          {errors && <p className="text-red-500 text-sm mt-2">{errors}</p>}
-        </div>
+        <FormInput
+          label="Tecnologia"
+          name="technology"
+          value={technology.technology}
+          onChange={(e) => handleChange(e, setTechnology)}
+          required
+        />
+        {errors && <Alert variant="error">{errors}</Alert>}
       </div>
-      <button
-        type="submit"
-        className="mt-4 bg-blue-600 text-white font-medium px-5 py-2 rounded-lg hover:bg-blue-700 active:scale-95 transition-all duration-200"
-      >
+      <FormButton type="submit" fullWidth={false} className="mt-4 px-6">
         Adicionar
-      </button>
+      </FormButton>
       {technologiesAnalyst.length > 0 && (
-        <p className="m-2">Tecnologias salvas:</p>
+        <p className="m-2 text-sm text-neutral-slate">Tecnologias salvas:</p>
       )}
       <div className="flex flex-row justify-start flex-wrap">
         {technologiesAnalyst.map((technology) => (
