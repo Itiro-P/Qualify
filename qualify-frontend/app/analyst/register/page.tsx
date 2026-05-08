@@ -4,7 +4,7 @@ import {
 
 import { Footer, Header } from "@/components";
 
-export function Register() {
+export default function Register() {
   return (
     <section id="register" className="px-6 md:px-20 py-14">
       <Header />

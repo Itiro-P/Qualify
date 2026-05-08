@@ -8,7 +8,7 @@ import {
 
 import { Footer, Header } from "@/components";
 
-export function Profile() {
+export default function Profile() {
   return (
     <section id="profile" className="px-6 md:px-20 py-14">
       <Header />
