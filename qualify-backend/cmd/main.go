@@ -32,12 +32,5 @@ func main() {
 	}))
 
 	routes.SetupRoutes(router, pool)
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8001"
-	}
-
-	fmt.Printf("Starting server on :%s\n", port)
-	router.Run(":" + port)
+	router.Run(":8001")
 }
