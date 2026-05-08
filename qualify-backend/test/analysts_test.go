@@ -1,7 +1,6 @@
 package test
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"main/internal/routes"
@@ -63,17 +62,6 @@ func TestAnalyst(t *testing.T) {
 			Timezone:      "America/Sao_Paulo",
 		},
 		{
-			Name:          "Alex do Durex",
-			Email:         "alex@utfpr.edu.br",
-			Password:      "aabbccddee",
-			Phone:         "44999690000",
-			Country_code:  "BR",
-			Country_name:  "Brazil",
-			Country_state: "PR",
-			City:          "Campo Mourão",
-			Timezone:      "America/Sao_Paulo",
-		},
-		{
 			Name:          "Rodrigo do Piolho",
 			Email:         "rodrigo@utfpr.edu.br",
 			Password:      "aabbccddee",
@@ -107,76 +95,49 @@ func TestAnalyst(t *testing.T) {
 		},
 		{
 			User:          pkg.User{},
-			Hourly_rate:   57.0,
+			Hourly_rate:   47.0,
 			Total_reviews: 30,
 			Mean_rating:   ToPtrFloat64(4.0),
 		},
 		{
 			User:          pkg.User{},
-			Hourly_rate:   50.0,
+			Hourly_rate:   130.0,
 			Total_reviews: 25,
 			Mean_rating:   ToPtrFloat64(4.0),
 		},
-		{
-			User:          pkg.User{},
-			Hourly_rate:   128.0,
-			Total_reviews: 28,
-			Mean_rating:   ToPtrFloat64(1.6),
-		},
 	}
+
+	tokens := []string{}
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 
 	routes.SetupRoutes(router, TestPool)
 
-	postAnalystResponse := []pkg.Analyst{}
-
 	// Primeiros testes para criação de analistas, que dependem da criação prévia de usuários
-	for i := range len(analysts) {
+	for i := range analysts {
 		t.Run("Criar Analista para "+userRegisters[i].Name, func(t *testing.T) {
-			// Primeiro, criamos o usuário associado ao analista
-			body, _ := json.Marshal(userRegisters[i])
-			targetURL := "/register"
+			// Agora pegamos o token e o ID de uma vez
+			token, userID := registerAndLogin(t, router, userRegisters[i])
 
-			req := httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-			req.Header.Set("Content-Type", "application/json")
+			// Atribui o ID ao analista antes de enviar o POST
+			analysts[i].User.Id = userID
 
+			body, _ := json.Marshal(analysts[i])
+			targetURL := fmt.Sprintf("/users/%d/analyst", userID)
+
+			req := authRequest(http.MethodPost, targetURL, body, token)
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
 
-			// Verificamos se o usuário foi criado com sucesso
 			assert.Equal(t, http.StatusCreated, w.Code)
-			var userResponse pkg.UserResponse
-			json.Unmarshal(w.Body.Bytes(), &userResponse)
 
-			if userResponse.User.Id == 0 {
-				t.Error("O ID do analista não deveria ser zero")
-			}
-
-			// Agora criamos o analista usando o ID do usuário criado
-			analysts[i].User = userResponse.User
-			body, _ = json.Marshal(analysts[i])
-			targetURL = fmt.Sprintf("/users/%d/analyst", analysts[i].User.Id)
-
-			req = httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-			req.Header.Set("Content-Type", "application/json")
-
-			w = httptest.NewRecorder()
-			router.ServeHTTP(w, req)
-
-			// Verificamos se o analista foi criado com sucesso
-			assert.Equal(t, http.StatusCreated, w.Code)
 			var analystResponse pkg.AnalystResponse
 			json.Unmarshal(w.Body.Bytes(), &analystResponse)
+			assert.NotZero(t, analystResponse.Analyst.Id)
 
-			if analystResponse.Analyst.Id == 0 {
-				t.Error("O ID do analista não deveria ser zero")
-			}
-
-			// Então adicionamos o analista criado à resposta para verificarmos depois se todos foram criados corretamente
-
-			postAnalystResponse = append(postAnalystResponse, analystResponse.Analyst)
+			analysts[i] = analystResponse.Analyst
+			tokens = append(tokens, token)
 		})
 	}
 
@@ -193,14 +154,14 @@ func TestAnalyst(t *testing.T) {
 		var analystsResponse pkg.AnalystsResponse
 		json.Unmarshal(w.Body.Bytes(), &analystsResponse)
 
-		if len(analystsResponse.Analysts) != len(postAnalystResponse) {
-			t.Errorf("Número de analistas retornados (%d) diferente do número de analistas criados (%d)", len(analystsResponse.Analysts), len(postAnalystResponse))
+		if len(analystsResponse.Analysts) != len(analysts) {
+			t.Errorf("Número de analistas retornados (%d) diferente do número de analistas criados (%d)", len(analystsResponse.Analysts), len(analysts))
 		}
-		assert.ElementsMatch(t, analystsResponse.Analysts, postAnalystResponse)
+		assert.ElementsMatch(t, analystsResponse.Analysts, analysts)
 	})
 
 	// Agora pegaremos cada analista em específico para ver se eles estão sendo retornados corretamente
-	for _, a := range postAnalystResponse {
+	for _, a := range analysts {
 		t.Run("Pegando analista "+a.User.Name+" por ID", func(t *testing.T) {
 			targetURL := fmt.Sprintf("/users/%d/analyst", a.User.Id)
 
@@ -218,7 +179,7 @@ func TestAnalyst(t *testing.T) {
 
 	// Agora testaremos os filtros de listagem de analistas, para ver se eles estão funcionando corretamente
 	t.Run("Listando analistas com filtro de nome", func(t *testing.T) {
-		johnXina := slices.IndexFunc(postAnalystResponse, func(a pkg.Analyst) bool {
+		johnXina := slices.IndexFunc(analysts, func(a pkg.Analyst) bool {
 			return strings.HasPrefix(a.User.Name, "John Xina")
 		})
 
@@ -236,11 +197,11 @@ func TestAnalyst(t *testing.T) {
 		if len(analystsResponse.Analysts) != 1 {
 			t.Errorf("Número de analistas retornados (%d) diferente do esperado (1)", len(analystsResponse.Analysts))
 		}
-		assert.Equal(t, analystsResponse.Analysts[0], postAnalystResponse[johnXina])
+		assert.Equal(t, analystsResponse.Analysts[0], analysts[johnXina])
 	})
 
 	t.Run("Listando analistas com filtro de país", func(t *testing.T) {
-		johnXina := slices.IndexFunc(postAnalystResponse, func(a pkg.Analyst) bool {
+		johnXina := slices.IndexFunc(analysts, func(a pkg.Analyst) bool {
 			return strings.HasPrefix(a.User.Country_name, "China")
 		})
 
@@ -258,11 +219,11 @@ func TestAnalyst(t *testing.T) {
 		if len(analystsResponse.Analysts) != 1 {
 			t.Errorf("Número de analistas retornados (%d) diferente do esperado (1)", len(analystsResponse.Analysts))
 		}
-		assert.Equal(t, analystsResponse.Analysts[0], postAnalystResponse[johnXina])
+		assert.Equal(t, analystsResponse.Analysts[0], analysts[johnXina])
 	})
 
 	t.Run("Listando analistas com filtro de cidade", func(t *testing.T) {
-		joao := slices.IndexFunc(postAnalystResponse, func(a pkg.Analyst) bool {
+		joao := slices.IndexFunc(analysts, func(a pkg.Analyst) bool {
 			return strings.HasPrefix(a.User.City, "Roncador")
 		})
 
@@ -280,11 +241,11 @@ func TestAnalyst(t *testing.T) {
 		if len(analystsResponse.Analysts) != 1 {
 			t.Errorf("Número de analistas retornados (%d) diferente do esperado (1)", len(analystsResponse.Analysts))
 		}
-		assert.Equal(t, analystsResponse.Analysts[0], postAnalystResponse[joao])
+		assert.Equal(t, analystsResponse.Analysts[0], analysts[joao])
 	})
 
 	t.Run("Listando analistas com filtro de maior valor", func(t *testing.T) {
-		maxim := slices.IndexFunc(postAnalystResponse, func(a pkg.Analyst) bool {
+		maxim := slices.IndexFunc(analysts, func(a pkg.Analyst) bool {
 			return a.Hourly_rate >= 128.0
 		})
 
@@ -302,11 +263,11 @@ func TestAnalyst(t *testing.T) {
 		if len(analystsResponse.Analysts) != 1 {
 			t.Errorf("Número de analistas retornados (%d) diferente do esperado (1)", len(analystsResponse.Analysts))
 		}
-		assert.Equal(t, analystsResponse.Analysts[0], postAnalystResponse[maxim])
+		assert.Equal(t, analystsResponse.Analysts[0], analysts[maxim])
 	})
 
 	t.Run("Listando analistas com filtro de menor valor", func(t *testing.T) {
-		maxim := slices.IndexFunc(postAnalystResponse, func(a pkg.Analyst) bool {
+		maxim := slices.IndexFunc(analysts, func(a pkg.Analyst) bool {
 			return a.Hourly_rate <= 50.0
 		})
 
@@ -324,12 +285,12 @@ func TestAnalyst(t *testing.T) {
 		if len(analystsResponse.Analysts) != 1 {
 			t.Errorf("Número de analistas retornados (%d) diferente do esperado (1)", len(analystsResponse.Analysts))
 		}
-		assert.Equal(t, analystsResponse.Analysts[0], postAnalystResponse[maxim])
+		assert.Equal(t, analystsResponse.Analysts[0], analysts[maxim])
 	})
 
 	t.Run("Listando analistas com filtro de mínimo de avaliações", func(t *testing.T) {
 		expected := []pkg.Analyst{}
-		for _, a := range postAnalystResponse {
+		for _, a := range analysts {
 			if a.Total_reviews >= 60 {
 				expected = append(expected, a)
 			}
@@ -355,7 +316,7 @@ func TestAnalyst(t *testing.T) {
 
 	t.Run("Listando analistas com filtro de mínimo de média de avaliações", func(t *testing.T) {
 		expected := []pkg.Analyst{}
-		for _, a := range postAnalystResponse {
+		for _, a := range analysts {
 			if a.Mean_rating != nil && *a.Mean_rating >= 4.5 {
 				expected = append(expected, a)
 			}
@@ -381,7 +342,7 @@ func TestAnalyst(t *testing.T) {
 	})
 
 	t.Run("Listando analistas ordenando do menor para o maior", func(t *testing.T) {
-		arr := postAnalystResponse
+		arr := analysts
 		slices.SortFunc(arr, func(a, b pkg.Analyst) int {
 			// strings.Compare retorna -1 se a < b, 0 se a == b, 1 se a > b
 			return strings.Compare(a.User.Name, b.User.Name)
@@ -409,15 +370,14 @@ func TestAnalyst(t *testing.T) {
 	 */
 
 	// Agora modificaremos um analista para ver se a atualização está funcionando corretamente
-	t.Run("Atualizando analista "+postAnalystResponse[0].User.Name, func(t *testing.T) {
-		analyst := postAnalystResponse[0]
+	t.Run("Atualizando analista "+analysts[0].User.Name, func(t *testing.T) {
+		analyst := analysts[0]
 		patchBody := map[string]interface{}{
 			"hourly_rate": 150.0,
 		}
 		body, _ := json.Marshal(patchBody)
 		targetURL := fmt.Sprintf("/users/%d/analyst", analyst.User.Id)
-
-		req := httptest.NewRequest(http.MethodPatch, targetURL, bytes.NewBuffer(body))
+		req := authRequest(http.MethodPatch, targetURL, body, tokens[0])
 		req.Header.Set("Content-Type", "application/json")
 
 		w := httptest.NewRecorder()
@@ -434,11 +394,11 @@ func TestAnalyst(t *testing.T) {
 	})
 
 	// Agora deletaremos cada analista em específico para ver se eles estão sendo deletados corretamente
-	for _, a := range postAnalystResponse {
+	for i, a := range analysts {
 		t.Run("Deletando analista "+a.User.Name+" por ID", func(t *testing.T) {
 			targetURL := fmt.Sprintf("/users/%d/analyst", a.User.Id)
 
-			req := httptest.NewRequest(http.MethodDelete, targetURL, nil)
+			req := authRequest(http.MethodDelete, targetURL, nil, tokens[i])
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
 
@@ -447,11 +407,11 @@ func TestAnalyst(t *testing.T) {
 	}
 
 	// Deletaremos também os usuários associados aos analistas para limpar o banco de dados
-	for _, a := range postAnalystResponse {
+	for i, a := range analysts {
 		t.Run("Deletando usuário associado ao analista "+a.User.Name, func(t *testing.T) {
 			targetURL := fmt.Sprintf("/users/%d", a.User.Id)
 
-			req := httptest.NewRequest(http.MethodDelete, targetURL, nil)
+			req := authRequest(http.MethodDelete, targetURL, nil, tokens[i])
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
 

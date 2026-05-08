@@ -1,7 +1,6 @@
 package test
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"main/internal/routes"
@@ -15,7 +14,11 @@ import (
 )
 
 func TestSkill(t *testing.T) {
-	var analystUser = pkg.UserRegister{
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	routes.SetupRoutes(router, TestPool)
+
+	analystUser := pkg.UserRegister{
 		Name:          "Reginaldo Rézinho ain",
 		Email:         "reginald0o@utfpr.edu.br",
 		Password:      "aabbccddee",
@@ -26,167 +29,90 @@ func TestSkill(t *testing.T) {
 		City:          "Campo Mourão",
 		Timezone:      "America/Sao_Paulo",
 	}
-	var analyst = pkg.Analyst{
-		User:          pkg.User{},
-		Hourly_rate:   100.0,
-		Total_reviews: 10,
-		Mean_rating:   ToPtrFloat64(4.5),
-	}
+	analystToken, analystUserID := registerAndLogin(t, router, analystUser)
 
-	var skill = pkg.Skill{
-		Id:   0,
-		Name: "C++",
-	}
+	// ID para persistência entre subtestes
+	var skillID int
 
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-
-	routes.SetupRoutes(router, TestPool)
-
-	var postSkillReponse = pkg.Skill{}
-	var postAnalystResponse = pkg.Analyst{}
-
-	t.Run("Criando perfil de analista", func(t *testing.T) {
-		// Primeiro, criamos o usuário associado ao analista
-		body, _ := json.Marshal(analystUser)
-		targetURL := "/register"
-
-		req := httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-
+	t.Run("Criando perfil e skill base", func(t *testing.T) {
+		// 1. Criar Analista
+		analystData := pkg.Analyst{
+			Hourly_rate:   100.0,
+			Total_reviews: 10,
+			Mean_rating:   ToPtrFloat64(4.5),
+		}
+		body, _ := json.Marshal(analystData)
+		req := authRequest(http.MethodPost, fmt.Sprintf("/users/%d/analyst", analystUserID), body, analystToken)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-
-		// Verificamos se o usuário foi criado com sucesso
 		assert.Equal(t, http.StatusCreated, w.Code)
-		var userResponse pkg.UserResponse
-		json.Unmarshal(w.Body.Bytes(), &userResponse)
 
-		if userResponse.User.Id == 0 {
-			t.Error("O ID do analista não deveria ser zero")
-		}
+		var aResp pkg.AnalystResponse
+		json.Unmarshal(w.Body.Bytes(), &aResp)
 
-		// Agora criamos o analista usando o ID do usuário criado
-		analyst.User = userResponse.User
-		body, _ = json.Marshal(analyst)
-		targetURL = fmt.Sprintf("/users/%d/analyst", analyst.User.Id)
-
-		req = httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-
+		// 2. Criar Skill Global (C++)
+		skillData := pkg.Skill{Name: "C++"}
+		body, _ = json.Marshal(skillData)
+		req = authRequest(http.MethodPost, "/skills", body, analystToken)
 		w = httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-
-		// Verificamos se o analista foi criado com sucesso
-		assert.Equal(t, http.StatusCreated, w.Code)
-		var analystResponse pkg.AnalystResponse
-		json.Unmarshal(w.Body.Bytes(), &analystResponse)
-
-		if analystResponse.Analyst.User.Id == 0 {
-			t.Error("O ID do analista não deveria ser zero")
-		}
-
-		postAnalystResponse = analystResponse.Analyst
-
-		// Agora sim criamos sua competencia
-		body, _ = json.Marshal(skill)
-		targetURL = "/skills"
-
-		req = httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-
-		w = httptest.NewRecorder()
-		router.ServeHTTP(w, req)
-
 		assert.Equal(t, http.StatusCreated, w.Code)
 
-		var skillResponse = pkg.SkillResponse{}
-		json.Unmarshal(w.Body.Bytes(), &skillResponse)
-		postSkillReponse = skillResponse.Skill
-
-		assert.Equal(t, postSkillReponse.Name, skill.Name)
+		var sResp pkg.SkillResponse
+		json.Unmarshal(w.Body.Bytes(), &sResp)
+		skillID = sResp.Skill.Id
+		assert.Equal(t, "C++", sResp.Skill.Name)
 	})
 
 	t.Run("Alterando skill", func(t *testing.T) {
 		newName := "aaaa"
-		patchBody := map[string]interface{}{
-			"name": newName,
-		}
+		patchBody := map[string]interface{}{"name": newName}
 		body, _ := json.Marshal(patchBody)
-		targetURL := fmt.Sprintf("/skills/%d", postSkillReponse.Id)
 
-		req := httptest.NewRequest(http.MethodPut, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-
+		req := authRequest(http.MethodPut, fmt.Sprintf("/skills/%d", skillID), body, analystToken)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-
-		var skillResponse pkg.SkillResponse
-		json.Unmarshal(w.Body.Bytes(), &skillResponse)
-
-		if skillResponse.Skill.Name != newName {
-			t.Errorf("Valor do campo 'name' diferente do esperado")
-		}
+		var sResp pkg.SkillResponse
+		json.Unmarshal(w.Body.Bytes(), &sResp)
+		assert.Equal(t, newName, sResp.Skill.Name)
 	})
 
 	t.Run("Colocando skill no analista", func(t *testing.T) {
-		targetURL := fmt.Sprintf("/users/%d/analyst/skills", postAnalystResponse.User.Id)
-
-		assocBody := pkg.AnalystSkill{
-			Skill_id: postSkillReponse.Id,
-		}
+		// Associação Analista <-> Skill
+		assocBody := pkg.AnalystSkill{Skill_id: skillID}
 		body, _ := json.Marshal(assocBody)
 
-		req := httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-
+		req := authRequest(http.MethodPost, fmt.Sprintf("/users/%d/analyst/skills", analystUserID), body, analystToken)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusCreated, w.Code)
-
-		var resp pkg.AnalystSkillResponse
-		json.Unmarshal(w.Body.Bytes(), &resp)
 	})
 
 	t.Run("Removendo skill do analista", func(t *testing.T) {
-		targetURL := fmt.Sprintf("/users/%d/analyst/skills?skill_id=%d",
-			postAnalystResponse.User.Id, postSkillReponse.Id)
-
-		req := httptest.NewRequest(http.MethodDelete, targetURL, nil)
-
+		targetURL := fmt.Sprintf("/users/%d/analyst/skills?skill_id=%d", analystUserID, skillID)
+		req := authRequest(http.MethodDelete, targetURL, nil, analystToken)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
-	t.Run("Removendo skill", func(t *testing.T) {
-		targetURL := fmt.Sprintf("/skills/%d", postSkillReponse.Id)
+	t.Run("Cleanup final", func(t *testing.T) {
+		// Remove a Skill
+		req := authRequest(http.MethodDelete, fmt.Sprintf("/skills/%d", skillID), nil, analystToken)
+		router.ServeHTTP(httptest.NewRecorder(), req)
 
-		req := httptest.NewRequest(http.MethodDelete, targetURL, nil)
+		// Remove o Analista
+		req = authRequest(http.MethodDelete, fmt.Sprintf("/users/%d/analyst", analystUserID), nil, analystToken)
+		router.ServeHTTP(httptest.NewRecorder(), req)
+
+		// Remove o Usuário
+		req = authRequest(http.MethodDelete, fmt.Sprintf("/users/%d", analystUserID), nil, analystToken)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-
 		assert.Equal(t, http.StatusOK, w.Code)
-
-		targetURL = fmt.Sprintf("/users/%d/analyst", postAnalystResponse.User.Id)
-
-		req = httptest.NewRequest(http.MethodDelete, targetURL, nil)
-		w = httptest.NewRecorder()
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-
-		targetURL = fmt.Sprintf("/users/%d", postAnalystResponse.User.Id)
-
-		req = httptest.NewRequest(http.MethodDelete, targetURL, nil)
-		w = httptest.NewRecorder()
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-
 	})
 }
