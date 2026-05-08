@@ -1,8 +1,6 @@
 "use client";
 
 import { ITechnology } from "@/types/analyst/profile/technology";
-import { ITechnologySavesProps } from "@/types/analyst/register/technologySavesProps";
-import { IRegisterTechnology } from "@/types/analyst/register/registerTechnology";
 import { useState } from "react";
 import { FormInput, FormButton, Alert } from "@/components/ui";
 
@@ -72,7 +70,10 @@ function removeTechnology(
 function TechnologySaves({
   technology,
   setTechnologiesAnalyst,
-}: ITechnologySavesProps) {
+}: {
+  technology: ITechnology;
+  setTechnologiesAnalyst: React.Dispatch<React.SetStateAction<ITechnology[]>>;
+}) {
   return (
     <FormButton
       variant="outline"
@@ -89,7 +90,10 @@ function TechnologySaves({
 export function RegisterTechnologies({
   technologiesAnalyst,
   setTechnologiesAnalyst,
-}: IRegisterTechnology) {
+}: {
+  technologiesAnalyst: ITechnology[];
+  setTechnologiesAnalyst: React.Dispatch<React.SetStateAction<ITechnology[]>>;
+}) {
   const [errors, setErrors] = useState<string>("");
   const [technology, setTechnology] = useState<ITechnology>({
     technology: "",

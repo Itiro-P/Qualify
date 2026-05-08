@@ -1,8 +1,6 @@
 "use client";
 
 import { Certification } from "@/types/services/certification";
-import { ICertificationSavesProps } from "@/types/analyst/register/certificationSavesProps";
-import { IRegisterCertifications } from "@/types/analyst/register/registerCertification";
 import { useState } from "react";
 import { FormInput, FormButton, Alert } from "@/components/ui";
 
@@ -131,7 +129,12 @@ function removeCertification(
 function CertificationSaves({
   certification,
   setCertificationsAnalyst,
-}: ICertificationSavesProps) {
+}: {
+  certification: Certification;
+  setCertificationsAnalyst: React.Dispatch<
+    React.SetStateAction<Certification[]>
+  >;
+}) {
   return (
     <FormButton
       variant="outline"
@@ -150,7 +153,12 @@ function CertificationSaves({
 export function RegisterCertifications({
   certificationsAnalyst,
   setCertificationsAnalyst,
-}: IRegisterCertifications) {
+}: {
+  certificationsAnalyst: Certification[];
+  setCertificationsAnalyst: React.Dispatch<
+    React.SetStateAction<Certification[]>
+  >;
+}) {
   const [certification, setCertification] = useState<Certification>({
     id: 0,
     name: "",

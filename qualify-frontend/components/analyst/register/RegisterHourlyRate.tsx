@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { IRegisterHourlyRate } from "@/types/analyst/register/registerHourlyRate";
 import { FormInput, FormButton } from "@/components/ui";
 
 function handleChange(
@@ -44,7 +43,10 @@ function handleSubmit(
 export function RegisterHourlyRate({
   hourlyRateAnalyst,
   setHourlyRateAnalyst,
-}: IRegisterHourlyRate) {
+}: {
+  hourlyRateAnalyst: number;
+  setHourlyRateAnalyst: React.Dispatch<React.SetStateAction<number>>;
+}) {
   const [errors, setErrors] = useState<string>("");
 
   return (
