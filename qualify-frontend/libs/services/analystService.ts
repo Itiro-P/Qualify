@@ -1,4 +1,5 @@
 import { api } from "@/libs/api";
+import { Certification } from "@/types/services/certification";
 import type {
   AnalystResponse,
   AnalystsResponse,
@@ -67,7 +68,7 @@ export const analystService = {
   },
 
   // Certifications
-  listCertifications(userId: number): Promise<{ certifications: unknown[]; count: number }> {
+  listCertifications(userId: number): Promise<{ certifications: Certification[]; count: number }> {
     return api.get(`/users/${userId}/analyst/certifications`);
   },
 

@@ -1,8 +1,8 @@
-import { ICertification } from "@/types/analyst/profile/certification";
+import { Certification } from "@/types/services/certification";
 
 export interface IRegisterCertifications {
-  certificationsAnalyst: ICertification[];
+  certificationsAnalyst: Certification[];
   setCertificationsAnalyst: React.Dispatch<
-    React.SetStateAction<ICertification[]>
+    React.SetStateAction<Certification[]>
   >;
 }

@@ -5,11 +5,23 @@ import { Review } from "@/components/analyst/profile/Review";
 import { Biography } from "@/components/analyst/profile/Biography";
 import { Technologies } from "@/components/analyst/profile/Technologies";
 import { Certifications } from "@/components/analyst/profile/Certifications";
+import { analystService } from "@/libs/services/analystService";
+import { Analyst } from "@/types/services";
+import { ITechnology } from "@/types/analyst/profile/technology";
 
-function TabsSystem() {
+function TabsSystem(analyst: Analyst) {
+  const [technologiesCardsVector, setTechnologiesCardsVector] = useState<
+    ITechnology[]
+  >([]);
   const [abaAtiva, setAbaAtiva] = useState<
     "biography" | "reviews" | "technologies" | "certifications"
   >("biography");
+
+  analystService.listSkills(analyst.id!).then((resp) => {
+    for (const skill in resp.analyst_skills) {
+      setTechnologiesCardsVector((prev) => [...prev, { technology: skill }]);
+    }
+  });
 
   return (
     <div>
@@ -45,7 +57,7 @@ function TabsSystem() {
 
         {abaAtiva === "reviews" && <Review />}
 
-        {abaAtiva === "technologies" && <Technologies />}
+        {abaAtiva === "technologies" && <Technologies technologiesCardsVector={technologiesCardsVector}/>}
 
         {abaAtiva === "certifications" && <Certifications />}
       </div>

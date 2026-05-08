@@ -1,28 +1,31 @@
 import { GraduationCap } from "lucide-react";
-import { ICertification } from "@/types/analyst/profile/certification";
+import { Certification } from "@/types/services/certification";
 
-const certificationsCardsVector: ICertification[] = [
+const certificationsCardsVector: Certification[] = [
   {
+    id: 1,
     name: "Certificado de Testador Supremo de Botões",
     institution: "Irmandade do Teste Supremo",
     description: "Me da certificações de testar botões",
-    year: "2024",
+    year: 2024,
   },
   {
+    id: 0,
     name: "Certificado de Guardião da Qualidade",
     institution: "Ordem Secreta do Teste",
     description: "Me da certificações de testar botões",
-    year: "2023",
+    year: 2023,
   },
   {
+    id: 2,
     name: "Certificado Profissional em Testes Aleatórios",
     description: "Me da certificações de testar botões",
     institution: "Comitê do Teste Aleatório",
-    year: "2023",
+    year: 2023,
   },
 ];
 
-function Card({ name, institution, description, year }: ICertification) {
+function Card({ name, institution, description, year }: Certification) {
   return (
     <div className="flex flex-col mt-4 mb-4">
       <h3 className="text-white-950 mb-1">{name}</h3>

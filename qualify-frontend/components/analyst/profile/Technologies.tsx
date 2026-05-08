@@ -1,20 +1,6 @@
 import { Settings } from "lucide-react";
-import { ITechnology } from "@/types/analyst/profile/technology";
-
-const technologiesCardsVector: ITechnology[] = [
-  {
-    technology: "Docker",
-  },
-  {
-    technology: "Javascript/TS",
-  },
-  {
-    technology: "GitHub Actions",
-  },
-  {
-    technology: "Kubernets",
-  },
-];
+import { ITechnology } from "@/types/analyst/profile/technology"; 
+import { ITechnologiesCardsVectorProps } from "@/types/analyst/profile/technologiesCardsVectorProps";
 
 function Card({ technology }: ITechnology) {
   return (
@@ -24,7 +10,7 @@ function Card({ technology }: ITechnology) {
   );
 }
 
-export function Technologies() {
+export function Technologies({ technologiesCardsVector }: ITechnologiesCardsVectorProps) {
   return (
     <div className="flex flex-col p-4 mb-6">
       <div className="flex">
