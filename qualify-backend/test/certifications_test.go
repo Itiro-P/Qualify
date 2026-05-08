@@ -1,7 +1,6 @@
 package test
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"main/internal/routes"
@@ -46,18 +45,6 @@ func TestCertifications(t *testing.T) {
 			Description: "Possui habilidades extraordinárias em computaria.",
 			Year:        1960,
 		},
-		{
-			Name:        "Ninja do Merge sem Conflito",
-			Institution: "UTFPR",
-			Description: "Resolve conflitos de git com silêncio e honra.",
-			Year:        2022,
-		},
-		{
-			Name:        "Especialista em Javanês",
-			Institution: "UTFPR",
-			Description: "Sabe muito Java.",
-			Year:        2019,
-		},
 	}
 
 	gin.SetMode(gin.TestMode)
@@ -65,17 +52,34 @@ func TestCertifications(t *testing.T) {
 
 	routes.SetupRoutes(router, TestPool)
 
-	postCertResponse := []pkg.Certification{}
+	userRegister := pkg.UserRegister{
+		Name:          "Paulo Sabo",
+		Email:         "sabo@utfpr.edu.br",
+		Password:      "aabbccddee",
+		Phone:         "45999697000",
+		Country_code:  "BR",
+		Country_name:  "Brazil",
+		Country_state: "PR",
+		City:          "Campo Mourão",
+		Timezone:      "America/Sao_Paulo",
+	}
+
+	analyst := pkg.Analyst{
+		Hourly_rate:   128.0,
+		Total_reviews: 28,
+		Mean_rating:   ToPtrFloat64(1.6),
+	}
+
+	token, userID := registerAndLogin(t, router, userRegister)
 
 	// Primeiros testes para criação de certificações
-	for _, c := range certifications {
+	for i, c := range certifications {
 		t.Run("Criar Certificação para "+c.Name, func(t *testing.T) {
 			certification := c
 			body, _ := json.Marshal(certification)
 			targetURL := "/certifications"
 
-			req := httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-			req.Header.Set("Content-Type", "application/json")
+			req := authRequest(http.MethodPost, targetURL, body, token)
 
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
@@ -88,8 +92,7 @@ func TestCertifications(t *testing.T) {
 			if certificationResponse.Certification.Id == 0 {
 				t.Error("O ID da certificação não deveria ser zero")
 			}
-
-			postCertResponse = append(postCertResponse, certificationResponse.Certification)
+			certifications[i] = certificationResponse.Certification
 		})
 	}
 
@@ -107,11 +110,11 @@ func TestCertifications(t *testing.T) {
 
 		var certificationResponse pkg.CertificationsResponse
 		json.Unmarshal(w.Body.Bytes(), &certificationResponse)
-		assert.ElementsMatch(t, postCertResponse, certificationResponse.Certifications)
+		assert.ElementsMatch(t, certifications, certificationResponse.Certifications)
 	})
 
 	// Agora veremos o GET por ID
-	for _, c := range postCertResponse {
+	for _, c := range certifications {
 		t.Run("Listando Certificação para "+c.Name, func(t *testing.T) {
 			targetURL := fmt.Sprintf("/certifications/%d", c.Id)
 
@@ -129,7 +132,7 @@ func TestCertifications(t *testing.T) {
 
 	// Agora atualizaremos uma certificação
 	t.Run("Atualizando uma certificação ", func(t *testing.T) {
-		var cert = postCertResponse[0]
+		var cert = certifications[0]
 		patchBody := map[string]interface{}{
 			"year": 1920,
 		}
@@ -137,8 +140,7 @@ func TestCertifications(t *testing.T) {
 		body, _ := json.Marshal(patchBody)
 		targetURL := fmt.Sprintf("/certifications/%d", cert.Id)
 
-		req := httptest.NewRequest(http.MethodPatch, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
+		req := authRequest(http.MethodPatch, targetURL, body, token)
 
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
@@ -153,78 +155,33 @@ func TestCertifications(t *testing.T) {
 
 	// Agora testaremos as certificações no analista
 	t.Run("Apontando certificação para um analista", func(t *testing.T) {
-		analyst := pkg.Analyst{
-			User: pkg.User{
-				Name:          "Rodrigo do Piolho",
-				Email:         "rodrigo@utfpr.edu.br",
-				Phone:         "44999690000",
-				Country_code:  "BR",
-				Country_name:  "Brazil",
-				Country_state: "GO",
-				City:          "Goiânia",
-				Timezone:      "America/Sao_Paulo",
-			},
-			Hourly_rate:   128.0,
-			Total_reviews: 28,
-			Mean_rating:   ToPtrFloat64(1.6),
-		}
+		body, _ := json.Marshal(analyst)
+		targetURL := fmt.Sprintf("/users/%d/analyst", userID)
 
-		t.Run("Criar Analista para "+analyst.User.Name, func(t *testing.T) {
-			// Primeiro, criamos o usuário associado ao analista
-			body, _ := json.Marshal(analyst.User)
-			targetURL := "/register"
+		req := authRequest(http.MethodPost, targetURL, body, token)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
 
-			req := httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-			req.Header.Set("Content-Type", "application/json")
+		assert.Equal(t, http.StatusCreated, w.Code)
 
-			w := httptest.NewRecorder()
-			router.ServeHTTP(w, req)
+		var analystResponse pkg.AnalystResponse
+		json.Unmarshal(w.Body.Bytes(), &analystResponse)
+		assert.NotZero(t, analystResponse.Analyst.Id)
 
-			// Verificamos se o usuário foi criado com sucesso
-			assert.Equal(t, http.StatusCreated, w.Code)
-			var userResponse pkg.UserResponse
-			json.Unmarshal(w.Body.Bytes(), &userResponse)
+		analyst = analystResponse.Analyst
 
-			if userResponse.User.Id == 0 {
-				t.Error("O ID do analista não deveria ser zero")
-			}
+		certification := certifications[0]
 
-			// Agora criamos o analista usando o ID do usuário criado
-			analyst.User = userResponse.User
-			body, _ = json.Marshal(analyst)
-			targetURL = fmt.Sprintf("/users/%d/analyst", analyst.User.Id)
-
-			req = httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-			req.Header.Set("Content-Type", "application/json")
-
-			w = httptest.NewRecorder()
-			router.ServeHTTP(w, req)
-
-			// Verificamos se o analista foi criado com sucesso
-			assert.Equal(t, http.StatusCreated, w.Code)
-			var analystResponse pkg.AnalystResponse
-			json.Unmarshal(w.Body.Bytes(), &analystResponse)
-
-			if analystResponse.Analyst.Id == 0 {
-				t.Error("O ID do analista não deveria ser zero")
-			}
-
-			analyst = analystResponse.Analyst
-		})
-
-		certification := postCertResponse[0]
-
-		targetURL := fmt.Sprintf("/users/%d/analyst/certifications", analyst.Id)
+		targetURL = fmt.Sprintf("/users/%d/analyst/certifications", analyst.Id)
 
 		reqBody := pkg.AnalystCertification{
 			Certification_id: certification.Id,
 			Analyst_id:       analyst.Id,
 		}
-		body, _ := json.Marshal(reqBody)
-		req := httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
+		body, _ = json.Marshal(reqBody)
+		req = authRequest(http.MethodPost, targetURL, body, token)
 
-		w := httptest.NewRecorder()
+		w = httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusCreated, w.Code)
@@ -236,27 +193,18 @@ func TestCertifications(t *testing.T) {
 
 		w = httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-
-		targetURL = fmt.Sprintf("/users/%d", analyst.User.Id)
-
-		req = httptest.NewRequest(http.MethodDelete, targetURL, nil)
-
-		w = httptest.NewRecorder()
-		router.ServeHTTP(w, req)
 	})
 
 	// Agora deletaremos as certificações criadas
-	for _, c := range postCertResponse {
+	for _, c := range certifications {
 		t.Run("Removendo Certificação para "+c.Name, func(t *testing.T) {
-			certification := c
-			targetURL := fmt.Sprintf("/certifications/%d", certification.Id)
-
-			req := httptest.NewRequest(http.MethodDelete, targetURL, nil)
+			targetURL := fmt.Sprintf("/certifications/%d", c.Id)
+			req := authRequest(http.MethodDelete, targetURL, nil, token)
 
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
 
-			// Verificamos se a certificação foi criada com sucesso
+			// Verificamos se a certificação foi removida com sucesso
 			assert.Equal(t, http.StatusOK, w.Code)
 		})
 	}

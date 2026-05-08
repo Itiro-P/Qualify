@@ -2,6 +2,8 @@ package routes
 
 import (
 	"main/internal/database/handlers"
+	"main/internal/middleware"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -10,117 +12,134 @@ import (
 )
 
 func SetupRoutes(router *gin.Engine, conn *pgxpool.Pool) {
-	// Users are the base entity. Roles are assigned as nested sub-resources.
-	router.POST("/register", handlers.CreateUser(conn))
-	router.POST("/login", handlers.Login(conn))
-	users := router.Group("/users")
+	router.Use(middleware.SecurityHeadersMiddleware())
+	router.Use(middleware.ErrorHandlingMiddleware())
+	router.Use(middleware.LoggingMiddleware())
+	router.Use(middleware.EnhancedCORSMiddleware())
+
+	// Rate limiters
+	authRateLimiter := middleware.NewRateLimiter(5, 15*time.Minute)
+	loginRateLimiter := middleware.NewRateLimiter(5, 5*time.Minute)
+
+	// --- ROTAS PÚBLICAS ---
+	router.POST("/register", middleware.RateLimitMiddleware(authRateLimiter), handlers.CreateUser(conn))
+
+	auth := router.Group("/auth")
 	{
-		users.GET("/:id", handlers.GetUser(conn))
-
-		user := users.Group("/:id")
-		{
-			user.PUT("", handlers.UpdateUser(conn))
-			user.PATCH("", handlers.UpdateUserPartial(conn))
-			user.DELETE("", handlers.DeleteUser(conn))
-
-			// User-owned profile/sub-resources
-			user.GET("/profile", handlers.GetUserProfile(conn))
-			user.POST("/profile", handlers.CreateUserProfile(conn))
-			user.PUT("/profile", handlers.UpdateUserProfile(conn))
-			user.DELETE("/profile", handlers.DeleteUserProfile(conn))
-
-			// Role assignment under the user resource
-			analystRole := user.Group("/analyst")
-			{
-				analystRole.POST("", handlers.CreateAnalyst(conn))
-				analystRole.GET("", handlers.GetAnalyst(conn))
-				analystRole.PUT("", handlers.UpdateAnalyst(conn))
-				analystRole.PATCH("", handlers.UpdateAnalystPartial(conn))
-				analystRole.DELETE("", handlers.DeleteAnalyst(conn))
-				// Analyst-specific sub-resources
-
-				analystRole.GET("/skills", handlers.GetAnalystSkills(conn))
-				analystRole.POST("/skills", handlers.CreateAnalystSkill(conn))
-				analystRole.DELETE("/skills", handlers.DeleteAnalystSkill(conn))
-				analystRole.GET("/profile", handlers.GetAnalystProfile(conn))
-				analystRole.POST("/profile", handlers.CreateAnalystProfile(conn))
-				analystRole.PUT("/profile", handlers.UpdateAnalystProfile(conn))
-				analystRole.DELETE("/profile", handlers.DeleteAnalystProfile(conn))
-
-				analystRole.GET("/certifications", handlers.GetAnalystCertifications(conn))
-				analystRole.POST("/certifications", handlers.CreateAnalystCertification(conn))
-				analystRole.DELETE("/certifications", handlers.DeleteAnalystCertification(conn))
-			}
-
-			clientRole := user.Group("/client")
-			{
-				clientRole.POST("", handlers.CreateClient(conn))
-				clientRole.GET("", handlers.GetClient(conn))
-				clientRole.PUT("", handlers.UpdateClient(conn))
-				clientRole.PATCH("", handlers.UpdateClientPartial(conn))
-				clientRole.DELETE("", handlers.DeleteClient(conn))
-
-				// Client-specific sub-resources
-				clientRole.GET("/profile", handlers.GetClientProfile(conn))
-				clientRole.POST("/profile", handlers.CreateClientProfile(conn))
-				clientRole.PUT("/profile", handlers.UpdateClientProfile(conn))
-				clientRole.DELETE("/profile", handlers.DeleteClientProfile(conn))
-			}
-		}
+		auth.POST("/login", middleware.RateLimitMiddleware(loginRateLimiter), handlers.Login(conn))
+		auth.POST("/refresh", handlers.RefreshToken(conn))
+		auth.POST("/reset-password", middleware.RateLimitMiddleware(authRateLimiter), handlers.ResetPassword(conn))
+		auth.POST("/reset-password/confirm", handlers.ConfirmPasswordReset(conn))
 	}
 
-	// Top-level collections for search/list endpoints
+	// Leituras Públicas (Users, Analysts, Clients)
 	router.GET("/analysts", handlers.GetAnalysts(conn))
 	router.GET("/clients", handlers.GetClients(conn))
 
-	reviews := router.Group("/reviews")
+	usersPublic := router.Group("/users")
 	{
-		reviews.GET("", handlers.GetReviews(conn))
-		reviews.GET("/:id", handlers.GetReview(conn))
-		reviews.POST("", handlers.CreateReview(conn))
-		reviews.PUT("/:id", handlers.UpdateReview(conn))
-		reviews.PATCH("/:id", handlers.UpdateReviewPartial(conn))
-		reviews.DELETE("/:id", handlers.DeleteReview(conn))
+		usersPublic.GET("/:id", handlers.GetUser(conn))
+		usersPublic.GET("/:id/profile", handlers.GetUserProfile(conn))
+		usersPublic.GET("/:id/analyst", handlers.GetAnalyst(conn))
+		usersPublic.GET("/:id/analyst/skills", handlers.GetAnalystSkills(conn))
+		usersPublic.GET("/:id/analyst/certifications", handlers.GetAnalystCertifications(conn))
+		usersPublic.GET("/:id/analyst/profile", handlers.GetAnalystProfile(conn))
+		usersPublic.GET("/:id/client", handlers.GetClient(conn))
+		usersPublic.GET("/:id/client/profile", handlers.GetClientProfile(conn))
 	}
 
-	proposals := router.Group("/proposals")
+	// Outras Leituras Públicas
+	router.GET("/reviews", handlers.GetReviews(conn))
+	router.GET("/reviews/:id", handlers.GetReview(conn))
+	router.GET("/proposals", handlers.GetProposalLetters(conn))
+	router.GET("/proposals/:id", handlers.GetProposalLetter(conn))
+	router.GET("/services", handlers.GetServices(conn))
+	router.GET("/services/:id", handlers.GetService(conn))
+	router.GET("/skills", handlers.GetSkills(conn))
+	router.GET("/certifications", handlers.GetCertifications(conn))
+	router.GET("/certifications/:id", handlers.GetCertification(conn))
+
+	// --- ROTAS AUTENTICADAS (Escrita e Sensíveis) ---
+	authenticated := router.Group("")
+	authenticated.Use(middleware.AuthMiddleware())
 	{
-		proposals.GET("", handlers.GetProposalLetters(conn))
-		proposals.GET("/:id", handlers.GetProposalLetter(conn))
-		proposals.POST("", handlers.CreateProposalLetter(conn))
-		proposals.PUT("/:id", handlers.UpdateProposalLetter(conn))
-		proposals.PATCH("/:id", handlers.UpdateProposalLetterPartial(conn))
-		proposals.DELETE("/:id", handlers.DeleteProposalLetter(conn))
+		// Auth Privado
+		authenticated.POST("/auth/logout", handlers.Logout(conn))
+		authenticated.POST("/auth/change-password", handlers.ChangePassword(conn))
+
+		users := authenticated.Group("/users")
+		{
+			users.PUT("/:id", handlers.UpdateUser(conn))
+			users.PATCH("/:id", handlers.UpdateUserPartial(conn))
+			users.DELETE("/:id", handlers.DeleteUser(conn))
+
+			profile := users.Group("/:id/profile")
+			{
+				profile.POST("", handlers.CreateUserProfile(conn))
+				profile.PUT("", handlers.UpdateUserProfile(conn))
+				profile.DELETE("", handlers.DeleteUserProfile(conn))
+			}
+
+			analyst := users.Group("/:id/analyst")
+			{
+				analyst.POST("", handlers.CreateAnalyst(conn))
+				analyst.PUT("", handlers.UpdateAnalyst(conn))
+				analyst.PATCH("", handlers.UpdateAnalystPartial(conn))
+				analyst.DELETE("", handlers.DeleteAnalyst(conn))
+				analyst.POST("/skills", handlers.CreateAnalystSkill(conn))
+				analyst.DELETE("/skills", handlers.DeleteAnalystSkill(conn))
+				analyst.POST("/certifications", handlers.CreateAnalystCertification(conn))
+				analyst.DELETE("/certifications", handlers.DeleteAnalystCertification(conn))
+
+				analystProfile := analyst.Group("/profile")
+				{
+					analystProfile.POST("", handlers.CreateAnalystProfile(conn))
+					analystProfile.PUT("", handlers.UpdateAnalystProfile(conn))
+					analystProfile.DELETE("", handlers.DeleteAnalystProfile(conn))
+				}
+			}
+
+			client := users.Group("/:id/client")
+			{
+				client.POST("", handlers.CreateClient(conn))
+				client.PUT("", handlers.UpdateClient(conn))
+				client.PATCH("", handlers.UpdateClientPartial(conn))
+				client.DELETE("", handlers.DeleteClient(conn))
+
+				clientProfile := client.Group("/profile")
+				{
+					clientProfile.POST("", handlers.CreateClientProfile(conn))
+					clientProfile.PUT("", handlers.UpdateClientProfile(conn))
+					clientProfile.DELETE("", handlers.DeleteClientProfile(conn))
+				}
+			}
+		}
+
+		// Escrita em Coleções
+		authenticated.POST("/reviews", handlers.CreateReview(conn))
+		authenticated.PUT("/reviews/:id", handlers.UpdateReview(conn))
+		authenticated.PATCH("/reviews/:id", handlers.UpdateReviewPartial(conn))
+		authenticated.DELETE("/reviews/:id", handlers.DeleteReview(conn))
+
+		authenticated.POST("/proposals", handlers.CreateProposalLetter(conn))
+		authenticated.PUT("/proposals/:id", handlers.UpdateProposalLetter(conn))
+		authenticated.PATCH("/proposals/:id", handlers.UpdateProposalLetterPartial(conn))
+		authenticated.DELETE("/proposals/:id", handlers.DeleteProposalLetter(conn))
+
+		authenticated.POST("/services", handlers.CreateService(conn))
+		authenticated.PUT("/services/:id", handlers.UpdateService(conn))
+		authenticated.PATCH("/services/:id", handlers.UpdateServicePartial(conn))
+		authenticated.DELETE("/services/:id", handlers.DeleteService(conn))
+
+		authenticated.POST("/skills", handlers.CreateSkill(conn))
+		authenticated.PUT("/skills/:id", handlers.UpdateSkill(conn))
+		authenticated.DELETE("/skills/:id", handlers.DeleteSkill(conn))
+
+		authenticated.POST("/certifications", handlers.CreateCertification(conn))
+		authenticated.PUT("/certifications/:id", handlers.UpdateCertification(conn))
+		authenticated.PATCH("/certifications/:id", handlers.UpdateCertificationPartial(conn))
+		authenticated.DELETE("/certifications/:id", handlers.DeleteCertification(conn))
 	}
 
-	services := router.Group("/services")
-	{
-		services.GET("", handlers.GetServices(conn))
-		services.GET("/:id", handlers.GetService(conn))
-		services.POST("", handlers.CreateService(conn))
-		services.PUT("/:id", handlers.UpdateService(conn))
-		services.PATCH("/:id", handlers.UpdateServicePartial(conn))
-		services.DELETE("/:id", handlers.DeleteService(conn))
-	}
-
-	skills := router.Group("/skills")
-	{
-		skills.GET("", handlers.GetSkills(conn))
-		skills.POST("", handlers.CreateSkill(conn))
-		skills.PUT("/:id", handlers.UpdateSkill(conn))
-		skills.DELETE("/:id", handlers.DeleteSkill(conn))
-	}
-
-	certifications := router.Group("/certifications")
-	{
-		certifications.GET("", handlers.GetCertifications(conn))
-		certifications.GET("/:id", handlers.GetCertification(conn))
-		certifications.POST("", handlers.CreateCertification(conn))
-		certifications.PUT("/:id", handlers.UpdateCertification(conn))
-		certifications.PATCH("/:id", handlers.UpdateCertificationPartial(conn))
-		certifications.DELETE("/:id", handlers.DeleteCertification(conn))
-	}
-
-	// swagger
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }

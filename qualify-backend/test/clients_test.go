@@ -1,7 +1,6 @@
 package test
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"main/internal/routes"
@@ -51,59 +50,37 @@ func TestClient(t *testing.T) {
 			Proposed_budget: 69.0,
 		},
 	}
+	tokens := []string{}
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 
 	routes.SetupRoutes(router, TestPool)
 
-	postClientResponse := []pkg.Client{}
-
 	// Primeiros testes para criação de clientes, que dependem da criação prévia de usuários
 	for i := range len(userRegisters) {
 		t.Run("Criar Cliente para "+userRegisters[i].Name, func(t *testing.T) {
-			// Primeiro, criamos o usuário associado ao cliente
-			body, _ := json.Marshal(userRegisters[i])
-			targetURL := "/register"
+			// Agora pegamos o token e o ID de uma vez
+			token, userID := registerAndLogin(t, router, userRegisters[i])
 
-			req := httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-			req.Header.Set("Content-Type", "application/json")
+			// Atribui o ID ao analista antes de enviar o POST
+			clients[i].User.Id = userID
 
+			body, _ := json.Marshal(clients[i])
+			targetURL := fmt.Sprintf("/users/%d/client", userID)
+
+			req := authRequest(http.MethodPost, targetURL, body, token)
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
 
-			// Verificamos se o usuário foi criado com sucesso
 			assert.Equal(t, http.StatusCreated, w.Code)
-			var userResponse pkg.UserResponse
-			json.Unmarshal(w.Body.Bytes(), &userResponse)
 
-			if userResponse.User.Id == 0 {
-				t.Error("O ID do cliente não deveria ser zero")
-			}
-
-			// Agora criamos o cliente usando o ID do usuário criado
-			clients[i].User = userResponse.User
-			body, _ = json.Marshal(clients[i])
-			targetURL = fmt.Sprintf("/users/%d/client", clients[i].User.Id)
-
-			req = httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-			req.Header.Set("Content-Type", "application/json")
-
-			w = httptest.NewRecorder()
-			router.ServeHTTP(w, req)
-
-			// Verificamos se o cliente foi criado com sucesso
-			assert.Equal(t, http.StatusCreated, w.Code)
 			var clientResponse pkg.ClientResponse
 			json.Unmarshal(w.Body.Bytes(), &clientResponse)
+			assert.NotZero(t, clientResponse.Client.Id)
 
-			if clientResponse.Client.Id == 0 {
-				t.Error("O ID do cliente não deveria ser zero")
-			}
-
-			// Então adicionamos o cliente criado à resposta para verificarmos depois se todos foram criados corretamente
-
-			postClientResponse = append(postClientResponse, clientResponse.Client)
+			clients[i] = clientResponse.Client
+			tokens = append(tokens, token)
 		})
 	}
 
@@ -120,14 +97,14 @@ func TestClient(t *testing.T) {
 		var clientsResponse pkg.ClientsResponse
 		json.Unmarshal(w.Body.Bytes(), &clientsResponse)
 
-		if len(clientsResponse.Clients) != len(postClientResponse) {
-			t.Errorf("Número de clientes retornados (%d) diferente do número de clientes criados (%d)", len(clientsResponse.Clients), len(postClientResponse))
+		if len(clientsResponse.Clients) != len(clients) {
+			t.Errorf("Número de clientes retornados (%d) diferente do número de clientes criados (%d)", len(clientsResponse.Clients), len(clients))
 		}
-		assert.ElementsMatch(t, clientsResponse.Clients, postClientResponse)
+		assert.ElementsMatch(t, clientsResponse.Clients, clients)
 	})
 
 	// Agora pegaremos cada cliente em específico para ver se eles estão sendo retornados corretamente
-	for _, a := range postClientResponse {
+	for _, a := range clients {
 		t.Run("Pegando cliente "+a.User.Name+" por ID", func(t *testing.T) {
 			targetURL := fmt.Sprintf("/users/%d/client", a.User.Id)
 
@@ -145,7 +122,7 @@ func TestClient(t *testing.T) {
 
 	// Agora testaremos os filtros de listagem de clientes, para ver se eles estão funcionando corretamente
 	t.Run("Listando clientes com filtro de nome", func(t *testing.T) {
-		frank := slices.IndexFunc(postClientResponse, func(a pkg.Client) bool {
+		frank := slices.IndexFunc(clients, func(a pkg.Client) bool {
 			return strings.HasPrefix(a.User.Name, "Frank")
 		})
 
@@ -163,11 +140,11 @@ func TestClient(t *testing.T) {
 		if len(clientsResponse.Clients) != 1 {
 			t.Errorf("Número de clientes retornados (%d) diferente do esperado (1)", len(clientsResponse.Clients))
 		}
-		assert.Equal(t, clientsResponse.Clients[0], postClientResponse[frank])
+		assert.Equal(t, clientsResponse.Clients[0], clients[frank])
 	})
 
 	t.Run("Listando clientes com filtro de país", func(t *testing.T) {
-		frank := slices.IndexFunc(postClientResponse, func(a pkg.Client) bool {
+		frank := slices.IndexFunc(clients, func(a pkg.Client) bool {
 			return strings.HasPrefix(a.User.Country_name, "Romania")
 		})
 
@@ -185,11 +162,11 @@ func TestClient(t *testing.T) {
 		if len(clientsResponse.Clients) != 1 {
 			t.Errorf("Número de clientes retornados (%d) diferente do esperado (1)", len(clientsResponse.Clients))
 		}
-		assert.Equal(t, clientsResponse.Clients[0], postClientResponse[frank])
+		assert.Equal(t, clientsResponse.Clients[0], clients[frank])
 	})
 
 	t.Run("Listando clientes com filtro de cidade", func(t *testing.T) {
-		client := slices.IndexFunc(postClientResponse, func(a pkg.Client) bool {
+		client := slices.IndexFunc(clients, func(a pkg.Client) bool {
 			return strings.HasPrefix(a.User.City, "Campo Mourão")
 		})
 
@@ -207,11 +184,11 @@ func TestClient(t *testing.T) {
 		if len(clientsResponse.Clients) != 1 {
 			t.Errorf("Número de clientes retornados (%d) diferente do esperado (1)", len(clientsResponse.Clients))
 		}
-		assert.Equal(t, clientsResponse.Clients[0], postClientResponse[client])
+		assert.Equal(t, clientsResponse.Clients[0], clients[client])
 	})
 
 	t.Run("Listando clientes com filtro de maior valor", func(t *testing.T) {
-		maxim := slices.IndexFunc(postClientResponse, func(a pkg.Client) bool {
+		maxim := slices.IndexFunc(clients, func(a pkg.Client) bool {
 			return a.Proposed_budget >= 100.0
 		})
 
@@ -229,11 +206,11 @@ func TestClient(t *testing.T) {
 		if len(clientsResponse.Clients) != 1 {
 			t.Errorf("Número de clientes retornados (%d) diferente do esperado (1)", len(clientsResponse.Clients))
 		}
-		assert.Equal(t, clientsResponse.Clients[0], postClientResponse[maxim])
+		assert.Equal(t, clientsResponse.Clients[0], clients[maxim])
 	})
 
 	t.Run("Listando clientes com filtro de menor valor", func(t *testing.T) {
-		maxim := slices.IndexFunc(postClientResponse, func(a pkg.Client) bool {
+		maxim := slices.IndexFunc(clients, func(a pkg.Client) bool {
 			return a.Proposed_budget <= 69.0
 		})
 
@@ -251,7 +228,7 @@ func TestClient(t *testing.T) {
 		if len(clientsResponse.Clients) != 1 {
 			t.Errorf("Número de clientes retornados (%d) diferente do esperado (1)", len(clientsResponse.Clients))
 		}
-		assert.Equal(t, clientsResponse.Clients[0], postClientResponse[maxim])
+		assert.Equal(t, clientsResponse.Clients[0], clients[maxim])
 	})
 
 	/**
@@ -259,16 +236,15 @@ func TestClient(t *testing.T) {
 	 */
 
 	// Agora modificaremos um cliente para ver se a atualização está funcionando corretamente
-	t.Run("Atualizando cliente "+postClientResponse[0].User.Name, func(t *testing.T) {
-		client := postClientResponse[0]
+	t.Run("Atualizando cliente "+clients[0].User.Name, func(t *testing.T) {
+		client := clients[0]
 		patchBody := map[string]interface{}{
 			"proposed_budget": 150.0,
 		}
 		body, _ := json.Marshal(patchBody)
 		targetURL := fmt.Sprintf("/users/%d/client", client.User.Id)
 
-		req := httptest.NewRequest(http.MethodPatch, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
+		req := authRequest(http.MethodPatch, targetURL, body, tokens[0])
 
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
@@ -284,11 +260,10 @@ func TestClient(t *testing.T) {
 	})
 
 	// Agora deletaremos cada cliente em específico para ver se eles estão sendo deletados corretamente
-	for _, c := range postClientResponse {
+	for i, c := range clients {
 		t.Run("Deletando cliente "+c.User.Name+" por ID", func(t *testing.T) {
 			targetURL := fmt.Sprintf("/users/%d/client", c.User.Id)
-
-			req := httptest.NewRequest(http.MethodDelete, targetURL, nil)
+			req := authRequest(http.MethodDelete, targetURL, nil, tokens[i])
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
 
@@ -297,11 +272,10 @@ func TestClient(t *testing.T) {
 	}
 
 	// Deletaremos também os usuários associados aos clientes para limpar o banco de dados
-	for _, a := range postClientResponse {
-		t.Run("Deletando usuário associado ao cliente "+a.User.Name, func(t *testing.T) {
-			targetURL := fmt.Sprintf("/users/%d", a.User.Id)
-
-			req := httptest.NewRequest(http.MethodDelete, targetURL, nil)
+	for i, u := range clients {
+		t.Run("Deletando usuário associado ao cliente "+u.User.Name, func(t *testing.T) {
+			targetURL := fmt.Sprintf("/users/%d", u.User.Id)
+			req := authRequest(http.MethodDelete, targetURL, nil, tokens[i])
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
 
