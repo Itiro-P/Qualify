@@ -124,6 +124,7 @@ func GetProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Success 201 {object} pkg.ProposalLetterResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /proposals [post]
 func CreateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -161,6 +162,7 @@ func CreateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /proposals/{id} [put]
 func UpdateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -214,6 +216,7 @@ func UpdateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /proposals/{id} [patch]
 func UpdateProposalLetterPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -297,6 +300,7 @@ func UpdateProposalLetterPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /proposals/{id} [delete]
 func DeleteProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {

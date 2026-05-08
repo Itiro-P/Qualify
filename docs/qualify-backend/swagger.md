@@ -141,6 +141,7 @@ Para que o `swag` gere corretamente os endpoints, comente os handlers e modelos 
 // @Produce json
 // @Param user body models.CreateUser true "User payload"
 // @Success 201 {object} models.User
+// @Security     BearerAuth
 // @Router /users [post]
 func CreateUser(c *gin.Context) { ... }
 ```

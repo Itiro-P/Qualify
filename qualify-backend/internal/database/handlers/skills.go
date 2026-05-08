@@ -112,6 +112,7 @@ func GetSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Success 201 {object} pkg.SkillResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /skills [post]
 func CreateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -149,6 +150,7 @@ func CreateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /skills/{id} [put]
 func UpdateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -201,6 +203,7 @@ func UpdateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /skills/{id} [delete]
 func DeleteSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -295,6 +298,7 @@ func GetAnalystSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /users/{id}/analyst/skills [post]
 func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -362,6 +366,7 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /users/{id}/analyst/skills [delete]
 func DeleteAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {

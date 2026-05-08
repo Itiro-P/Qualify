@@ -107,6 +107,9 @@ const docTemplate = `{
             "post": {
                 "security": [
                     {
+                        "BearerAuth": []
+                    },
+                    {
                         "Bearer": []
                     }
                 ],
@@ -191,6 +194,15 @@ const docTemplate = `{
                         "description": "Senha do usuário",
                         "name": "password",
                         "in": "query"
+                    },
+                    {
+                        "description": "Objeto login",
+                        "name": "analyst",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/pkg.UserLogin"
+                        }
                     }
                 ],
                 "responses": {
@@ -230,6 +242,9 @@ const docTemplate = `{
         "/auth/logout": {
             "post": {
                 "security": [
+                    {
+                        "BearerAuth": []
+                    },
                     {
                         "Bearer": []
                     }
@@ -283,6 +298,11 @@ const docTemplate = `{
         },
         "/auth/refresh": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtém um novo token de acesso usando um refresh token válido.",
                 "consumes": [
                     "application/json"
@@ -382,6 +402,11 @@ const docTemplate = `{
         },
         "/auth/reset-password/confirm": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Define nova senha usando token de redefinição enviado por email",
                 "consumes": [
                     "application/json"
@@ -469,6 +494,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Cria uma nova certificação",
                 "consumes": [
                     "application/json"
@@ -578,6 +608,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atualiza uma certificação pelo ID",
                 "consumes": [
                     "application/json"
@@ -644,6 +679,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Exclui certificação pelo ID",
                 "consumes": [
                     "application/json"
@@ -704,6 +744,11 @@ const docTemplate = `{
                 }
             },
             "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atualiza um ou mais campos da certificação pelo ID",
                 "consumes": [
                     "application/json"
@@ -889,6 +934,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Cria uma nova carta de proposta",
                 "consumes": [
                     "application/json"
@@ -998,6 +1048,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atualiza uma proposta existente pelo ID",
                 "consumes": [
                     "application/json"
@@ -1064,6 +1119,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Remove uma proposta pelo ID",
                 "consumes": [
                     "application/json"
@@ -1124,6 +1184,11 @@ const docTemplate = `{
                 }
             },
             "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atualiza um ou mais campos da proposta existente pelo ID",
                 "consumes": [
                     "application/json"
@@ -1192,6 +1257,11 @@ const docTemplate = `{
         },
         "/register": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Registra e cria um novo usuário",
                 "consumes": [
                     "application/json"
@@ -1324,6 +1394,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Cria uma nova avaliação para um serviço",
                 "consumes": [
                     "application/json"
@@ -1433,6 +1508,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atualiza uma avaliação pelo ID",
                 "consumes": [
                     "application/json"
@@ -1499,6 +1579,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Remove uma avaliação pelo ID",
                 "consumes": [
                     "application/json"
@@ -1559,6 +1644,11 @@ const docTemplate = `{
                 }
             },
             "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atualiza um ou mais campos da avaliação pelo ID",
                 "consumes": [
                     "application/json"
@@ -1671,6 +1761,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Cria um novo serviço associado a uma proposta",
                 "consumes": [
                     "application/json"
@@ -1780,6 +1875,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atualiza um serviço pelo ID",
                 "consumes": [
                     "application/json"
@@ -1846,6 +1946,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Remove um serviço pelo ID",
                 "consumes": [
                     "application/json"
@@ -1906,6 +2011,11 @@ const docTemplate = `{
                 }
             },
             "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atualiza um ou mais campos do serviço pelo ID",
                 "consumes": [
                     "application/json"
@@ -2021,6 +2131,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Cria uma nova habilidade",
                 "consumes": [
                     "application/json"
@@ -2130,6 +2245,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atualiza uma habilidade pelo ID",
                 "consumes": [
                     "application/json"
@@ -2196,6 +2316,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Remove uma habilidade pelo ID",
                 "consumes": [
                     "application/json"
@@ -2315,6 +2440,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atualiza um usuário pelo ID",
                 "consumes": [
                     "application/json"
@@ -2381,6 +2511,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Remove um usuário pelo ID",
                 "consumes": [
                     "application/json"
@@ -2441,6 +2576,11 @@ const docTemplate = `{
                 }
             },
             "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atualiza um ou mais dados do usuário pelo ID",
                 "consumes": [
                     "application/json"
@@ -2566,6 +2706,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atualiza dados do analista pelo ID do usuário",
                 "consumes": [
                     "application/json"
@@ -2632,6 +2777,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atribui o papel de analista a um usuário existente",
                 "consumes": [
                     "application/json"
@@ -2689,6 +2839,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Remove o papel de analista de um usuário",
                 "consumes": [
                     "application/json"
@@ -2749,6 +2904,11 @@ const docTemplate = `{
                 }
             },
             "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atualiza um ou mais campos do usuário/analista",
                 "consumes": [
                     "application/json"
@@ -2865,6 +3025,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Associa uma certificação a um analista",
                 "consumes": [
                     "application/json"
@@ -2922,6 +3087,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Remove associação de certificação de um analista",
                 "consumes": [
                     "application/json"
@@ -3048,6 +3218,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atualiza o perfil do analista pelo ID do usuário",
                 "consumes": [
                     "application/json"
@@ -3114,6 +3289,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Cria o perfil do analista para o usuário especificado",
                 "consumes": [
                     "application/json"
@@ -3171,6 +3351,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Remove o perfil do analista",
                 "consumes": [
                     "application/json"
@@ -3290,6 +3475,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Cria uma nova habilidade para um analista pelo ID e ID da habilidade",
                 "consumes": [
                     "application/json"
@@ -3356,6 +3546,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Exclui uma habilidade de um analista pelo ID e id da habilidade",
                 "consumes": [
                     "application/json"
@@ -3475,6 +3670,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atualiza dados do cliente pelo ID do usuário",
                 "consumes": [
                     "application/json"
@@ -3541,6 +3741,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atribui o papel de cliente a um usuário existente",
                 "consumes": [
                     "application/json"
@@ -3598,6 +3803,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Remove o papel de cliente de um usuário",
                 "consumes": [
                     "application/json"
@@ -3658,6 +3868,11 @@ const docTemplate = `{
                 }
             },
             "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atualiza um ou mais campos do usuário/cliente",
                 "consumes": [
                     "application/json"
@@ -3783,6 +3998,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atualiza o perfil do cliente pelo ID do usuário",
                 "consumes": [
                     "application/json"
@@ -3849,6 +4069,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Cria o perfil do cliente para o usuário especificado",
                 "consumes": [
                     "application/json"
@@ -3906,6 +4131,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Remove o perfil do cliente",
                 "consumes": [
                     "application/json"
@@ -4025,6 +4255,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atualiza o perfil do usuário pelo ID",
                 "consumes": [
                     "application/json"
@@ -4091,6 +4326,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Cria o perfil para o usuário especificado",
                 "consumes": [
                     "application/json"
@@ -4148,6 +4388,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Remove o perfil do usuário",
                 "consumes": [
                     "application/json"
@@ -4932,6 +5177,21 @@ const docTemplate = `{
                 }
             }
         },
+        "pkg.UserLogin": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
         "pkg.UserProfile": {
             "type": "object",
             "properties": {
@@ -5032,17 +5292,25 @@ const docTemplate = `{
                 }
             }
         }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Digite 'Bearer ' seguido do seu token JWT",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
+	Version:          "1.0",
 	Host:             "",
 	BasePath:         "",
 	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Title:            "Qualify API",
+	Description:      "Sim.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

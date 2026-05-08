@@ -13,6 +13,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// @title           Qualify API
+// @version         1.0
+// @description     Sim.
+
+// @securityDefinitions.apikey BearerAuth
+// @in                         header
+// @name                       Authorization
+// @description                Digite 'Bearer ' seguido do seu token JWT
 func main() {
 	pool, err := pgxpool.New(context.Background(), os.Getenv("DB_URL"))
 	if err != nil {

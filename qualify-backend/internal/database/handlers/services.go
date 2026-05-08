@@ -120,6 +120,7 @@ func GetService(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Success 201 {object} pkg.ServiceResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /services [post]
 func CreateService(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -157,6 +158,7 @@ func CreateService(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /services/{id} [put]
 func UpdateService(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -215,6 +217,7 @@ func UpdateService(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /services/{id} [patch]
 func UpdateServicePartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -299,6 +302,7 @@ func UpdateServicePartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /services/{id} [delete]
 func DeleteService(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {

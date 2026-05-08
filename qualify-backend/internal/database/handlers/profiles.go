@@ -61,6 +61,7 @@ func GetUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Success 201 {object} pkg.UserProfileResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /users/{id}/profile [post]
 func CreateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -106,6 +107,7 @@ func CreateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /users/{id}/profile [put]
 func UpdateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -158,6 +160,7 @@ func UpdateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /users/{id}/profile [delete]
 func DeleteUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -236,6 +239,7 @@ func GetAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Success 201 {object} pkg.AnalystProfileResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /users/{id}/analyst/profile [post]
 func CreateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -281,6 +285,7 @@ func CreateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /users/{id}/analyst/profile [put]
 func UpdateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -333,6 +338,7 @@ func UpdateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /users/{id}/analyst/profile [delete]
 func DeleteAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -411,6 +417,7 @@ func GetClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Success 201 {object} pkg.ClientProfileResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /users/{id}/client/profile [post]
 func CreateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -462,6 +469,7 @@ func CreateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /users/{id}/client/profile [put]
 func UpdateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -508,6 +516,7 @@ func UpdateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /users/{id}/client/profile [delete]
 func DeleteClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {

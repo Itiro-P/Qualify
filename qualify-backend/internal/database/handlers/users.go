@@ -64,6 +64,7 @@ func GetUser(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Success 201 {object} pkg.UserResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /register [post]
 func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -118,6 +119,7 @@ func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /users/{id} [put]
 func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -168,6 +170,7 @@ func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /users/{id} [patch]
 func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -248,6 +251,7 @@ func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /users/{id} [delete]
 func DeleteUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {

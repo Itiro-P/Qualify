@@ -24,6 +24,7 @@ import (
 // @Failure 400 {object} pkg.ErrorResponse "Requisição inválida ou senha fraca"
 // @Failure 401 {object} pkg.ErrorResponse "Senha atual inválida"
 // @Failure 500 {object} pkg.ErrorResponse "Erro interno do servidor"
+// @Security     BearerAuth
 // @Router /auth/change-password [post]
 // @Security Bearer
 func ChangePassword(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -272,7 +273,7 @@ func ResetPassword(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Success 200 {object} pkg.SuccessResponse "Redefinição de senha bem-sucedida"
 // @Failure 400 {object} pkg.ErrorResponse "Token inválido ou senha fraca"
 // @Failure 500 {object} pkg.ErrorResponse "Erro interno do servidor"
-// @Router /auth/reset-password/confirm [post]
+// @Security     BearerAuth
 // @Router /auth/reset-password/confirm [post]
 func ConfirmPasswordReset(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {

@@ -101,6 +101,7 @@ func GetCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Success 201 {object} pkg.CertificationResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /certifications [post]
 func CreateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -157,6 +158,7 @@ func CreateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /certifications/{id} [put]
 func UpdateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -224,6 +226,7 @@ func UpdateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /certifications/{id} [patch]
 func UpdateCertificationPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -306,6 +309,7 @@ func UpdateCertificationPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /certifications/{id} [delete]
 func DeleteCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -398,6 +402,7 @@ func GetAnalystCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Success 201 {object} pkg.AnalystCertificationResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /users/{id}/analyst/certifications [post]
 func CreateAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -469,6 +474,7 @@ func CreateAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /users/{id}/analyst/certifications [delete]
 func DeleteAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {

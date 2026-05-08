@@ -22,6 +22,7 @@ import (
 // @Failure 400 {object} pkg.ErrorResponse "Requisição inválida"
 // @Failure 401 {object} pkg.ErrorResponse "Refresh token inválido ou expirado"
 // @Failure 500 {object} pkg.ErrorResponse "Erro interno do servidor"
+// @Security     BearerAuth
 // @Router /auth/refresh [post]
 func RefreshToken(conn *pgxpool.Pool) gin.HandlerFunc {
 	jwtManager := utils.NewJWTManager()

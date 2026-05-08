@@ -238,6 +238,7 @@ func GetReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Success 201 {object} pkg.ReviewResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /reviews [post]
 func CreateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -281,6 +282,7 @@ func CreateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /reviews/{id} [put]
 func UpdateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -334,6 +336,7 @@ func UpdateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /reviews/{id} [patch]
 func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -405,6 +408,7 @@ func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /reviews/{id} [delete]
 func DeleteReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {

@@ -18,6 +18,7 @@ import (
 // @Produce json
 // @Param email query string false "Email do usuário"
 // @Param password query string false "Senha do usuário"
+// @Param analyst body pkg.UserLogin true "Objeto login"
 // @Success 200 {object} pkg.LoginResponse "Autenticado com sucesso e tokens retornados"
 // @Failure 400 {object} pkg.ErrorResponse "Entrada inválida ou erro de validação"
 // @Failure 401 {object} pkg.ErrorResponse "Credenciais inválidas"

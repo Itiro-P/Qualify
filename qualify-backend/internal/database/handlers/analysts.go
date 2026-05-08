@@ -225,6 +225,7 @@ func GetAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /users/{id}/analyst [patch]
 func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -395,6 +396,7 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Success 201 {object} pkg.AnalystResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /users/{id}/analyst [post]
 func CreateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -441,6 +443,7 @@ func CreateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /users/{id}/analyst [put]
 func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -555,6 +558,7 @@ func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
+// @Security     BearerAuth
 // @Router /users/{id}/analyst [delete]
 func DeleteAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {

@@ -26,6 +26,7 @@ import (
 // @Failure 400 {object} pkg.ErrorResponse "Requisição inválida"
 // @Failure 401 {object} pkg.ErrorResponse "Não autorizado - Token inválido ou expirado"
 // @Failure 500 {object} pkg.ErrorResponse "Erro interno do servidor"
+// @Security     BearerAuth
 // @Router /auth/logout [post]
 // @Security Bearer
 func Logout(conn *pgxpool.Pool) gin.HandlerFunc {
