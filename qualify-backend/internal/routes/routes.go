@@ -2,6 +2,8 @@ package routes
 
 import (
 	"main/internal/database/handlers"
+	"main/internal/middleware"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -10,9 +12,28 @@ import (
 )
 
 func SetupRoutes(router *gin.Engine, conn *pgxpool.Pool) {
+	// Apply global middleware
+	router.Use(middleware.SecurityHeadersMiddleware())
+	router.Use(middleware.ErrorHandlingMiddleware())
+	router.Use(middleware.LoggingMiddleware())
+
+	// Setup rate limiters for different endpoints
+	authRateLimiter := middleware.NewRateLimiter(5, 15*time.Minute) // 5 attempts per 15 minutes
+	loginRateLimiter := middleware.NewRateLimiter(5, 5*time.Minute) // 5 attempts per 5 minutes
+
 	// Users are the base entity. Roles are assigned as nested sub-resources.
-	router.POST("/register", handlers.CreateUser(conn))
-	router.POST("/login", handlers.Login(conn))
+	router.POST("/register", middleware.RateLimitMiddleware(authRateLimiter), handlers.CreateUser(conn))
+
+	// Authentication endpoints
+	authGroup := router.Group("/auth")
+	{
+		authGroup.POST("/login", middleware.RateLimitMiddleware(loginRateLimiter), handlers.Login(conn))
+		authGroup.POST("/refresh", handlers.RefreshToken(conn))
+		authGroup.POST("/logout", middleware.AuthMiddleware(), handlers.Logout(conn))
+		authGroup.POST("/change-password", middleware.AuthMiddleware(), handlers.ChangePassword(conn))
+		authGroup.POST("/reset-password", handlers.ResetPassword(conn))
+		authGroup.POST("/reset-password/confirm", handlers.ConfirmPasswordReset(conn))
+	}
 	users := router.Group("/users")
 	{
 		users.GET("/:id", handlers.GetUser(conn))

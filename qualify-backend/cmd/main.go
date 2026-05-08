@@ -28,9 +28,16 @@ func main() {
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		AllowCredentials: true,
+		MaxAge:           3600,
 	}))
 
 	routes.SetupRoutes(router, pool)
-	router.Run(":8001")
 
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8001"
+	}
+
+	fmt.Printf("Starting server on :%s\n", port)
+	router.Run(":" + port)
 }
