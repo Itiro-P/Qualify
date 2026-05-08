@@ -1,3 +1,5 @@
+"use client"
+
 import { Footer, Header } from "@/components";
 import {
   ImageProfile,
