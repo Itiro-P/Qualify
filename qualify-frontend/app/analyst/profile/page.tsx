@@ -11,24 +11,22 @@ import { getSessionUser } from "@/libs/session";
 import { useState, useEffect } from "react";
 import { Analyst } from "@/types/services";
 import { analystService } from "@/libs";
-import { useRouter } from "next/router";
 
 export default function Profile() {
-  const router = useRouter();
   const [analyst, setAnalyst] = useState<Analyst | null>(null);
 
   useEffect(() => {
     const session = getSessionUser();
 
     if (!session) {
-      router.push("/User/register");
+      window.location.href = "/User/register";
       return;
     }
 
     analystService
       .getByUserId(session.id)
       .then((resp) => setAnalyst(resp.analyst));
-  }, [router]);
+  }, []);
 
   return analyst ? (
     <section id="profile" className="px-6 md:px-20 py-14">
