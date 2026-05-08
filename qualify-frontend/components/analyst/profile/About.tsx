@@ -41,18 +41,7 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
   });
 
   analystService.listCertifications(analyst.id).then((resp) => {
-    for (let i = 0; i < resp.count; i++) {
-      setCertificationsCardsVector((prev) => [
-        ...prev,
-        {
-          id: resp.certifications[i].id,
-          name: resp.certifications[i].name,
-          description: resp.certifications[i].description,
-          institution: resp.certifications[i].institution,
-          year: resp.certifications[i].year,
-        },
-      ]);
-    }
+    setCertificationsCardsVector(resp.certifications);
   });
 
   return (
