@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Terminal, Search, User, LogOut, Settings, ChevronDown } from "lucide-react";
+import { Terminal, Search, User, LogOut, Settings, ChevronDown, ChevronsUp } from "lucide-react";
 import Link from "next/link";
 import { getSessionUser, clearSession } from "@/libs/session";
 import type { SessionUser } from "@/libs/session";
@@ -97,6 +97,22 @@ export function Header() {
                   >
                     <Settings className="w-4 h-4" />
                     Minha conta
+                  </Link>
+                  <Link
+                    href="/analyst/profiler"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/80 hover:bg-white/5 hover:text-accent transition-colors"
+                  >
+                    <User className="w-4 h-4" />
+                    Perfil
+                  </Link>
+                  <Link
+                    href="/analyst/register"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/80 hover:bg-white/5 hover:text-accent transition-colors"
+                  >
+                    <ChevronsUp className="w-4 h-4" />
+                    Cadastrar como analista
                   </Link>
                   <button
                     onClick={handleLogout}

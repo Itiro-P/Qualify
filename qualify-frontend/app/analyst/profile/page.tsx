@@ -12,7 +12,7 @@ export default function Profile() {
   return (
     <section id="profile" className="px-6 md:px-20 py-14">
       <Header />
-      <div className="flex justify-between ml-3">
+      <div className="flex justify-between ml-3 mt-10">
         <ImageProfile />
         <Informations />
         <ContactButtons />

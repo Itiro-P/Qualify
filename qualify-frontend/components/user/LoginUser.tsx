@@ -100,7 +100,7 @@ export function LoginUser() {
 
         <div className="flex justify-end">
           <Link
-            href="/User/recover-password"
+            href="/user/recover-password"
             className="text-xs text-accent hover:underline"
           >
             Esqueceu a senha?
@@ -114,7 +114,7 @@ export function LoginUser() {
 
       <p className="text-center text-sm text-neutral-slate mt-6">
         Não tem uma conta?{" "}
-        <Link href="/User/register" className="text-accent hover:underline font-medium">
+        <Link href="/user/register" className="text-accent hover:underline font-medium">
           Cadastre-se
         </Link>
       </p>

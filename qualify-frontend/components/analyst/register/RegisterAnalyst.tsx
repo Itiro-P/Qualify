@@ -49,7 +49,7 @@ async function getOrCreateCertification(cert: ICertification): Promise<number> {
   return created.id;
 }
 
-async function getOrCreateSkill(tech: ITechnology): Promise<number> {
+async function getOrCreateTechnology(tech: ITechnology): Promise<number> {
   // Busca pelo nome
   const searchRes = await fetch(
     `http://localhost:3001/skills?name=${encodeURIComponent(tech.technology)}`,
@@ -130,7 +130,7 @@ async function handleSubmitAll(
 
     // 3. Skills: busca ou cria, depois vincula ao analista
     const skillIds = await Promise.all(
-      technologiesAnalyst.map(getOrCreateSkill),
+      technologiesAnalyst.map(getOrCreateTechnology),
     );
 
     await Promise.all(
@@ -182,7 +182,7 @@ export function RegisterAnalyst() {
     return created.certification.id!;
   }
 
-  async function getOrCreateSkill(tech: ITechnology): Promise<number> {
+  async function getOrCreateTechnology(tech: ITechnology): Promise<number> {
     const searchData = await skillService.list(tech.technology);
 
     if (searchData.count > 0) {
@@ -214,7 +214,7 @@ export function RegisterAnalyst() {
 
       // 3. Skills: busca ou cria, depois vincula ao analista
       const skillIds = await Promise.all(
-        technologiesAnalyst.map(getOrCreateSkill),
+        technologiesAnalyst.map(getOrCreateTechnology),
       );
 
       await Promise.all(
