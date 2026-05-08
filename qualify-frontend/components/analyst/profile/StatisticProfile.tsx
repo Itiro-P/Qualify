@@ -1,4 +1,4 @@
-import { IStatisticProfile } from "@/types/analyst/profile/statisticProfile";
+import { IStatisticProfile } from "@/types/analyst/statisticProfile";
 
 const StatisticProfileCardsVector: IStatisticProfile[] = [
   {
