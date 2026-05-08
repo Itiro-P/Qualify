@@ -7,19 +7,51 @@ import { Technologies } from "@/components/analyst/profile/Technologies";
 import { Certifications } from "@/components/analyst/profile/Certifications";
 import { analystService } from "@/libs/services/analystService";
 import { Analyst } from "@/types/services";
-import { ITechnology } from "@/types/analyst/profile/technology";
+import { ITechnology } from "@/types/analyst/technology";
+import { Review } from "@/types/services/review";
+import { Certification } from "@/types/services/certification";
 
-function TabsSystem(analyst: Analyst) {
+function TabsSystem({ analyst }: { analyst: Analyst }) {
+  const [biography, setBiography] = useState<string>("");
+
+  const [reviewCardsVector, setReviewCardsVector] = useState<Review[]>([]);
+
   const [technologiesCardsVector, setTechnologiesCardsVector] = useState<
     ITechnology[]
   >([]);
+
+  const [certificationsCardsVector, setCertificationsCardsVector] = useState<
+    Certification[]
+  >([]);
+
   const [abaAtiva, setAbaAtiva] = useState<
     "biography" | "reviews" | "technologies" | "certifications"
   >("biography");
 
+  analystService.getProfile(analyst.id).then((resp) => {
+    setBiography(resp.analyst_profile.biography);
+  });
+
+  //colocar metodo para atualizar as reviewCardsVector de acordo com o 'analyst'
+
   analystService.listSkills(analyst.id!).then((resp) => {
     for (const skill in resp.analyst_skills) {
       setTechnologiesCardsVector((prev) => [...prev, { technology: skill }]);
+    }
+  });
+
+  analystService.listCertifications(analyst.id).then((resp) => {
+    for (let i = 0; i < resp.count; i++) {
+      setCertificationsCardsVector((prev) => [
+        ...prev,
+        {
+          id: resp.certifications[i].id,
+          name: resp.certifications[i].name,
+          description: resp.certifications[i].description,
+          institution: resp.certifications[i].institution,
+          year: resp.certifications[i].year,
+        },
+      ]);
     }
   });
 
@@ -53,22 +85,30 @@ function TabsSystem(analyst: Analyst) {
       </div>
 
       <div className="mt-4">
-        {abaAtiva === "biography" && <Biography />}
+        {abaAtiva === "biography" && <Biography biography={biography} />}
 
-        {abaAtiva === "reviews" && <Reviews />}
+        {abaAtiva === "reviews" && (
+          <Reviews reviewCardsVector={reviewCardsVector} />
+        )}
 
-        {abaAtiva === "technologies" && <Technologies technologiesCardsVector={technologiesCardsVector}/>}
+        {abaAtiva === "technologies" && (
+          <Technologies technologiesCardsVector={technologiesCardsVector} />
+        )}
 
-        {abaAtiva === "certifications" && <Certifications />}
+        {abaAtiva === "certifications" && (
+          <Certifications
+            certificationsCardsVector={certificationsCardsVector}
+          />
+        )}
       </div>
     </div>
   );
 }
 
-export function About() {
+export function About({ analyst }: { analyst: Analyst }) {
   return (
     <section id="sobre" className="flex flex-col px-3 w-8/10">
-      <TabsSystem />
+      <TabsSystem analyst={analyst} />
     </section>
   );
 }

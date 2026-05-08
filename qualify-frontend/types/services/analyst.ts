@@ -1,5 +1,5 @@
 export interface Analyst {
-  id?: number;
+  id: number;
   name?: string;
   email?: string;
   phone?: string;
@@ -39,7 +39,7 @@ export interface AnalystUpdateRequest {
 
 export interface AnalystProfile {
   user_id?: number;
-  biography?: string;
+  biography: string;
 }
 
 export interface AnalystProfileResponse {

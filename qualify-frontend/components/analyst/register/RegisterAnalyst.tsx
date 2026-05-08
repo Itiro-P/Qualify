@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Certification } from "@/types/services/certification";
-import { ITechnology } from "@/types/analyst/profile/technology";
+import { ITechnology } from "@/types/analyst/technology";
 import {
   RegisterCertifications,
   RegisterHourlyRate,

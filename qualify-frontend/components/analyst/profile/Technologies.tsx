@@ -1,6 +1,5 @@
 import { Settings } from "lucide-react";
-import { ITechnology } from "@/types/analyst/profile/technology"; 
-import { ITechnologiesCardsVectorProps } from "@/types/analyst/profile/technologiesCardsVectorProps";
+import { ITechnology } from "@/types/analyst/technology";
 
 function Card({ technology }: ITechnology) {
   return (
@@ -10,7 +9,11 @@ function Card({ technology }: ITechnology) {
   );
 }
 
-export function Technologies({ technologiesCardsVector }: ITechnologiesCardsVectorProps) {
+export function Technologies({
+  technologiesCardsVector,
+}: {
+  technologiesCardsVector: ITechnology[];
+}) {
   return (
     <div className="flex flex-col p-4 mb-6">
       <div className="flex">

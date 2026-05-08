@@ -1,36 +1,6 @@
 import { SquarePen } from "lucide-react";
 import { Review } from "@/types/services/review";
 
-const reviewCardsVector: Review[] = [
-  {
-    id: 0,
-    analyst_id: 0,
-    client_id: 0,
-    service_id: 0,
-    rating: 2.5,
-    comment: "Bons testes aletórios",
-    time_created: "10/03/2026",
-  },
-  {
-    id: 1,
-    analyst_id: 1,
-    client_id: 1,
-    service_id: 1,
-    rating: 3.2,
-    comment: "É um exelente guardião da qualidade",
-    time_created: "21/01/2026",
-  },
-  {
-    id: 2,
-    analyst_id: 2,
-    client_id: 2,
-    service_id: 2,
-    rating: 2.7,
-    comment: "Auxiliou muito com seus testes de botões",
-    time_created: "15/02/2026",
-  },
-];
-
 function Stars({ type }: { type: string }) {
   if (type === "full") return <span>⭐</span>;
   return <span>☆</span>;
@@ -64,7 +34,7 @@ function Card({ rating, comment, time_created }: Review) {
   );
 }
 
-export function Reviews() {
+export function Reviews({ reviewCardsVector }: { reviewCardsVector: Review[] }) {
   return (
     <div id="review" className="flex flex-col p-4 mb-6">
       <div className="flex">

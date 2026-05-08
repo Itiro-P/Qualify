@@ -1,6 +1,6 @@
 "use client";
 
-import { ITechnology } from "@/types/analyst/profile/technology";
+import { ITechnology } from "@/types/analyst/technology";
 import { useState } from "react";
 import { FormInput, FormButton, Alert } from "@/components/ui";
 
