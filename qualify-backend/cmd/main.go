@@ -33,7 +33,7 @@ func main() {
 	gin.SetMode(os.Getenv("GIN_MODE"))
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:8000"},
+		AllowOrigins:     []string{"http://localhost:3000"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		AllowCredentials: true,

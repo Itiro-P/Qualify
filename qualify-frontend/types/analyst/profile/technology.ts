@@ -1,3 +1,3 @@
 export interface ITechnology {
-    technology: string;
+  technology: string;
 }

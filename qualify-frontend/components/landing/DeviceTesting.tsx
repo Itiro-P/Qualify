@@ -72,7 +72,9 @@ export function DeviceTesting() {
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-20 items-center">
         <div className="lg:w-1/2 grid grid-cols-2 gap-4">
           <div className="space-y-4">
-            <div className={`${deviceImages[0].height} rounded-xl overflow-hidden border border-white/10 relative`}>
+            <div
+              className={`${deviceImages[0].height} rounded-xl overflow-hidden border border-white/10 relative`}
+            >
               <Image
                 className="object-cover"
                 alt={deviceImages[0].alt}
@@ -81,7 +83,9 @@ export function DeviceTesting() {
                 sizes="(max-width: 768px) 50vw, 25vw"
               />
             </div>
-            <div className={`${deviceImages[1].height} rounded-xl overflow-hidden border border-white/10 relative`}>
+            <div
+              className={`${deviceImages[1].height} rounded-xl overflow-hidden border border-white/10 relative`}
+            >
               <Image
                 className="object-cover"
                 alt={deviceImages[1].alt}
@@ -92,7 +96,9 @@ export function DeviceTesting() {
             </div>
           </div>
           <div className="space-y-4 pt-8">
-            <div className={`${deviceImages[2].height} rounded-xl overflow-hidden border border-white/10 relative`}>
+            <div
+              className={`${deviceImages[2].height} rounded-xl overflow-hidden border border-white/10 relative`}
+            >
               <Image
                 className="object-cover"
                 alt={deviceImages[2].alt}
@@ -101,7 +107,9 @@ export function DeviceTesting() {
                 sizes="(max-width: 768px) 50vw, 25vw"
               />
             </div>
-            <div className={`${deviceImages[3].height} rounded-xl overflow-hidden border border-white/10 relative`}>
+            <div
+              className={`${deviceImages[3].height} rounded-xl overflow-hidden border border-white/10 relative`}
+            >
               <Image
                 className="object-cover"
                 alt={deviceImages[3].alt}
@@ -113,9 +121,13 @@ export function DeviceTesting() {
           </div>
         </div>
         <div className="lg:w-1/2">
-          <h2 className="text-3xl font-bold mb-6">Testes em Dispositivos Reais</h2>
+          <h2 className="text-3xl font-bold mb-6">
+            Testes em Dispositivos Reais
+          </h2>
           <p className="text-neutral-slate text-lg mb-8 leading-relaxed">
-            A simulação nunca é suficiente. Nossos especialistas testam em uma vasta gama de dispositivos reais para garantir que seu software funcione perfeitamente em qualquer ambiente.
+            A simulação nunca é suficiente. Nossos especialistas testam em uma
+            vasta gama de dispositivos reais para garantir que seu software
+            funcione perfeitamente em qualquer ambiente.
           </p>
           <div className="grid grid-cols-2 gap-6 mb-8">
             {categories.map((category) => (
