@@ -59,7 +59,7 @@ const tiers: TierCardProps[] = [
 
 export function TestingTiers() {
   return (
-    <section id="tiers" className="px-6 md:px-20 py-24 bg-white/[0.02]">
+    <section id="tiers" className="px-6 md:px-20 py-24 bg-white/2">
       <div className="max-w-7xl mx-auto">
         <div className="mb-16">
           <h2 className="text-3xl font-bold mb-4">

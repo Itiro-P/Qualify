@@ -139,7 +139,7 @@ function CertificationSaves({
       onClick={() =>
         removeCertification(setCertificationsAnalyst, certification)
       }
-      className="m-1 !py-2 !px-4 text-sm"
+      className="m-1 py-2! px-4! text-sm"
       type="button"
     >
       {certification.name}/{certification.year} ✕

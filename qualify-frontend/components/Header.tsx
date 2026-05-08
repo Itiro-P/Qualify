@@ -7,13 +7,9 @@ import { getSessionUser, clearSession } from "@/libs/session";
 import type { SessionUser } from "@/libs/session";
 
 export function Header() {
-  const [user, setUser] = useState<SessionUser | null>(null);
+  const [user, setUser] = useState<SessionUser | null>(()=>getSessionUser());
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setUser(getSessionUser());
-  }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -78,7 +74,7 @@ export function Header() {
                 className="flex items-center gap-2 bg-white/5 border border-white/10 hover:border-accent/50 px-4 py-2 rounded-lg transition-all cursor-pointer"
               >
                 <User className="w-4 h-4 text-accent" />
-                <span className="text-sm font-medium truncate max-w-[120px]">
+                <span className="text-sm font-medium truncate max-w-30">
                   {user.name.split(" ")[0]}
                 </span>
                 <ChevronDown className={`w-3 h-3 text-neutral-slate transition-transform ${menuOpen ? "rotate-180" : ""}`} />

@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 export function HeroSection() {
   return (
     <section className="relative px-6 md:px-20 pt-20 pb-32 overflow-hidden">
-      <div className="absolute top-0 right-0 -z-10 w-1/2 h-full bg-gradient-to-l from-primary/10 to-transparent" />
+      <div className="absolute top-0 right-0 -z-10 w-1/2 h-full bg-linear-to-l from-primary/10 to-transparent" />
       <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
         <div className="flex flex-col gap-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-bold uppercase tracking-widest w-fit">
