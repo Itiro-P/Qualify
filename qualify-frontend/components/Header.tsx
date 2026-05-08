@@ -95,7 +95,7 @@ export function Header() {
                     Minha conta
                   </Link>
                   <Link
-                    href="/analyst/profiler"
+                    href="/analyst/profile"
                     onClick={() => setMenuOpen(false)}
                     className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/80 hover:bg-white/5 hover:text-accent transition-colors"
                   >
