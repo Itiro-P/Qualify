@@ -10,7 +10,8 @@ export function Footer() {
             <h2 className="text-xl font-bold">Qualify</h2>
           </div>
           <p className="text-sm text-neutral-slate leading-relaxed">
-            Conectando empresas a testadores de software qualificados globalmente
+            Conectando empresas a testadores de software qualificados
+            globalmente
           </p>
         </div>
       </div>

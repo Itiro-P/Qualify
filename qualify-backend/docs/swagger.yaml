@@ -1,0 +1,3494 @@
+definitions:
+  pkg.Analyst:
+    properties:
+      city:
+        type: string
+      country_code:
+        type: string
+      country_name:
+        type: string
+      country_state:
+        type: string
+      email:
+        type: string
+      hourly_rate:
+        type: number
+      id:
+        type: integer
+      mean_rating:
+        type: number
+      name:
+        type: string
+      phone:
+        type: string
+      time_created:
+        type: string
+      timezone:
+        type: string
+      total_reviews:
+        type: integer
+    type: object
+  pkg.AnalystCertification:
+    properties:
+      analyst_id:
+        type: integer
+      certification_id:
+        type: integer
+    type: object
+  pkg.AnalystCertificationResponse:
+    properties:
+      analyst_certification:
+        $ref: '#/definitions/pkg.AnalystCertification'
+    type: object
+  pkg.AnalystProfile:
+    properties:
+      biography:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  pkg.AnalystProfileResponse:
+    properties:
+      analyst_profile:
+        $ref: '#/definitions/pkg.AnalystProfile'
+    type: object
+  pkg.AnalystResponse:
+    properties:
+      analyst:
+        $ref: '#/definitions/pkg.Analyst'
+    type: object
+  pkg.AnalystSkill:
+    properties:
+      analyst_id:
+        type: integer
+      skill_id:
+        type: integer
+    type: object
+  pkg.AnalystSkillResponse:
+    properties:
+      analyst_skill:
+        $ref: '#/definitions/pkg.AnalystSkill'
+    type: object
+  pkg.AnalystSkillsResponse:
+    properties:
+      analyst_skills:
+        items:
+          $ref: '#/definitions/pkg.AnalystSkill'
+        type: array
+      count:
+        type: integer
+    type: object
+  pkg.AnalystUpdateRequest:
+    properties:
+      city:
+        type: string
+      country_code:
+        type: string
+      country_name:
+        type: string
+      country_state:
+        type: string
+      email:
+        type: string
+      hourly_rate:
+        type: number
+      mean_rating:
+        type: number
+      name:
+        description: Devemos deixar mudar o nome/email/telefone?
+        type: string
+      phone:
+        type: string
+      timezone:
+        type: string
+      total_reviews:
+        type: integer
+    type: object
+  pkg.AnalystsResponse:
+    properties:
+      analysts:
+        items:
+          $ref: '#/definitions/pkg.Analyst'
+        type: array
+      count:
+        type: integer
+    type: object
+  pkg.Certification:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      institution:
+        type: string
+      name:
+        type: string
+      year:
+        type: integer
+    type: object
+  pkg.CertificationResponse:
+    properties:
+      certification:
+        $ref: '#/definitions/pkg.Certification'
+    type: object
+  pkg.CertificationUpdateRequest:
+    properties:
+      description:
+        type: string
+      institution:
+        type: string
+      name:
+        type: string
+      year:
+        type: integer
+    type: object
+  pkg.CertificationsResponse:
+    properties:
+      certifications:
+        items:
+          $ref: '#/definitions/pkg.Certification'
+        type: array
+      count:
+        type: integer
+    type: object
+  pkg.Client:
+    properties:
+      city:
+        type: string
+      country_code:
+        type: string
+      country_name:
+        type: string
+      country_state:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      phone:
+        type: string
+      proposed_budget:
+        type: number
+      time_created:
+        type: string
+      timezone:
+        type: string
+    type: object
+  pkg.ClientProfile:
+    properties:
+      biography:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  pkg.ClientProfileResponse:
+    properties:
+      client_profile:
+        $ref: '#/definitions/pkg.ClientProfile'
+    type: object
+  pkg.ClientResponse:
+    properties:
+      client:
+        $ref: '#/definitions/pkg.Client'
+    type: object
+  pkg.ClientUpdateRequest:
+    properties:
+      city:
+        type: string
+      country_code:
+        type: string
+      country_name:
+        type: string
+      country_state:
+        type: string
+      email:
+        type: string
+      name:
+        description: Devemos deixar mudar o nome/email/telefone?
+        type: string
+      phone:
+        type: string
+      proposed_budget:
+        type: number
+      timezone:
+        type: string
+    type: object
+  pkg.ClientsResponse:
+    properties:
+      clients:
+        items:
+          $ref: '#/definitions/pkg.Client'
+        type: array
+      count:
+        type: integer
+    type: object
+  pkg.ErrorResponse:
+    properties:
+      code:
+        type: string
+      error:
+        type: string
+      message:
+        type: string
+      path:
+        type: string
+      timestamp:
+        type: string
+      validation_errors:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
+  pkg.LoginResponse:
+    properties:
+      access_token:
+        type: string
+      expires_at:
+        type: string
+      expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+      user:
+        $ref: '#/definitions/pkg.User'
+    type: object
+  pkg.PasswordChangeRequest:
+    properties:
+      current_password:
+        minLength: 8
+        type: string
+      new_password:
+        minLength: 12
+        type: string
+      send_notification:
+        type: boolean
+    required:
+    - current_password
+    - new_password
+    type: object
+  pkg.PasswordChangeResponse:
+    properties:
+      changed_at:
+        type: string
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  pkg.ProposalLetter:
+    properties:
+      analyst_id:
+        type: integer
+      client_id:
+        type: integer
+      content:
+        type: string
+      id:
+        type: integer
+      proposed_hourly_rate:
+        type: number
+      time_created:
+        type: string
+      title:
+        type: string
+    type: object
+  pkg.ProposalLetterResponse:
+    properties:
+      proposal_letter:
+        $ref: '#/definitions/pkg.ProposalLetter'
+    type: object
+  pkg.ProposalLetterUpdateRequest:
+    properties:
+      content:
+        type: string
+      proposed_hourly_rate:
+        type: number
+      title:
+        type: string
+    type: object
+  pkg.ProposalLettersResponse:
+    properties:
+      count:
+        type: integer
+      proposal_letters:
+        items:
+          $ref: '#/definitions/pkg.ProposalLetter'
+        type: array
+    type: object
+  pkg.Review:
+    properties:
+      analyst_id:
+        type: integer
+      client_id:
+        type: integer
+      comment:
+        type: string
+      id:
+        type: integer
+      rating:
+        type: integer
+      service_id:
+        type: integer
+      time_created:
+        type: string
+    type: object
+  pkg.ReviewResponse:
+    properties:
+      review:
+        $ref: '#/definitions/pkg.Review'
+    type: object
+  pkg.ReviewUpdateRequest:
+    properties:
+      comment:
+        type: string
+      rating:
+        type: integer
+    type: object
+  pkg.ReviewsResponse:
+    properties:
+      count:
+        type: integer
+      page:
+        type: integer
+      page_size:
+        type: integer
+      reviews:
+        items:
+          $ref: '#/definitions/pkg.Review'
+        type: array
+    type: object
+  pkg.Service:
+    properties:
+      content:
+        type: string
+      hourly_rate:
+        type: number
+      id:
+        type: integer
+      proposal_letter_id:
+        type: integer
+      status:
+        type: string
+      time_created:
+        type: string
+      title:
+        type: string
+    type: object
+  pkg.ServiceResponse:
+    properties:
+      service:
+        $ref: '#/definitions/pkg.Service'
+    type: object
+  pkg.ServiceUpdateRequest:
+    properties:
+      content:
+        type: string
+      hourly_rate:
+        type: number
+      status:
+        type: string
+      title:
+        type: string
+    type: object
+  pkg.ServicesResponse:
+    properties:
+      count:
+        type: integer
+      services:
+        items:
+          $ref: '#/definitions/pkg.Service'
+        type: array
+    type: object
+  pkg.Skill:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  pkg.SkillResponse:
+    properties:
+      skill:
+        $ref: '#/definitions/pkg.Skill'
+    type: object
+  pkg.SkillsResponse:
+    properties:
+      count:
+        type: integer
+      skills:
+        items:
+          $ref: '#/definitions/pkg.Skill'
+        type: array
+    type: object
+  pkg.SuccessResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  pkg.TokenResponse:
+    properties:
+      access_token:
+        type: string
+      expires_at:
+        type: string
+      expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+    type: object
+  pkg.User:
+    properties:
+      city:
+        type: string
+      country_code:
+        type: string
+      country_name:
+        type: string
+      country_state:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      phone:
+        type: string
+      time_created:
+        type: string
+      timezone:
+        type: string
+    type: object
+  pkg.UserLogin:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  pkg.UserProfile:
+    properties:
+      biography:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  pkg.UserProfileResponse:
+    properties:
+      user_profile:
+        $ref: '#/definitions/pkg.UserProfile'
+    type: object
+  pkg.UserRegister:
+    properties:
+      city:
+        type: string
+      country_code:
+        type: string
+      country_name:
+        type: string
+      country_state:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+      timezone:
+        type: string
+    required:
+    - city
+    - country_code
+    - country_name
+    - country_state
+    - email
+    - name
+    - password
+    - phone
+    - timezone
+    type: object
+  pkg.UserResponse:
+    properties:
+      user:
+        $ref: '#/definitions/pkg.User'
+    type: object
+  pkg.UserUpdateRequest:
+    properties:
+      city:
+        type: string
+      country_code:
+        type: string
+      country_name:
+        type: string
+      country_state:
+        type: string
+      email:
+        type: string
+      name:
+        description: Devemos deixar mudar o nome/email/telefone?
+        type: string
+      phone:
+        type: string
+      timezone:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: Sim.
+  title: Qualify API
+  version: "1.0"
+paths:
+  /analysts:
+    get:
+      consumes:
+      - application/json
+      description: Retorna uma lista de analistas com filtros opcionais
+      parameters:
+      - description: Nome parcial para busca
+        in: query
+        name: name
+        type: string
+      - description: País
+        in: query
+        name: country
+        type: string
+      - description: Cidade
+        in: query
+        name: city
+        type: string
+      - description: Valor mínimo por hora
+        in: query
+        name: min_hourly_rate
+        type: number
+      - description: Valor máximo por hora
+        in: query
+        name: max_hourly_rate
+        type: number
+      - description: Quantidade mínima de avaliações totais
+        in: query
+        name: min_total_reviews
+        type: integer
+      - description: Avaliação média mínima
+        in: query
+        name: min_mean_rating
+        type: number
+      - description: 'Campo para ordenar: name,country_name,city,hourly_rate,total_reviews,mean_rating,time_created'
+        in: query
+        name: sort_by
+        type: string
+      - description: 'Direção: ASC ou DESC'
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.AnalystsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Listar analistas
+      tags:
+      - Analistas
+  /auth/change-password:
+    post:
+      consumes:
+      - application/json
+      description: Permite que usuário autenticado altere sua senha com validação.
+        Requer token de acesso válido
+      parameters:
+      - description: 'Enviar confirmação por email (padrão: true)'
+        in: query
+        name: send_email
+        type: boolean
+      - description: Senha atual e nova senha
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.PasswordChangeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Senha alterada com sucesso
+          schema:
+            $ref: '#/definitions/pkg.PasswordChangeResponse'
+        "400":
+          description: Requisição inválida ou senha fraca
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "401":
+          description: Senha atual inválida
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      - Bearer: []
+      summary: Alterar senha do usuário
+      tags:
+      - Autenticação
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Autentica usuário com email e senha, retornando tokens JWT de acesso
+        e refresh.
+      parameters:
+      - description: Email do usuário
+        in: query
+        name: email
+        type: string
+      - description: Senha do usuário
+        in: query
+        name: password
+        type: string
+      - description: Objeto login
+        in: body
+        name: analyst
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.UserLogin'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Autenticado com sucesso e tokens retornados
+          schema:
+            $ref: '#/definitions/pkg.LoginResponse'
+        "400":
+          description: Entrada inválida ou erro de validação
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "401":
+          description: Credenciais inválidas
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "429":
+          description: Muitas tentativas de login
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      summary: Login de usuário com geração de JWT
+      tags:
+      - Autenticação
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Revoga todos os refresh tokens do usuário autenticado, efetivamente desconectando todas as sessões ativas. Se um refresh_token específico for fornecido como query parameter, apenas aquele token será revogado (logout do dispositivo atual). Caso contrário, todos os tokens do usuário são revogados (logout global).
+
+        **Comportamentos:**
+        - Sem parâmetro: Revoga TODOS os refresh tokens (logout de todos os dispositivos)
+        - Com refresh_token: Revoga APENAS aquele token específico (logout do dispositivo atual)
+      parameters:
+      - description: Refresh token específico para revogar (opcional). Se não fornecido,
+          revoga todos os tokens do usuário
+        in: query
+        name: refresh_token
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logout realizado com sucesso
+          schema:
+            $ref: '#/definitions/pkg.SuccessResponse'
+        "400":
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "401":
+          description: Não autorizado - Token inválido ou expirado
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      - Bearer: []
+      summary: Logout e invalidação de tokens
+      tags:
+      - Autenticação
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Obtém um novo token de acesso usando um refresh token válido.
+      parameters:
+      - description: Refresh token
+        in: query
+        name: token
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Novo token de acesso gerado
+          schema:
+            $ref: '#/definitions/pkg.TokenResponse'
+        "400":
+          description: Requisição inválida
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "401":
+          description: Refresh token inválido ou expirado
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Atualizar token de acesso
+      tags:
+      - Autenticação
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Inicia o processo de redefinição de senha enviando link por email
+      parameters:
+      - description: Endereço de email do usuário
+        in: query
+        name: email
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email de redefinição enviado
+          schema:
+            $ref: '#/definitions/pkg.SuccessResponse'
+        "400":
+          description: Email inválido
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Usuário não encontrado
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      summary: Solicitar redefinição de senha
+      tags:
+      - Autenticação
+  /auth/reset-password/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Define nova senha usando token de redefinição enviado por email
+      parameters:
+      - description: Token de redefinição de senha
+        in: query
+        name: token
+        required: true
+        type: string
+      - description: Nova senha (mínimo 8 caracteres, com letras maiúsculas, minúsculas,
+          números e símbolos)
+        in: query
+        name: new_password
+        required: true
+        type: string
+      - description: 'Enviar confirmação por email (padrão: true)'
+        in: query
+        name: send_email
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Redefinição de senha bem-sucedida
+          schema:
+            $ref: '#/definitions/pkg.SuccessResponse'
+        "400":
+          description: Token inválido ou senha fraca
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Confirmar redefinição de senha com token
+      tags:
+      - Autenticação
+  /certifications:
+    get:
+      consumes:
+      - application/json
+      description: Retorna lista de certificações
+      parameters:
+      - description: Nome parcial
+        in: query
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.CertificationsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Listar certificações
+      tags:
+      - Certificações
+    post:
+      consumes:
+      - application/json
+      description: Cria uma nova certificação
+      parameters:
+      - description: Objeto certificação
+        in: body
+        name: certification
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.Certification'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/pkg.CertificationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Criar certificação
+      tags:
+      - Certificações
+  /certifications/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Exclui certificação pelo ID
+      parameters:
+      - description: ID da certificação
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Excluir certificação
+      tags:
+      - Certificações
+    get:
+      consumes:
+      - application/json
+      description: Retorna certificação por ID
+      parameters:
+      - description: ID da certificação
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.CertificationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obter certificação
+      tags:
+      - Certificações
+    patch:
+      consumes:
+      - application/json
+      description: Atualiza um ou mais campos da certificação pelo ID
+      parameters:
+      - description: ID da certificação
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto certificação
+        in: body
+        name: certification
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.CertificationUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.CertificationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Atualizar certificação parcialmente
+      tags:
+      - Certificações
+    put:
+      consumes:
+      - application/json
+      description: Atualiza uma certificação pelo ID
+      parameters:
+      - description: ID da certificação
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto certificação
+        in: body
+        name: certification
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.Certification'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.CertificationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Atualizar certificação
+      tags:
+      - Certificações
+  /clients:
+    get:
+      consumes:
+      - application/json
+      description: Retorna uma lista de clientes com filtros opcionais
+      parameters:
+      - description: Nome parcial para busca
+        in: query
+        name: name
+        type: string
+      - description: País
+        in: query
+        name: country
+        type: string
+      - description: Cidade
+        in: query
+        name: city
+        type: string
+      - description: Orçamento mínimo
+        in: query
+        name: min_proposed_budget
+        type: number
+      - description: Orçamento máximo
+        in: query
+        name: max_proposed_budget
+        type: number
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ClientsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Listar clientes
+      tags:
+      - Clientes
+  /login:
+    get:
+      consumes:
+      - application/json
+      description: Faz login com os dados fornecidos
+      parameters:
+      - description: Objeto do usuário
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.UserLogin'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Fazer login
+      tags:
+      - Usuários
+  /proposals:
+    get:
+      consumes:
+      - application/json
+      description: Retorna lista de cartas de proposta (proposals)
+      parameters:
+      - description: ID do cliente
+        in: query
+        name: client_id
+        type: integer
+      - description: ID do analista
+        in: query
+        name: analyst_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ProposalLettersResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Listar propostas
+      tags:
+      - Propostas
+    post:
+      consumes:
+      - application/json
+      description: Cria uma nova carta de proposta
+      parameters:
+      - description: Objeto proposta
+        in: body
+        name: proposal
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.ProposalLetter'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/pkg.ProposalLetterResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Criar proposta
+      tags:
+      - Propostas
+  /proposals/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove uma proposta pelo ID
+      parameters:
+      - description: ID da proposta
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Excluir proposta
+      tags:
+      - Propostas
+    get:
+      consumes:
+      - application/json
+      description: Retorna uma proposta específica pelo ID
+      parameters:
+      - description: ID da proposta
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ProposalLetterResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obter proposta
+      tags:
+      - Propostas
+    patch:
+      consumes:
+      - application/json
+      description: Atualiza um ou mais campos da proposta existente pelo ID
+      parameters:
+      - description: ID da proposta
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto proposta
+        in: body
+        name: proposal
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.ProposalLetterUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ProposalLetterResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Atualizar parcialmente proposta
+      tags:
+      - Propostas
+    put:
+      consumes:
+      - application/json
+      description: Atualiza uma proposta existente pelo ID
+      parameters:
+      - description: ID da proposta
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto proposta
+        in: body
+        name: proposal
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.ProposalLetter'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ProposalLetterResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Atualizar proposta
+      tags:
+      - Propostas
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Registra e cria um novo usuário
+      parameters:
+      - description: Objeto do usuário
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.UserRegister'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/pkg.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Criar usuário
+      tags:
+      - Usuários
+  /reviews:
+    get:
+      consumes:
+      - application/json
+      description: Retorna avaliações com filtros e paginação
+      parameters:
+      - description: ID do analista
+        in: query
+        name: analyst_id
+        type: integer
+      - description: ID do cliente
+        in: query
+        name: client_id
+        type: integer
+      - description: ID do serviço
+        in: query
+        name: service_id
+        type: integer
+      - description: Avaliação exata
+        in: query
+        name: rating
+        type: integer
+      - description: Avaliação mínima
+        in: query
+        name: min_rating
+        type: integer
+      - description: Avaliação máxima
+        in: query
+        name: max_rating
+        type: integer
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ReviewsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Listar avaliações
+      tags:
+      - Avaliações
+    post:
+      consumes:
+      - application/json
+      description: Cria uma nova avaliação para um serviço
+      parameters:
+      - description: Objeto avaliação
+        in: body
+        name: review
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.Review'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/pkg.ReviewResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Criar avaliação
+      tags:
+      - Avaliações
+  /reviews/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove uma avaliação pelo ID
+      parameters:
+      - description: ID da avaliação
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Excluir avaliação
+      tags:
+      - Avaliações
+    get:
+      consumes:
+      - application/json
+      description: Retorna uma avaliação pelo ID
+      parameters:
+      - description: ID da avaliação
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ReviewResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obter avaliação
+      tags:
+      - Avaliações
+    patch:
+      consumes:
+      - application/json
+      description: Atualiza um ou mais campos da avaliação pelo ID
+      parameters:
+      - description: ID da avaliação
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto avaliação
+        in: body
+        name: review
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.ReviewUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ReviewResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Atualizar parcialmente avaliação
+      tags:
+      - Avaliações
+    put:
+      consumes:
+      - application/json
+      description: Atualiza uma avaliação pelo ID
+      parameters:
+      - description: ID da avaliação
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto avaliação
+        in: body
+        name: review
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.Review'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ReviewResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Atualizar avaliação
+      tags:
+      - Avaliações
+  /services:
+    get:
+      consumes:
+      - application/json
+      description: Retorna lista de serviços com filtros
+      parameters:
+      - description: Status do serviço
+        in: query
+        name: status
+        type: string
+      - description: ID da proposta
+        in: query
+        name: proposal_letter_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ServicesResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Listar serviços
+      tags:
+      - Serviços
+    post:
+      consumes:
+      - application/json
+      description: Cria um novo serviço associado a uma proposta
+      parameters:
+      - description: Objeto serviço
+        in: body
+        name: service
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.Service'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/pkg.ServiceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Criar serviço
+      tags:
+      - Serviços
+  /services/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove um serviço pelo ID
+      parameters:
+      - description: ID do serviço
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Excluir serviço
+      tags:
+      - Serviços
+    get:
+      consumes:
+      - application/json
+      description: Retorna um serviço pelo ID
+      parameters:
+      - description: ID do serviço
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ServiceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obter serviço
+      tags:
+      - Serviços
+    patch:
+      consumes:
+      - application/json
+      description: Atualiza um ou mais campos do serviço pelo ID
+      parameters:
+      - description: ID do serviço
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto serviço
+        in: body
+        name: service
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.ServiceUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ServiceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Atualizar parcialmente um serviço
+      tags:
+      - Serviços
+    put:
+      consumes:
+      - application/json
+      description: Atualiza um serviço pelo ID
+      parameters:
+      - description: ID do serviço
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto serviço
+        in: body
+        name: service
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.Service'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ServiceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Atualizar serviço
+      tags:
+      - Serviços
+  /skills:
+    get:
+      consumes:
+      - application/json
+      description: Retorna lista de habilidades
+      parameters:
+      - description: Nome parcial
+        in: query
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.SkillsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Listar habilidades
+      tags:
+      - Habilidades
+    post:
+      consumes:
+      - application/json
+      description: Cria uma nova habilidade
+      parameters:
+      - description: Objeto habilidade
+        in: body
+        name: skill
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.Skill'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/pkg.SkillResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Criar habilidade
+      tags:
+      - Habilidades
+  /skills/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove uma habilidade pelo ID
+      parameters:
+      - description: ID da habilidade
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Excluir habilidade
+      tags:
+      - Habilidades
+    get:
+      consumes:
+      - application/json
+      description: Retorna uma habilidade pelo ID
+      parameters:
+      - description: ID da habilidade
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.SkillResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obter habilidade
+      tags:
+      - Habilidades
+    put:
+      consumes:
+      - application/json
+      description: Atualiza uma habilidade pelo ID
+      parameters:
+      - description: ID da habilidade
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto habilidade
+        in: body
+        name: skill
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.Skill'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.SkillResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Atualizar habilidade
+      tags:
+      - Habilidades
+  /users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove um usuário pelo ID
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Excluir usuário
+      tags:
+      - Usuários
+    get:
+      consumes:
+      - application/json
+      description: Retorna um usuário pelo ID
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obter usuário
+      tags:
+      - Usuários
+    patch:
+      consumes:
+      - application/json
+      description: Atualiza um ou mais dados do usuário pelo ID
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto do usuário
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.UserUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Atualizar parcialmente um ou mais dados do usuário
+      tags:
+      - Usuários
+    put:
+      consumes:
+      - application/json
+      description: Atualiza um usuário pelo ID
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto do usuário
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Atualizar usuário
+      tags:
+      - Usuários
+  /users/{id}/analyst:
+    delete:
+      consumes:
+      - application/json
+      description: Remove o papel de analista de um usuário
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Excluir analista
+      tags:
+      - Analistas
+    get:
+      consumes:
+      - application/json
+      description: Retorna os detalhes de um analista pelo ID do usuário
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.AnalystResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obter analista
+      tags:
+      - Analistas
+    patch:
+      consumes:
+      - application/json
+      description: Atualiza um ou mais campos do usuário/analista
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Campos opcionais para atualização
+        in: body
+        name: analyst
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.AnalystUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.AnalystResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Atualizar parcialmente um analista
+      tags:
+      - Analistas
+    post:
+      consumes:
+      - application/json
+      description: Atribui o papel de analista a um usuário existente
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto analista (envie apenas `hourly_rate`)
+        in: body
+        name: analyst
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.Analyst'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/pkg.AnalystResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Criar papel de analista
+      tags:
+      - Analistas
+    put:
+      consumes:
+      - application/json
+      description: Atualiza dados do analista pelo ID do usuário
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto analista
+        in: body
+        name: analyst
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.Analyst'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.AnalystResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Atualizar analista
+      tags:
+      - Analistas
+  /users/{id}/analyst/certifications:
+    delete:
+      consumes:
+      - application/json
+      description: Remove associação de certificação de um analista
+      parameters:
+      - description: ID do usuário (analista)
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID da certificação
+        in: query
+        name: certification_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Remover certificação do analista
+      tags:
+      - Certificações
+    get:
+      consumes:
+      - application/json
+      description: Retorna as certificações associadas a um analista
+      parameters:
+      - description: ID do usuário (analista)
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.CertificationsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Listar certificações do analista
+      tags:
+      - Certificações
+    post:
+      consumes:
+      - application/json
+      description: Associa uma certificação a um analista
+      parameters:
+      - description: ID do usuário (analista)
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto associação
+        in: body
+        name: certification
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.AnalystCertification'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/pkg.AnalystCertificationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Associar certificação ao analista
+      tags:
+      - Certificações
+  /users/{id}/analyst/profile:
+    delete:
+      consumes:
+      - application/json
+      description: Remove o perfil do analista
+      parameters:
+      - description: ID do usuário (analista)
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Excluir perfil do analista
+      tags:
+      - Perfis
+    get:
+      consumes:
+      - application/json
+      description: Retorna o perfil do analista pelo ID do usuário
+      parameters:
+      - description: ID do usuário (analista)
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.AnalystProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obter perfil do analista
+      tags:
+      - Perfis
+    post:
+      consumes:
+      - application/json
+      description: Cria o perfil do analista para o usuário especificado
+      parameters:
+      - description: ID do usuário (analista)
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto perfil
+        in: body
+        name: profile
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.AnalystProfile'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/pkg.AnalystProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Criar perfil do analista
+      tags:
+      - Perfis
+    put:
+      consumes:
+      - application/json
+      description: Atualiza o perfil do analista pelo ID do usuário
+      parameters:
+      - description: ID do usuário (analista)
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto perfil
+        in: body
+        name: profile
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.AnalystProfile'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.AnalystProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Atualizar perfil do analista
+      tags:
+      - Perfis
+  /users/{id}/analyst/skills:
+    delete:
+      consumes:
+      - application/json
+      description: Exclui uma habilidade de um analista pelo ID e id da habilidade
+      parameters:
+      - description: ID do analista
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Excluir habilidade do analista
+      tags:
+      - Habilidades
+    get:
+      consumes:
+      - application/json
+      description: Retorna as habilidades de um analista pelo ID
+      parameters:
+      - description: ID do analista
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.AnalystSkillsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obter habilidades do analista
+      tags:
+      - Habilidades
+    post:
+      consumes:
+      - application/json
+      description: Cria uma nova habilidade para um analista pelo ID e ID da habilidade
+      parameters:
+      - description: ID do analista
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto associação
+        in: body
+        name: certification
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.AnalystSkill'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.AnalystSkillResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Criar habilidade para o analista
+      tags:
+      - Habilidades
+  /users/{id}/client:
+    delete:
+      consumes:
+      - application/json
+      description: Remove o papel de cliente de um usuário
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Excluir cliente
+      tags:
+      - Clientes
+    get:
+      consumes:
+      - application/json
+      description: Retorna os detalhes de um cliente pelo ID do usuário
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ClientResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obter cliente
+      tags:
+      - Clientes
+    patch:
+      consumes:
+      - application/json
+      description: Atualiza um ou mais campos do usuário/cliente
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Campos opcionais para atualização
+        in: body
+        name: client
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.ClientUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ClientResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Atualizar parcialmente um cliente
+      tags:
+      - Clientes
+    post:
+      consumes:
+      - application/json
+      description: Atribui o papel de cliente a um usuário existente
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: '{\'
+        in: body
+        name: proposed_budget
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/pkg.ClientResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Criar papel de cliente
+      tags:
+      - Clientes
+    put:
+      consumes:
+      - application/json
+      description: Atualiza dados do cliente pelo ID do usuário
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto cliente
+        in: body
+        name: client
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.Client'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ClientResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Atualizar cliente
+      tags:
+      - Clientes
+  /users/{id}/client/profile:
+    delete:
+      consumes:
+      - application/json
+      description: Remove o perfil do cliente
+      parameters:
+      - description: ID do usuário (cliente)
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Excluir perfil do cliente
+      tags:
+      - Perfis
+    get:
+      consumes:
+      - application/json
+      description: Retorna o perfil do cliente pelo ID do usuário
+      parameters:
+      - description: ID do usuário (cliente)
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ClientProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obter perfil do cliente
+      tags:
+      - Perfis
+    post:
+      consumes:
+      - application/json
+      description: Cria o perfil do cliente para o usuário especificado
+      parameters:
+      - description: ID do usuário (cliente)
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto perfil
+        in: body
+        name: profile
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.ClientProfile'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/pkg.ClientProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Criar perfil do cliente
+      tags:
+      - Perfis
+    put:
+      consumes:
+      - application/json
+      description: Atualiza o perfil do cliente pelo ID do usuário
+      parameters:
+      - description: ID do usuário (cliente)
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto perfil
+        in: body
+        name: profile
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.ClientProfile'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ClientProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Atualizar perfil do cliente
+      tags:
+      - Perfis
+  /users/{id}/profile:
+    delete:
+      consumes:
+      - application/json
+      description: Remove o perfil do usuário
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Excluir perfil do usuário
+      tags:
+      - Perfis
+    get:
+      consumes:
+      - application/json
+      description: Retorna o perfil do usuário pelo ID
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.UserProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obter perfil do usuário
+      tags:
+      - Perfis
+    post:
+      consumes:
+      - application/json
+      description: Cria o perfil para o usuário especificado
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto perfil
+        in: body
+        name: profile
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.UserProfile'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/pkg.UserProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Criar perfil do usuário
+      tags:
+      - Perfis
+    put:
+      consumes:
+      - application/json
+      description: Atualiza o perfil do usuário pelo ID
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto perfil
+        in: body
+        name: profile
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.UserProfile'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.UserProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Atualizar perfil do usuário
+      tags:
+      - Perfis
+securityDefinitions:
+  BearerAuth:
+    description: Digite 'Bearer ' seguido do seu token JWT
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
