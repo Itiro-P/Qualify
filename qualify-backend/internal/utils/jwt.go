@@ -5,21 +5,28 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"main/pkg"
 	"os"
-	"strings"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // JWTManager handles JWT token generation and validation
 type JWTManager struct {
-	secretKey     string
+	secretKey     []byte
 	accessExpiry  time.Duration
 	refreshExpiry time.Duration
+}
+
+// jwtCustomClaims defines the JWT payload structure
+type jwtCustomClaims struct {
+	UserID int    `json:"user_id"`
+	Email  string `json:"email"`
+	Name   string `json:"name"`
+	jwt.RegisteredClaims
 }
 
 // NewJWTManager creates a new JWT manager instance
@@ -30,53 +37,41 @@ func NewJWTManager() *JWTManager {
 	}
 
 	return &JWTManager{
-		secretKey:     secretKey,
-		accessExpiry:  15 * time.Minute,   // 15 minutes
-		refreshExpiry: 7 * 24 * time.Hour, // 7 days
+		secretKey:     []byte(secretKey),
+		accessExpiry:  15 * time.Minute,
+		refreshExpiry: 7 * 24 * time.Hour,
 	}
 }
 
-// GenerateAccessToken creates a JWT access token
+// GenerateAccessToken creates a signed JWT access token
 func (jm *JWTManager) GenerateAccessToken(user *pkg.User) (string, time.Time, error) {
 	now := time.Now()
 	expiresAt := now.Add(jm.accessExpiry)
 
-	claims := pkg.JWTClaims{
-		UserID:    user.Id,
-		Email:     user.Email,
-		Name:      user.Name,
-		ExpiresAt: expiresAt,
-		IssuedAt:  now,
-		NotBefore: now,
+	claims := jwtCustomClaims{
+		UserID: user.Id,
+		Email:  user.Email,
+		Name:   user.Name,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expiresAt),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+		},
 	}
 
-	// Simple JWT implementation (Note: In production, use github.com/golang-jwt/jwt)
-	payload := fmt.Sprintf(`{
-		"user_id":%d,
-		"email":"%s",
-		"name":"%s",
-		"exp":%d,
-		"iat":%d,
-		"nbf":%d
-	}`, claims.UserID, claims.Email, claims.Name, claims.ExpiresAt.Unix(), claims.IssuedAt.Unix(), claims.NotBefore.Unix())
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signed, err := token.SignedString(jm.secretKey)
+	if err != nil {
+		return "", time.Time{}, fmt.Errorf("failed to sign token: %w", err)
+	}
 
-	header := `{"alg":"HS256","typ":"JWT"}`
-	signature := generateSignature(header, payload, jm.secretKey)
-
-	token := fmt.Sprintf("%s.%s.%s",
-		base64.URLEncoding.EncodeToString([]byte(header)),
-		base64.URLEncoding.EncodeToString([]byte(payload)),
-		signature)
-
-	return token, expiresAt, nil
+	return signed, expiresAt, nil
 }
 
-// GenerateRefreshToken creates a random refresh token
+// GenerateRefreshToken creates a cryptographically random refresh token
 func (jm *JWTManager) GenerateRefreshToken() (string, time.Time, error) {
-	// Generate random token
 	token := make([]byte, 32)
-	_, err := rand.Read(token)
-	if err != nil {
+	if _, err := rand.Read(token); err != nil {
 		return "", time.Time{}, fmt.Errorf("failed to generate token: %w", err)
 	}
 
@@ -86,85 +81,46 @@ func (jm *JWTManager) GenerateRefreshToken() (string, time.Time, error) {
 	return tokenStr, expiresAt, nil
 }
 
-// HashToken creates a hash of the token for storage
+// ValidateAccessToken parses and validates a JWT access token
+func (jm *JWTManager) ValidateAccessToken(tokenStr string) (*pkg.JWTClaims, error) {
+	if tokenStr == "" {
+		return nil, fmt.Errorf("token is required")
+	}
+
+	token, err := jwt.ParseWithClaims(tokenStr, &jwtCustomClaims{}, func(t *jwt.Token) (interface{}, error) {
+		// Enforce the expected signing method to prevent algorithm confusion attacks
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+		}
+		return jm.secretKey, nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("invalid token: %w", err)
+	}
+
+	claims, ok := token.Claims.(*jwtCustomClaims)
+	if !ok || !token.Valid {
+		return nil, fmt.Errorf("invalid token claims")
+	}
+
+	return &pkg.JWTClaims{
+		UserID:    claims.UserID,
+		Email:     claims.Email,
+		Name:      claims.Name,
+		ExpiresAt: claims.ExpiresAt.Time,
+		IssuedAt:  claims.IssuedAt.Time,
+		NotBefore: claims.NotBefore.Time,
+	}, nil
+}
+
+// HashToken creates a SHA-256 hash of a token for safe storage
 func HashToken(token string) string {
 	sha := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(sha[:])
 }
 
-// generateSimpleHash creates a simple hash of the token
-func generateSimpleHash(token string) string {
-	data := []byte(token)
-	hash := make([]byte, 32)
-	for i := 0; i < len(data); i++ {
-		hash[i%32] ^= data[i]
-	}
-	return hex.EncodeToString(hash)
-}
-
-// generateSignature creates HMAC signature for JWT
-func generateSignature(header, payload, secret string) string {
-	// Simplified HMAC-SHA256 signature
-	message := header + "." + payload
-	h := hex.EncodeToString([]byte(message + secret))
-	return h
-}
-
-// ValidateAccessToken validates an access token
-func (jm *JWTManager) ValidateAccessToken(token string) (*pkg.JWTClaims, error) {
-	if token == "" {
-		return nil, fmt.Errorf("token is required")
-	}
-
-	parts := strings.Split(token, ".")
-	if len(parts) != 3 {
-		return nil, fmt.Errorf("invalid token format")
-	}
-
-	// Verify signature
-	expectedSignature := generateSignature(parts[0], parts[1], jm.secretKey)
-	if parts[2] != expectedSignature {
-		return nil, fmt.Errorf("invalid token signature")
-	}
-
-	payloadBytes, err := base64.URLEncoding.DecodeString(parts[1])
-	if err != nil {
-		return nil, fmt.Errorf("invalid token payload")
-	}
-
-	type rawClaims struct {
-		UserID int    `json:"user_id"`
-		Email  string `json:"email"`
-		Name   string `json:"name"`
-		Exp    int64  `json:"exp"`
-		Iat    int64  `json:"iat"`
-		Nbf    int64  `json:"nbf"`
-	}
-
-	var raw rawClaims
-	if err := json.Unmarshal(payloadBytes, &raw); err != nil {
-		return nil, fmt.Errorf("invalid token claims")
-	}
-
-	now := time.Now().Unix()
-	if raw.Nbf > now {
-		return nil, fmt.Errorf("token not valid yet")
-	}
-	if raw.Exp < now {
-		return nil, fmt.Errorf("token expired")
-	}
-
-	return &pkg.JWTClaims{
-		UserID:    raw.UserID,
-		Email:     raw.Email,
-		Name:      raw.Name,
-		ExpiresAt: time.Unix(raw.Exp, 0),
-		IssuedAt:  time.Unix(raw.Iat, 0),
-		NotBefore: time.Unix(raw.Nbf, 0),
-	}, nil
-}
-
-// ValidatePassword checks if provided password matches the hash
+// ValidatePassword checks if the provided password matches the bcrypt hash
 func ValidatePassword(password, hash string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 }

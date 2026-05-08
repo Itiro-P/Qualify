@@ -6,13 +6,19 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
+var allowedOrigins = map[string]bool{
+	"http://localhost:3000": true,
+}
+
 // RateLimiter tracks request counts per IP
 type RateLimiter struct {
+	mu      sync.Mutex
 	clients map[string]*ClientRateLimit
 	limit   int
 	window  time.Duration
@@ -30,16 +36,32 @@ type ClientRateLimit struct {
 // NewRateLimiter creates a new rate limiter
 // limit: max requests per window
 // window: time duration for the limit window
+
 func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
-	return &RateLimiter{
+	rl := &RateLimiter{
 		clients: make(map[string]*ClientRateLimit),
 		limit:   limit,
 		window:  window,
 	}
+	// limpa entradas antigas a cada 5 minutos
+	go func() {
+		for range time.Tick(5 * time.Minute) {
+			rl.mu.Lock()
+			for ip, c := range rl.clients {
+				if time.Since(c.lastAttempt) > rl.window*2 {
+					delete(rl.clients, ip)
+				}
+			}
+			rl.mu.Unlock()
+		}
+	}()
+	return rl
 }
 
 // IsAllowed checks if a request is allowed
 func (rl *RateLimiter) IsAllowed(clientIP string) bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
 	client, exists := rl.clients[clientIP]
 
 	now := time.Now()
@@ -226,7 +248,8 @@ func LoggingMiddleware() gin.HandlerFunc {
 
 // Helper function to get client IP
 func getClientIP(c *gin.Context) string {
-	// Check X-Forwarded-For header (for proxies)
+	// Só use X-Forwarded-For se sua infra garante que o proxy seta esse header.
+	/**
 	if forwarded := c.Request.Header.Get("X-Forwarded-For"); forwarded != "" {
 		// Take first IP if multiple are present
 		ips := strings.Split(forwarded, ",")
@@ -239,7 +262,7 @@ func getClientIP(c *gin.Context) string {
 	if realIP := c.Request.Header.Get("X-Real-IP"); realIP != "" {
 		return realIP
 	}
-
+	**/
 	// Fall back to RemoteAddr
 	ip, _, err := net.SplitHostPort(c.Request.RemoteAddr)
 	if err != nil {
@@ -251,17 +274,19 @@ func getClientIP(c *gin.Context) string {
 // CORSMiddleware configuration (can be enhanced if needed)
 func EnhancedCORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", c.Request.Header.Get("Origin"))
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		origin := c.Request.Header.Get("Origin")
+		if allowedOrigins[origin] {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+			c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		}
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, PATCH, DELETE")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		c.Writer.Header().Set("Access-Control-Max-Age", "86400")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
 			return
 		}
-
 		c.Next()
 	}
 }

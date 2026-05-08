@@ -62,50 +62,40 @@ func Logout(conn *pgxpool.Pool) gin.HandlerFunc {
 		now := time.Now()
 		revokeCount := 0
 
-		// Revoke the specific refresh token if provided
 		if request.RefreshToken != "" {
-			if err := utils.ValidateRefreshToken(request.RefreshToken); err == nil {
-				tokenHash := utils.HashToken(request.RefreshToken)
-
-				result, err := conn.Exec(c.Request.Context(),
-					`UPDATE refresh_token 
-					 SET revoked_at = $1 
-					 WHERE user_id = $2 AND token_hash = $3 AND revoked_at IS NULL`,
-					now, userID, tokenHash)
-
-				if err != nil {
-					c.JSON(http.StatusInternalServerError, pkg.ErrorResponse{
-						Error:     "revocation_failed",
-						Message:   "Failed to revoke refresh token",
-						Code:      "TOKEN_ERROR",
-						Timestamp: time.Now(),
-					})
-					return
-				}
-
-				revokeCount = int(result.RowsAffected())
+			// Logout só deste dispositivo
+			tokenHash := utils.HashToken(request.RefreshToken)
+			result, err := conn.Exec(c.Request.Context(),
+				`UPDATE refresh_token SET revoked_at = $1
+				WHERE user_id = $2 AND token_hash = $3 AND revoked_at IS NULL`,
+				now, userID, tokenHash)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, pkg.ErrorResponse{
+					Error:     "revocation_failed",
+					Message:   "Failed to revoke refresh token",
+					Code:      "TOKEN_ERROR",
+					Timestamp: time.Now(),
+				})
+				return
 			}
+			revokeCount = int(result.RowsAffected())
+		} else {
+			// Logout global — revoga todos
+			result, err := conn.Exec(c.Request.Context(),
+				`UPDATE refresh_token SET revoked_at = $1
+				WHERE user_id = $2 AND revoked_at IS NULL`,
+				now, userID)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, pkg.ErrorResponse{
+					Error:     "revocation_failed",
+					Message:   "Failed to revoke refresh token",
+					Code:      "TOKEN_ERROR",
+					Timestamp: time.Now(),
+				})
+				return
+			}
+			revokeCount = int(result.RowsAffected())
 		}
-
-		// Revoke all active refresh tokens for this user
-		// This provides complete logout across all devices
-		result, err := conn.Exec(c.Request.Context(),
-			`UPDATE refresh_token 
-			 SET revoked_at = $1 
-			 WHERE user_id = $2 AND revoked_at IS NULL`,
-			now, userID)
-
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.ErrorResponse{
-				Error:     "revocation_failed",
-				Message:   "Failed to revoke tokens",
-				Code:      "TOKEN_ERROR",
-				Timestamp: time.Now(),
-			})
-			return
-		}
-
-		revokeCount = int(result.RowsAffected())
 
 		// Log logout event (optional)
 		// You can implement audit logging here

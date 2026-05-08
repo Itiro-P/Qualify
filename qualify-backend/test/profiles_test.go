@@ -1,7 +1,6 @@
 package test
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"main/internal/routes"
@@ -15,26 +14,24 @@ import (
 )
 
 func TestProfile(t *testing.T) {
-	var analystUser = pkg.UserRegister{
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	routes.SetupRoutes(router, TestPool)
+
+	analystUser := pkg.UserRegister{
 		Name:          "Reginaldo Ré",
 		Email:         "reginaldo@utfpr.edu.br",
 		Password:      "aabbccddee",
-		Phone:         "41999999999",
+		Phone:         "41999999989",
 		Country_code:  "BR",
 		Country_name:  "Brazil",
 		Country_state: "PR",
 		City:          "Campo Mourão",
 		Timezone:      "America/Sao_Paulo",
 	}
+	analystToken, analystUserID := registerAndLogin(t, router, analystUser)
 
-	var analyst = pkg.Analyst{
-		User:          pkg.User{},
-		Hourly_rate:   100.0,
-		Total_reviews: 10,
-		Mean_rating:   ToPtrFloat64(4.5),
-	}
-
-	var clientUser = pkg.UserRegister{
+	clientUser := pkg.UserRegister{
 		Name:          "Marcos Calvaro",
 		Email:         "markos@utfpr.edu.br",
 		Password:      "aabbccddee",
@@ -45,218 +42,91 @@ func TestProfile(t *testing.T) {
 		City:          "Campo Mourão",
 		Timezone:      "America/Sao_Paulo",
 	}
+	clientToken, clientUserID := registerAndLogin(t, router, clientUser)
 
-	var client = pkg.Client{
-		User:            pkg.User{},
-		Proposed_budget: 100.0,
-	}
-
-	var analystProfile = pkg.AnalystProfile{
-		UserProfile: pkg.UserProfile{
-			User_id:   0,
-			Biography: "",
-		},
-	}
-
-	var clientProfile = pkg.ClientProfile{
-		UserProfile: pkg.UserProfile{
-			User_id:   0,
-			Biography: "Initial client biography",
-		},
-	}
-
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-
-	routes.SetupRoutes(router, TestPool)
-
-	t.Run("Criando perfil de analista", func(t *testing.T) {
-		// Primeiro, criamos o usuário associado ao analista
-		body, _ := json.Marshal(analystUser)
-		targetURL := "/register"
-
-		req := httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-
+	t.Run("Fluxo de Perfil do Analista", func(t *testing.T) {
+		// Criar o Analista primeiro
+		analyst := pkg.Analyst{Hourly_rate: 100.0}
+		body, _ := json.Marshal(analyst)
+		req := authRequest(http.MethodPost, fmt.Sprintf("/users/%d/analyst", analystUserID), body, analystToken)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-
-		// Verificamos se o usuário foi criado com sucesso
 		assert.Equal(t, http.StatusCreated, w.Code)
-		var userResponse pkg.UserResponse
-		json.Unmarshal(w.Body.Bytes(), &userResponse)
 
-		if userResponse.User.Id == 0 {
-			t.Error("O ID do analista não deveria ser zero")
+		// Criar Perfil
+		profile := pkg.AnalystProfile{
+			UserProfile: pkg.UserProfile{Biography: "Initial analyst biography"},
 		}
-
-		// Agora criamos o analista usando o ID do usuário criado
-		analyst.User = userResponse.User
-		body, _ = json.Marshal(analyst)
-		targetURL = fmt.Sprintf("/users/%d/analyst", analyst.User.Id)
-
-		req = httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-
+		body, _ = json.Marshal(profile)
+		req = authRequest(http.MethodPost, fmt.Sprintf("/users/%d/analyst/profile", analystUserID), body, analystToken)
 		w = httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-
-		// Verificamos se o analista foi criado com sucesso
 		assert.Equal(t, http.StatusCreated, w.Code)
-		var analystResponse pkg.AnalystResponse
-		json.Unmarshal(w.Body.Bytes(), &analystResponse)
 
-		if analystResponse.Analyst.User.Id == 0 {
-			t.Error("O ID do analista não deveria ser zero")
-		}
-
-		analyst = analystResponse.Analyst
-
-		// Agora sim criamos seu perfil
-		body, _ = json.Marshal(analystProfile)
-		targetURL = fmt.Sprintf("/users/%d/analyst/profile", analyst.User.Id)
-
-		req = httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-
+		// Alterar Perfil
+		newBio := "Nova bio do Reginaldo"
+		patchBody := map[string]interface{}{"biography": newBio}
+		body, _ = json.Marshal(patchBody)
+		req = authRequest(http.MethodPut, fmt.Sprintf("/users/%d/analyst/profile", analystUserID), body, analystToken)
 		w = httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusCreated, w.Code)
-
-		var profileResponse = pkg.AnalystProfileResponse{}
-		json.Unmarshal(w.Body.Bytes(), &profileResponse)
-		analystProfile = profileResponse.Analyst_profile
-
-		assert.Equal(t, analyst.User.Id, analystProfile.User_id)
-	})
-
-	t.Run("Alterando perfil de analista", func(t *testing.T) {
-		newBio := "aaaa"
-		patchBody := map[string]interface{}{
-			"biography": newBio,
-		}
-		body, _ := json.Marshal(patchBody)
-		targetURL := fmt.Sprintf("/users/%d/analyst/profile", analyst.User.Id)
-
-		req := httptest.NewRequest(http.MethodPut, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
-
 		assert.Equal(t, http.StatusOK, w.Code)
 
-		var analystProfileResponse pkg.AnalystProfileResponse
-		json.Unmarshal(w.Body.Bytes(), &analystProfileResponse)
+		var resp pkg.AnalystProfileResponse
+		json.Unmarshal(w.Body.Bytes(), &resp)
+		assert.Equal(t, newBio, resp.Analyst_profile.Biography)
 
-		if analystProfileResponse.Analyst_profile.Biography != newBio {
-			t.Errorf("Valor do campo 'biography' diferente do esperado")
-		}
-	})
-
-	t.Run("Removendo perfil de analista", func(t *testing.T) {
-		targetURL := fmt.Sprintf("/users/%d/analyst/profile", analyst.User.Id)
-
-		req := httptest.NewRequest(http.MethodDelete, targetURL, nil)
-		w := httptest.NewRecorder()
+		// Remover Perfil
+		req = authRequest(http.MethodDelete, fmt.Sprintf("/users/%d/analyst/profile", analystUserID), nil, analystToken)
+		w = httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
-	t.Run("Criando perfil de cliente", func(t *testing.T) {
-		// Primeiro, criamos o usuário associado ao cliente
-		body, _ := json.Marshal(clientUser)
-		targetURL := "/register"
-
-		req := httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-
+	t.Run("Fluxo de Perfil do Cliente", func(t *testing.T) {
+		// Criar o Cliente primeiro
+		client := pkg.Client{Proposed_budget: 500.0}
+		body, _ := json.Marshal(client)
+		req := authRequest(http.MethodPost, fmt.Sprintf("/users/%d/client", clientUserID), body, clientToken)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-
-		// Verificamos se o usuário foi criado com sucesso
 		assert.Equal(t, http.StatusCreated, w.Code)
-		var userResponse pkg.UserResponse
-		json.Unmarshal(w.Body.Bytes(), &userResponse)
 
-		if userResponse.User.Id == 0 {
-			t.Error("O ID do cliente não deveria ser zero")
+		// Criar Perfil
+		profile := pkg.ClientProfile{
+			UserProfile: pkg.UserProfile{Biography: "Initial client biography"},
 		}
-
-		// Agora criamos o cliente usando o ID do usuário criado
-		client.User = userResponse.User
-		body, _ = json.Marshal(client)
-		targetURL = fmt.Sprintf("/users/%d/client", client.User.Id)
-
-		req = httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-
+		body, _ = json.Marshal(profile)
+		req = authRequest(http.MethodPost, fmt.Sprintf("/users/%d/client/profile", clientUserID), body, clientToken)
 		w = httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-
-		// Verificamos se o cliente foi criado com sucesso
 		assert.Equal(t, http.StatusCreated, w.Code)
-		var clientResponse pkg.ClientResponse
-		json.Unmarshal(w.Body.Bytes(), &clientResponse)
 
-		if clientResponse.Client.Id == 0 {
-			t.Error("O ID do analista não deveria ser zero")
-		}
-
-		client = clientResponse.Client
-
-		// Agora sim criamos seu perfil
-		body, _ = json.Marshal(clientProfile)
-		targetURL = fmt.Sprintf("/users/%d/client/profile", client.User.Id)
-
-		req = httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-
+		// Alterar Perfil
+		newBio := "Nova bio do Marcos"
+		patchBody := map[string]interface{}{"biography": newBio}
+		body, _ = json.Marshal(patchBody)
+		req = authRequest(http.MethodPut, fmt.Sprintf("/users/%d/client/profile", clientUserID), body, clientToken)
 		w = httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusCreated, w.Code)
-
-		var profileResponse = pkg.ClientProfileResponse{}
-		json.Unmarshal(w.Body.Bytes(), &profileResponse)
-		clientProfile = profileResponse.Client_profile
-
-		assert.Equal(t, client.User.Id, clientProfile.User_id)
-	})
-
-	t.Run("Alterando perfil de cliente", func(t *testing.T) {
-		newBio := "aaaa"
-		patchBody := map[string]interface{}{
-			"biography": newBio,
-		}
-		body, _ := json.Marshal(patchBody)
-		targetURL := fmt.Sprintf("/users/%d/client/profile", clientProfile.User_id)
-
-		req := httptest.NewRequest(http.MethodPut, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
-
 		assert.Equal(t, http.StatusOK, w.Code)
 
-		var clientProfileResponse pkg.ClientProfileResponse
-		json.Unmarshal(w.Body.Bytes(), &clientProfileResponse)
+		var resp pkg.ClientProfileResponse
+		json.Unmarshal(w.Body.Bytes(), &resp)
+		assert.Equal(t, newBio, resp.Client_profile.Biography)
 
-		if clientProfileResponse.Client_profile.Biography != newBio {
-			t.Errorf("Valor do campo 'biography' diferente do esperado")
-		}
+		// Remover Perfil
+		req = authRequest(http.MethodDelete, fmt.Sprintf("/users/%d/client/profile", clientUserID), nil, clientToken)
+		w = httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
-	t.Run("Removendo perfil de cliente", func(t *testing.T) {
-		targetURL := fmt.Sprintf("/users/%d/client/profile", clientProfile.User_id)
+	t.Run("Cleanup de usuários", func(t *testing.T) {
+		reqA := authRequest(http.MethodDelete, fmt.Sprintf("/users/%d", analystUserID), nil, analystToken)
+		router.ServeHTTP(httptest.NewRecorder(), reqA)
 
-		req := httptest.NewRequest(http.MethodDelete, targetURL, nil)
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusOK, w.Code)
+		reqC := authRequest(http.MethodDelete, fmt.Sprintf("/users/%d", clientUserID), nil, clientToken)
+		router.ServeHTTP(httptest.NewRecorder(), reqC)
 	})
 }

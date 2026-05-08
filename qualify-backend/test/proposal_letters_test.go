@@ -1,7 +1,6 @@
 package test
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"main/internal/routes"
@@ -15,7 +14,11 @@ import (
 )
 
 func TestProposalLetter(t *testing.T) {
-	var analystUser = pkg.UserRegister{
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	routes.SetupRoutes(router, TestPool)
+
+	analystUser := pkg.UserRegister{
 		Name:          "Rafael Liberado",
 		Email:         "rafael@utfpr.edu.br",
 		Password:      "aabbccddee",
@@ -26,8 +29,9 @@ func TestProposalLetter(t *testing.T) {
 		City:          "Campo Mourão",
 		Timezone:      "America/Sao_Paulo",
 	}
+	analystToken, analystUserID := registerAndLogin(t, router, analystUser)
 
-	var clientUser = pkg.UserRegister{
+	clientUser := pkg.UserRegister{
 		Name:          "Alyssa Min Ha Lynguissa",
 		Email:         "alyssaaa@utfpr.edu.br",
 		Password:      "aabbccddee",
@@ -38,134 +42,62 @@ func TestProposalLetter(t *testing.T) {
 		City:          "Campo Mourão",
 		Timezone:      "America/Sao_Paulo",
 	}
+	clientToken, clientUserID := registerAndLogin(t, router, clientUser)
 
-	var analyst = pkg.Analyst{
-		User:          pkg.User{},
-		Hourly_rate:   100.0,
-		Total_reviews: 10,
-		Mean_rating:   ToPtrFloat64(4.5),
-	}
+	// Variáveis para persistência entre subtestes
+	var analystID int
+	var clientID int
+	var proposalID int
 
-	var client = pkg.Client{
-		User:            pkg.User{},
-		Proposed_budget: 112.0,
-	}
-
-	var proposal_letter = pkg.ProposalLetter{
-		Title:                "Arrumem a merda da traseira pelo AMOR DE AAAAA",
-		Content:              "Só arruma cara. Por favor :)",
-		Proposed_hourly_rate: 79.0,
-	}
-
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-	routes.SetupRoutes(router, TestPool)
-
-	t.Run("Criando carta proposta", func(t *testing.T) {
-		// Primeiro, criamos o usuário associado ao analista
-		body, _ := json.Marshal(analystUser)
-		targetURL := "/register"
-
-		req := httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-
+	t.Run("Criando entidades e carta proposta", func(t *testing.T) {
+		// 1. Criar o Analista (usando o token do analista)
+		analystData := pkg.Analyst{
+			Hourly_rate:   100.0,
+			Total_reviews: 10,
+			Mean_rating:   ToPtrFloat64(4.5),
+		}
+		body, _ := json.Marshal(analystData)
+		req := authRequest(http.MethodPost, fmt.Sprintf("/users/%d/analyst", analystUserID), body, analystToken)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-
-		// Verificamos se o usuário foi criado com sucesso
 		assert.Equal(t, http.StatusCreated, w.Code)
-		var userResponse pkg.UserResponse
-		json.Unmarshal(w.Body.Bytes(), &userResponse)
 
-		if userResponse.User.Id == 0 {
-			t.Error("O ID do analista não deveria ser zero")
+		var aResp pkg.AnalystResponse
+		json.Unmarshal(w.Body.Bytes(), &aResp)
+		analystID = aResp.Analyst.Id
+
+		// 2. Criar o Cliente (usando o token do cliente)
+		clientData := pkg.Client{
+			Proposed_budget: 112.0,
 		}
-
-		// Agora criamos o analista usando o ID do usuário criado
-		analyst.User = userResponse.User
-		body, _ = json.Marshal(analyst)
-		targetURL = fmt.Sprintf("/users/%d/analyst", analyst.User.Id)
-
-		req = httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-
+		body, _ = json.Marshal(clientData)
+		req = authRequest(http.MethodPost, fmt.Sprintf("/users/%d/client", clientUserID), body, clientToken)
 		w = httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-
-		// Verificamos se o analista foi criado com sucesso
 		assert.Equal(t, http.StatusCreated, w.Code)
-		var analystResponse pkg.AnalystResponse
-		json.Unmarshal(w.Body.Bytes(), &analystResponse)
 
-		if analystResponse.Analyst.User.Id == 0 {
-			t.Error("O ID do analista não deveria ser zero")
+		var cResp pkg.ClientResponse
+		json.Unmarshal(w.Body.Bytes(), &cResp)
+		clientID = cResp.Client.Id
+
+		// 3. Criar a Carta Proposta (O cliente envia para o analista)
+		proposal_letter := pkg.ProposalLetter{
+			Title:                "Arrumem a merda da traseira pelo AMOR DE AAAAA",
+			Content:              "Só arruma cara. Por favor :)",
+			Proposed_hourly_rate: 79.0,
+			Analyst_id:           analystID,
+			Client_id:            clientID,
 		}
-
-		analyst = analystResponse.Analyst
-
-		// Criamos o usuário associado ao cliente
-		body, _ = json.Marshal(clientUser)
-		targetURL = "/users"
-
-		req = httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-
-		w = httptest.NewRecorder()
-		router.ServeHTTP(w, req)
-
-		// Verificamos se o usuário foi criado com sucesso
-		assert.Equal(t, http.StatusCreated, w.Code)
-		json.Unmarshal(w.Body.Bytes(), &userResponse)
-
-		if userResponse.User.Id == 0 {
-			t.Error("O ID do cliente não deveria ser zero")
-		}
-
-		// Agora criamos o cliente usando o ID do usuário criado
-		client.User = userResponse.User
-		body, _ = json.Marshal(client)
-		targetURL = fmt.Sprintf("/users/%d/client", client.User.Id)
-
-		req = httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-
-		w = httptest.NewRecorder()
-		router.ServeHTTP(w, req)
-
-		// Verificamos se o cliente foi criado com sucesso
-		assert.Equal(t, http.StatusCreated, w.Code)
-		var clientResponse pkg.ClientResponse
-		json.Unmarshal(w.Body.Bytes(), &clientResponse)
-
-		if clientResponse.Client.User.Id == 0 {
-			t.Error("O ID do cliente não deveria ser zero")
-		}
-
-		client = clientResponse.Client
-
-		proposal_letter.Analyst_id = analyst.Id
-		proposal_letter.Client_id = client.Id
-
-		// Agora SIM criamos a carta proposta
 		body, _ = json.Marshal(proposal_letter)
-		targetURL = "/proposals"
-
-		req = httptest.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-
+		req = authRequest(http.MethodPost, "/proposals", body, clientToken)
 		w = httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
-		// Verificamos se a carta proposta foi criado com sucesso
 		assert.Equal(t, http.StatusCreated, w.Code)
-		var plResponse pkg.ProposalLetterResponse
-		json.Unmarshal(w.Body.Bytes(), &plResponse)
-
-		if plResponse.Proposal_letter.Id == 0 {
-			t.Error("O ID da carta proposta não deveria ser zero")
-		}
-
-		proposal_letter = plResponse.Proposal_letter
+		var plResp pkg.ProposalLetterResponse
+		json.Unmarshal(w.Body.Bytes(), &plResp)
+		assert.NotZero(t, plResp.Proposal_letter.Id)
+		proposalID = plResp.Proposal_letter.Id
 	})
 
 	t.Run("Alterando carta proposta", func(t *testing.T) {
@@ -176,70 +108,38 @@ func TestProposalLetter(t *testing.T) {
 			"title":   newTitle,
 			"content": newContent,
 		}
-
 		body, _ := json.Marshal(patchBody)
-		targetURL := fmt.Sprintf("/proposals/%d", proposal_letter.Id)
 
-		req := httptest.NewRequest(http.MethodPatch, targetURL, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-
+		// Patch exige token (usamos o do cliente que criou a proposta)
+		req := authRequest(http.MethodPatch, fmt.Sprintf("/proposals/%d", proposalID), body, clientToken)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-
-		var plResponse pkg.ProposalLetterResponse
-		err := json.Unmarshal(w.Body.Bytes(), &plResponse)
-		assert.NoError(t, err)
-
-		// Verificações
-		assert.Equal(t, newTitle, plResponse.Proposal_letter.Title)
-		assert.Equal(t, newContent, plResponse.Proposal_letter.Content)
-
-		// Atualiza a variável compartilhada para garantir que o estado está correto
-		proposal_letter = plResponse.Proposal_letter
+		var plResp pkg.ProposalLetterResponse
+		json.Unmarshal(w.Body.Bytes(), &plResp)
+		assert.Equal(t, newTitle, plResp.Proposal_letter.Title)
 	})
 
-	t.Run("Removendo carta proposta", func(t *testing.T) {
-		targetURL := fmt.Sprintf("/proposals/%d", proposal_letter.Id)
-
-		req := httptest.NewRequest(http.MethodDelete, targetURL, nil)
-
+	t.Run("Removendo entidades", func(t *testing.T) {
+		// 1. Deleta a Proposta
+		req := authRequest(http.MethodDelete, fmt.Sprintf("/proposals/%d", proposalID), nil, clientToken)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-
 		assert.Equal(t, http.StatusOK, w.Code)
 
-		targetURL = fmt.Sprintf("/users/%d/analyst", analyst.User.Id)
+		// 2. Cleanup Analista (Token do Rafael)
+		req = authRequest(http.MethodDelete, fmt.Sprintf("/users/%d/analyst", analystUserID), nil, analystToken)
+		router.ServeHTTP(httptest.NewRecorder(), req)
 
-		req = httptest.NewRequest(http.MethodDelete, targetURL, nil)
-		w = httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		req = authRequest(http.MethodDelete, fmt.Sprintf("/users/%d", analystUserID), nil, analystToken)
+		router.ServeHTTP(httptest.NewRecorder(), req)
 
-		assert.Equal(t, http.StatusOK, w.Code)
+		// 3. Cleanup Cliente (Token da Alyssa)
+		req = authRequest(http.MethodDelete, fmt.Sprintf("/users/%d/client", clientUserID), nil, clientToken)
+		router.ServeHTTP(httptest.NewRecorder(), req)
 
-		targetURL = fmt.Sprintf("/users/%d", analyst.User.Id)
-
-		req = httptest.NewRequest(http.MethodDelete, targetURL, nil)
-		w = httptest.NewRecorder()
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-
-		targetURL = fmt.Sprintf("/users/%d/client", client.User.Id)
-
-		req = httptest.NewRequest(http.MethodDelete, targetURL, nil)
-		w = httptest.NewRecorder()
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-
-		targetURL = fmt.Sprintf("/users/%d", client.User.Id)
-
-		req = httptest.NewRequest(http.MethodDelete, targetURL, nil)
-		w = httptest.NewRecorder()
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusOK, w.Code)
+		req = authRequest(http.MethodDelete, fmt.Sprintf("/users/%d", clientUserID), nil, clientToken)
+		router.ServeHTTP(httptest.NewRecorder(), req)
 	})
 }

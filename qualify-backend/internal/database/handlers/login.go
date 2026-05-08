@@ -115,9 +115,7 @@ func Login(conn *pgxpool.Pool) gin.HandlerFunc {
 			}
 
 			// Update failed attempts
-			conn.QueryRow(c.Request.Context(),
-				`UPDATE "user" SET failed_login_attempts = $1 WHERE id = $2`,
-				failedLoginAttempts, user.Id).Scan()
+			conn.Exec(c.Request.Context(), `UPDATE "user" SET failed_login_attempts = $1 WHERE id = $2`, failedLoginAttempts, user.Id)
 
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error":   "invalid_credentials",
