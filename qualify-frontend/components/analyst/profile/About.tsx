@@ -27,41 +27,45 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
     "biography" | "reviews" | "skills" | "certifications"
   >("biography");
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        // Biography
-        const profileResp = await analystService.getProfile(analyst.id);
+  // useEffect(() => {
+  //   async function loadData() {
+  //     try {
+  //       // Biography
+  //       const profileResp = await analystService.getProfile(analyst.id);
 
-        setBiography(profileResp.analyst_profile.biography);
+  //       setBiography(profileResp.analyst_profile.biography);
 
-        // Reviews
-        // preisa implementar
+  //       // Reviews
+  //       // precisa implementar
 
-        // Skills
-        const skillsResp = await analystService.listSkills(analyst.id);
+  //       // Skills
+  //       const skillsResp = await analystService.listSkills(analyst.id);
 
-        const skills = await Promise.all(
-          skillsResp.analyst_skills.map(async (skillid) => {
-            const respskill = await skillService.getById(skillid.skill_id);
+  //       const skills = await Promise.all(
+  //         skillsResp.analyst_skills.map(async (skillid) => {
+  //           const respskill = await skillService.getById(skillid.skill_id);
 
-            return respskill.skill;
-          }),
-        );
+  //           return respskill.skill;
+  //         }),
+  //       );
 
-        setSkillsCardsVector(skills);
+  //       setSkillsCardsVector(skills);
 
-        // Certifications
-        const certResp = await analystService.listCertifications(analyst.id);
+  //       // Certifications
+  //       const certResp = await analystService.listCertifications(analyst.id);
 
-        setCertificationsCardsVector(certResp.certifications);
-      } catch (error: unknown) {
-        //tem que implentar algum erro aqui
-      }
-    }
+  //       setCertificationsCardsVector(certResp.certifications);
+  //     } catch (error: unknown) {
+  //       if (error instanceof Error) {
+  //         console.error(error.message);
+  //       } else {
+  //         console.error(error);
+  //       }
+  //     }
+  //   }
 
-    loadData();
-  }, [analyst.id]);
+  //   loadData();
+  // }, [analyst.id]);
 
   return (
     <div>
