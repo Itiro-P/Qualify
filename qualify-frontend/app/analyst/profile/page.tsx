@@ -30,24 +30,27 @@ export default function Profile() {
       .then((resp) => setAnalyst(resp.analyst));
   }, []);
 
-  return analyst ? (
+  return (
     <section id="profile" className="px-6 md:px-20 py-14">
       <Header />
+      {analyst ? (
+        <div>
+          <div className="flex justify-between ml-3 mt-10">
+            <ImageProfile />
+            <Informations />
+            <ContactButtons />
+          </div>
 
-      <div className="flex justify-between ml-3 mt-10">
-        <ImageProfile />
-        <Informations />
-        <ContactButtons />
-      </div>
-
-      <div className="flex mt-10">
-        <About analyst={analyst} />
-        <StatisticProfile />
-      </div>
+          <div className="flex mt-10">
+            <About analyst={analyst} />
+            <StatisticProfile />
+          </div>
+        </div>
+      ) : (
+        <p>Usuário não logado ou não é analista</p>
+      )}
 
       <Footer />
     </section>
-  ) : (
-    <p>Usuário não logado ou não é analista</p>
   );
 }
