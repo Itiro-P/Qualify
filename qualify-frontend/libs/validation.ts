@@ -1,5 +1,11 @@
-import type { IUserRegisterForm, IUserRegisterFormErrors } from "@/types/user/userRegisterForm";
-import type { IUserEditForm, IUserEditFormErrors } from "@/types/user/userEditForm";
+import type {
+  IUserRegisterForm,
+  IUserRegisterFormErrors,
+} from "@/types/user/userRegisterForm";
+import type {
+  IUserEditForm,
+  IUserEditFormErrors,
+} from "@/types/user/userEditForm";
 
 function validateEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -14,7 +20,9 @@ function validatePassword(password: string): string[] {
   return errors;
 }
 
-export function validateRegisterForm(form: IUserRegisterForm): IUserRegisterFormErrors {
+export function validateRegisterForm(
+  form: IUserRegisterForm,
+): IUserRegisterFormErrors {
   const errors: IUserRegisterFormErrors = {};
 
   if (!form.name.trim()) errors.name = "Nome é obrigatório";
@@ -28,7 +36,8 @@ export function validateRegisterForm(form: IUserRegisterForm): IUserRegisterForm
 
   if (!form.timezone.trim()) errors.timezone = "Fuso horário é obrigatório";
   if (!form.country_name.trim()) errors.country_name = "País é obrigatório";
-  if (!form.country_code.trim()) errors.country_code = "Código do país é obrigatório";
+  if (!form.country_code.trim())
+    errors.country_code = "Código do país é obrigatório";
   if (!form.country_state.trim()) errors.country_state = "Estado é obrigatório";
   if (!form.city.trim()) errors.city = "Cidade é obrigatória";
 
@@ -64,7 +73,8 @@ export function validateEditForm(form: IUserEditForm): IUserEditFormErrors {
 
   if (!form.timezone.trim()) errors.timezone = "Fuso horário é obrigatório";
   if (!form.country_name.trim()) errors.country_name = "País é obrigatório";
-  if (!form.country_code.trim()) errors.country_code = "Código do país é obrigatório";
+  if (!form.country_code.trim())
+    errors.country_code = "Código do país é obrigatório";
   if (!form.country_state.trim()) errors.country_state = "Estado é obrigatório";
   if (!form.city.trim()) errors.city = "Cidade é obrigatória";
 

@@ -16,10 +16,7 @@ function handleChange(
 function validateSkill(skills: Skill[], skill: string): string {
   let newErrors: string = "";
 
-  if (
-    skills.length > 0 &&
-    skills.find((element) => element.name === skill)
-  ) {
+  if (skills.length > 0 && skills.find((element) => element.name === skill)) {
     newErrors = "Essa tecnologia já foi incluída";
   }
 
@@ -36,20 +33,14 @@ function handleSubmit(
 ) {
   e.preventDefault();
 
-  const validationErrors = validateSkill(
-    skillsAnalyst,
-    skill.name,
-  );
+  const validationErrors = validateSkill(skillsAnalyst, skill.name);
 
   setErrors(validationErrors);
 
   if (!validationErrors) {
     console.log("Dados salvados:", skill.name);
 
-    setSkillsAnalyst((prev) => [
-      ...prev,
-      { id: 0, name: skill.name },
-    ]);
+    setSkillsAnalyst((prev) => [...prev, { id: 0, name: skill.name }]);
 
     setskill({ id: 0, name: "" });
   }
@@ -129,10 +120,7 @@ export function RegisterSkills({
       )}
       <div className="flex flex-row justify-start flex-wrap">
         {skillsAnalyst.map((skill) => (
-          <SkillSaves
-            key={skill.name}
-            {...{ setSkillsAnalyst, skill }}
-          />
+          <SkillSaves key={skill.name} {...{ setSkillsAnalyst, skill }} />
         ))}
       </div>
     </form>

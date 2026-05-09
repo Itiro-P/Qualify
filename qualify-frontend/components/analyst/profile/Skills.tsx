@@ -9,11 +9,7 @@ function Card({ name }: Skill) {
   );
 }
 
-export function Skills({
-  skillsCardsVector,
-}: {
-  skillsCardsVector: Skill[];
-}) {
+export function Skills({ skillsCardsVector }: { skillsCardsVector: Skill[] }) {
   return (
     <div className="flex flex-col p-4 mb-6">
       <div className="flex">

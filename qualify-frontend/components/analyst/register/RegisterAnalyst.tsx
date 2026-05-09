@@ -19,9 +19,7 @@ export function RegisterAnalyst() {
   const [certificationsAnalyst, setCertificationsAnalyst] = useState<
     Certification[]
   >([]);
-  const [skillsAnalyst, setSkillsAnalyst] = useState<Skill[]>(
-    [],
-  );
+  const [skillsAnalyst, setSkillsAnalyst] = useState<Skill[]>([]);
   const [hourlyRateAnalyst, setHourlyRateAnalyst] = useState<number>(-1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -39,15 +37,17 @@ export function RegisterAnalyst() {
       await analystService.create(userId, { hourly_rate: hourlyRateAnalyst });
 
       // 2. Colocar Certificações //necessario mudar depois
-      for(const certification of certificationsAnalyst){
+      for (const certification of certificationsAnalyst) {
         const temp = await certificationService.create(certification);
-        await analystService.addCertification(userId, {certification_id: temp.certification.id});
+        await analystService.addCertification(userId, {
+          certification_id: temp.certification.id,
+        });
       }
 
       // 3. Colocar Skills //necessario mudar depois
-      for(const skill of skillsAnalyst){
+      for (const skill of skillsAnalyst) {
         const temp = await skillService.create(skill);
-        await analystService.addSkill(userId, {skill_id: temp.skill.id});
+        await analystService.addSkill(userId, { skill_id: temp.skill.id });
       }
 
       setSuccess("Cadastro de analista realizado com sucesso!");

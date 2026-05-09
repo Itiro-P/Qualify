@@ -108,7 +108,7 @@ function handleSubmit(
         name: "",
         description: "",
         institution: "",
-        year: -1
+        year: -1,
       });
       console.log("Dados salvados:", certification);
     }
@@ -218,7 +218,7 @@ export function RegisterCertifications({
           <FormInput
             label="Ano"
             name="year"
-            value={certification.year > 0 ? (certification.year) : ("")}
+            value={certification.year > 0 ? certification.year : ""}
             onChange={(e) => handleChange(e, setCertification)}
             error={errorsCertification.year}
             required

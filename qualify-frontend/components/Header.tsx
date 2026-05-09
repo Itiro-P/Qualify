@@ -1,13 +1,21 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Terminal, Search, User, LogOut, Settings, ChevronDown, ChevronsUp } from "lucide-react";
+import {
+  Terminal,
+  Search,
+  User,
+  LogOut,
+  Settings,
+  ChevronDown,
+  ChevronsUp,
+} from "lucide-react";
 import Link from "next/link";
 import { getSessionUser, clearSession } from "@/libs/session";
 import type { SessionUser } from "@/libs/session";
 
 export function Header() {
-  const [user, setUser] = useState<SessionUser | null>(()=>getSessionUser());
+  const [user, setUser] = useState<SessionUser | null>(() => getSessionUser());
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -77,14 +85,20 @@ export function Header() {
                 <span className="text-sm font-medium truncate max-w-30">
                   {user.name.split(" ")[0]}
                 </span>
-                <ChevronDown className={`w-3 h-3 text-neutral-slate transition-transform ${menuOpen ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  className={`w-3 h-3 text-neutral-slate transition-transform ${menuOpen ? "rotate-180" : ""}`}
+                />
               </button>
 
               {menuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-bg-dark border border-white/10 rounded-lg shadow-lg overflow-hidden">
                   <div className="px-4 py-3 border-b border-white/10">
-                    <p className="text-sm font-medium text-white truncate">{user.name}</p>
-                    <p className="text-xs text-neutral-slate truncate">{user.email}</p>
+                    <p className="text-sm font-medium text-white truncate">
+                      {user.name}
+                    </p>
+                    <p className="text-xs text-neutral-slate truncate">
+                      {user.email}
+                    </p>
                   </div>
                   <Link
                     href="/user/edit"

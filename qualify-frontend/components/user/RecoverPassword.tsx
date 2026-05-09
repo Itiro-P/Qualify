@@ -38,8 +38,9 @@ export function RecoverPassword() {
           <Alert variant="success">
             <p className="font-medium mb-1">E-mail enviado!</p>
             <p className="text-sm opacity-80">
-              Se o e-mail <strong className="text-white">{email}</strong> estiver cadastrado,
-              você receberá as instruções de recuperação em breve.
+              Se o e-mail <strong className="text-white">{email}</strong>{" "}
+              estiver cadastrado, você receberá as instruções de recuperação em
+              breve.
             </p>
           </Alert>
           <Link
@@ -73,7 +74,9 @@ export function RecoverPassword() {
 
       <p className="text-center text-sm text-neutral-slate mt-6">
         Lembrou a senha?{" "}
-        <Link href="#" className="text-accent hover:underline">Entrar</Link>
+        <Link href="#" className="text-accent hover:underline">
+          Entrar
+        </Link>
       </p>
     </FormPanel>
   );

@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { Footer, Header } from "@/components";
 import {

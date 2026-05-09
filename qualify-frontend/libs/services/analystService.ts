@@ -34,7 +34,10 @@ export const analystService = {
     return api.get(`/users/${userId}/analyst`);
   },
 
-  create(userId: number, data: { hourly_rate: number }): Promise<AnalystResponse> {
+  create(
+    userId: number,
+    data: { hourly_rate: number },
+  ): Promise<AnalystResponse> {
     return api.post(`/users/${userId}/analyst`, data);
   },
 
@@ -55,11 +58,17 @@ export const analystService = {
     return api.get(`/users/${userId}/analyst/profile`);
   },
 
-  createProfile(userId: number, data: AnalystProfile): Promise<AnalystProfileResponse> {
+  createProfile(
+    userId: number,
+    data: AnalystProfile,
+  ): Promise<AnalystProfileResponse> {
     return api.post(`/users/${userId}/analyst/profile`, data);
   },
 
-  updateProfile(userId: number, data: AnalystProfile): Promise<AnalystProfileResponse> {
+  updateProfile(
+    userId: number,
+    data: AnalystProfile,
+  ): Promise<AnalystProfileResponse> {
     return api.put(`/users/${userId}/analyst/profile`, data);
   },
 
@@ -68,16 +77,26 @@ export const analystService = {
   },
 
   // Certifications
-  listCertifications(userId: number): Promise<{ certifications: Certification[]; count: number }> {
+  listCertifications(
+    userId: number,
+  ): Promise<{ certifications: Certification[]; count: number }> {
     return api.get(`/users/${userId}/analyst/certifications`);
   },
 
-  addCertification(userId: number, data: { certification_id: number }): Promise<AnalystCertificationResponse> {
+  addCertification(
+    userId: number,
+    data: { certification_id: number },
+  ): Promise<AnalystCertificationResponse> {
     return api.post(`/users/${userId}/analyst/certifications`, data);
   },
 
-  removeCertification(userId: number, certificationId: number): Promise<Record<string, string>> {
-    return api.delete(`/users/${userId}/analyst/certifications?certification_id=${certificationId}`);
+  removeCertification(
+    userId: number,
+    certificationId: number,
+  ): Promise<Record<string, string>> {
+    return api.delete(
+      `/users/${userId}/analyst/certifications?certification_id=${certificationId}`,
+    );
   },
 
   // Skills
@@ -85,7 +104,10 @@ export const analystService = {
     return api.get(`/users/${userId}/analyst/skills`);
   },
 
-  addSkill(userId: number, data: { skill_id: number }): Promise<AnalystSkillResponse> {
+  addSkill(
+    userId: number,
+    data: { skill_id: number },
+  ): Promise<AnalystSkillResponse> {
     return api.post(`/users/${userId}/analyst/skills`, data);
   },
 
