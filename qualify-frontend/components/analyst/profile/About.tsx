@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Reviews } from "@/components/analyst/profile/Reviews";
 import { Biography } from "@/components/analyst/profile/Biography";
 import { Skills } from "@/components/analyst/profile/Skills";
@@ -27,23 +27,41 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
     "biography" | "reviews" | "skills" | "certifications"
   >("biography");
 
-  analystService.getProfile(analyst.id).then((resp) => {
-    setBiography(resp.analyst_profile.biography);
-  });
+  useEffect(() => {
+    async function loadData() {
+      try {
+        // Biography
+        const profileResp = await analystService.getProfile(analyst.id);
 
-  //colocar metodo para atualizar as reviewCardsVector de acordo com o 'analyst'
+        setBiography(profileResp.analyst_profile.biography);
 
-  analystService.listSkills(analyst.id).then((resp) => {
-    for (const skillid of resp.analyst_skills) {
-      skillService.getById(skillid.skill_id).then((respskill) => {
-        setSkillsCardsVector((prev) => [...prev, respskill.skill]);
-      });
+        // Reviews
+        // preisa implementar
+
+        // Skills
+        const skillsResp = await analystService.listSkills(analyst.id);
+
+        const skills = await Promise.all(
+          skillsResp.analyst_skills.map(async (skillid) => {
+            const respskill = await skillService.getById(skillid.skill_id);
+
+            return respskill.skill;
+          }),
+        );
+
+        setSkillsCardsVector(skills);
+
+        // Certifications
+        const certResp = await analystService.listCertifications(analyst.id);
+
+        setCertificationsCardsVector(certResp.certifications);
+      } catch (error: unknown) {
+        //tem que implentar algum erro aqui
+      }
     }
-  });
 
-  analystService.listCertifications(analyst.id).then((resp) => {
-    setCertificationsCardsVector(resp.certifications);
-  });
+    loadData();
+  }, [analyst.id]);
 
   return (
     <div>

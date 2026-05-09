@@ -1,17 +1,17 @@
 export interface Analyst {
   id: number;
-  name?: string;
-  email?: string;
-  phone?: string;
-  city?: string;
-  country_code?: string;
-  country_name?: string;
-  country_state?: string;
-  timezone?: string;
-  hourly_rate?: number;
-  mean_rating?: number;
-  total_reviews?: number;
-  time_created?: string;
+  name: string;
+  email: string;
+  phone: string;
+  city: string;
+  country_code: string;
+  country_name: string;
+  country_state: string;
+  timezone: string;
+  hourly_rate: number;
+  mean_rating: number;
+  total_reviews: number;
+  time_created: string;
 }
 
 export interface AnalystResponse {

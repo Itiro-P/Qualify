@@ -8,37 +8,27 @@ import {
   Informations,
   ContactButtons,
 } from "@/components/analyst/profile";
-
-import { getSessionUser } from "@/libs/session";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Analyst } from "@/types/services";
-import { analystService } from "@/libs";
 
 export default function Profile() {
-  const [analyst, setAnalyst] = useState<Analyst | null>(null);
+  const [analyst, setAnalyst] = useState<Analyst | null>({
+    id: 0,
+    name: "",
+    email: "",
+    phone: "",
+    city: "",
+    country_code: "",
+    country_name: "",
+    country_state: "",
+    timezone: "",
+    hourly_rate: 0,
+    mean_rating: 0,
+    total_reviews: 0,
+    time_created: "",
+  });
 
-  useEffect(() => {
-    const session = getSessionUser();
-
-    if (!session) {
-      window.location.href = "/User/register";
-      return;
-    }
-
-    analystService
-      .getByUserId(session.id)
-      .then((resp) => {
-        console.log(resp);
-        setAnalyst(resp.analyst);
-      })
-      .catch((error) => {
-        console.error("ERRO:", error);
-
-        if (error.response) {
-          console.error(error.response.data);
-        }
-      });
-  }, []);
+  //tem que implementar forma de pegar o usuario da seessão e ver se é analista ou não e colocar no 'analyst'
 
   return (
     <section id="profile" className="px-6 md:px-20 py-14">
