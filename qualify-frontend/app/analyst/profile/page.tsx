@@ -27,7 +27,17 @@ export default function Profile() {
 
     analystService
       .getByUserId(session.id)
-      .then((resp) => setAnalyst(resp.analyst));
+      .then((resp) => {
+        console.log(resp);
+        setAnalyst(resp.analyst);
+      })
+      .catch((error) => {
+        console.error("ERRO:", error);
+
+        if (error.response) {
+          console.error(error.response.data);
+        }
+      });
   }, []);
 
   return (
