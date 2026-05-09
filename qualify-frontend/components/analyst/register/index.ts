@@ -1,4 +1,4 @@
 export { RegisterCertifications } from "./RegisterCertifications";
 export { RegisterHourlyRate } from "./RegisterHourlyRate";
-export { RegisterTechnologies } from "./RegisterTechnologies";
+export { RegisterSkills } from "./RegisterSkills";
 export { RegisterAnalyst } from "./RegisterAnalyst";

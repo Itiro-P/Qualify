@@ -59,7 +59,7 @@ export function RegisterHourlyRate({
           label="Valor por hora ($)"
           name="hourlyRate"
           type="number"
-          value={hourlyRateAnalyst}
+          value={hourlyRateAnalyst > 0 ? hourlyRateAnalyst : ""}
           onChange={(e) => handleChange(e, setHourlyRateAnalyst)}
           error={errors}
           required

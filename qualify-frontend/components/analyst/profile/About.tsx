@@ -3,29 +3,28 @@
 import { useState } from "react";
 import { Reviews } from "@/components/analyst/profile/Reviews";
 import { Biography } from "@/components/analyst/profile/Biography";
-import { Technologies } from "@/components/analyst/profile/Technologies";
+import { Skills } from "@/components/analyst/profile/Skills";
 import { Certifications } from "@/components/analyst/profile/Certifications";
 import { analystService } from "@/libs/services/analystService";
 import { Analyst } from "@/types/services";
-import { ITechnology } from "@/types/analyst/technology";
+import { Skill } from "@/types/services";
 import { Review } from "@/types/services/review";
 import { Certification } from "@/types/services/certification";
+import { skillService } from "@/libs";
 
 function TabsSystem({ analyst }: { analyst: Analyst }) {
   const [biography, setBiography] = useState<string>("");
 
   const [reviewCardsVector, setReviewCardsVector] = useState<Review[]>([]);
 
-  const [technologiesCardsVector, setTechnologiesCardsVector] = useState<
-    ITechnology[]
-  >([]);
+  const [skillsCardsVector, setSkillsCardsVector] = useState<Skill[]>([]);
 
   const [certificationsCardsVector, setCertificationsCardsVector] = useState<
     Certification[]
   >([]);
 
   const [abaAtiva, setAbaAtiva] = useState<
-    "biography" | "reviews" | "technologies" | "certifications"
+    "biography" | "reviews" | "skills" | "certifications"
   >("biography");
 
   analystService.getProfile(analyst.id).then((resp) => {
@@ -34,9 +33,11 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
 
   //colocar metodo para atualizar as reviewCardsVector de acordo com o 'analyst'
 
-  analystService.listSkills(analyst.id!).then((resp) => {
-    for (const skill in resp.analyst_skills) {
-      setTechnologiesCardsVector((prev) => [...prev, { technology: skill }]);
+  analystService.listSkills(analyst.id).then((resp) => {
+    for (const skillid of resp.analyst_skills) {
+      skillService.getById(skillid.skill_id).then((respskill) => {
+        setSkillsCardsVector((prev) => [...prev, respskill.skill]);
+      });
     }
   });
 
@@ -61,7 +62,7 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
         </button>
         <button
           className="p-2 m-2 bg-blue-950"
-          onClick={() => setAbaAtiva("technologies")}
+          onClick={() => setAbaAtiva("skills")}
         >
           Tecnologias
         </button>
@@ -80,8 +81,8 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
           <Reviews reviewCardsVector={reviewCardsVector} />
         )}
 
-        {abaAtiva === "technologies" && (
-          <Technologies technologiesCardsVector={technologiesCardsVector} />
+        {abaAtiva === "skills" && (
+          <Skills skillsCardsVector={skillsCardsVector} />
         )}
 
         {abaAtiva === "certifications" && (

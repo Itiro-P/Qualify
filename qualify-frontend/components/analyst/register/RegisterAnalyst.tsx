@@ -1,11 +1,11 @@
 "use client";
 import { useState } from "react";
 import { Certification } from "@/types/services/certification";
-import { ITechnology } from "@/types/analyst/technology";
+import { Skill } from "@/types/services/skill";
 import {
   RegisterCertifications,
   RegisterHourlyRate,
-  RegisterTechnologies,
+  RegisterSkills,
 } from "@/components/analyst/register";
 import {
   analystService,
@@ -19,46 +19,16 @@ export function RegisterAnalyst() {
   const [certificationsAnalyst, setCertificationsAnalyst] = useState<
     Certification[]
   >([]);
-  const [technologiesAnalyst, setTechnologiesAnalyst] = useState<ITechnology[]>(
+  const [skillsAnalyst, setSkillsAnalyst] = useState<Skill[]>(
     [],
   );
-  const [hourlyRateAnalyst, setHourlyRateAnalyst] = useState<number>(0);
+  const [hourlyRateAnalyst, setHourlyRateAnalyst] = useState<number>(-1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   // TODO: pegar o userId da sessão/auth (ex: useSession do NextAuth)
   const userId = 1;
-
-  async function getOrCreateCertification(
-    cert: Certification,
-  ): Promise<number> {
-    const searchData = await certificationService.list(cert.name);
-
-    if (searchData.count > 0) {
-      return searchData.certifications[0].id!;
-    }
-
-    const created = await certificationService.create({
-      description: cert.description,
-      institution: cert.institution,
-      name: cert.name,
-      year: Number(cert.year),
-    });
-
-    return created.certification.id!;
-  }
-
-  async function getOrCreateTechnology(tech: ITechnology): Promise<number> {
-    const searchData = await skillService.list(tech.technology);
-
-    if (searchData.count > 0) {
-      return searchData.skills[0].id!;
-    }
-
-    const created = await skillService.create({ name: tech.technology });
-    return created.skill.id!;
-  }
 
   async function handleSubmitAll() {
     setLoading(true);
@@ -68,27 +38,17 @@ export function RegisterAnalyst() {
       // 1. Promover usuário a analista
       await analystService.create(userId, { hourly_rate: hourlyRateAnalyst });
 
-      // 2. Certificações: busca ou cria, depois vincula ao analista
-      const certIds = await Promise.all(
-        certificationsAnalyst.map(getOrCreateCertification),
-      );
+      // 2. Colocar Certificações //necessario mudar depois
+      for(const certification of certificationsAnalyst){
+        const temp = await certificationService.create(certification);
+        await analystService.addCertification(userId, {certification_id: temp.certification.id});
+      }
 
-      await Promise.all(
-        certIds.map((certId) =>
-          analystService.addCertification(userId, { certification_id: certId }),
-        ),
-      );
-
-      // 3. Skills: busca ou cria, depois vincula ao analista
-      const skillIds = await Promise.all(
-        technologiesAnalyst.map(getOrCreateTechnology),
-      );
-
-      await Promise.all(
-        skillIds.map((skillId) =>
-          analystService.addSkill(userId, { skill_id: skillId }),
-        ),
-      );
+      // 3. Colocar Skills //necessario mudar depois
+      for(const skill of skillsAnalyst){
+        const temp = await skillService.create(skill);
+        await analystService.addSkill(userId, {skill_id: temp.skill.id});
+      }
 
       setSuccess("Cadastro de analista realizado com sucesso!");
     } catch (err) {
@@ -128,9 +88,9 @@ export function RegisterAnalyst() {
         certificationsAnalyst={certificationsAnalyst}
         setCertificationsAnalyst={setCertificationsAnalyst}
       />
-      <RegisterTechnologies
-        technologiesAnalyst={technologiesAnalyst}
-        setTechnologiesAnalyst={setTechnologiesAnalyst}
+      <RegisterSkills
+        skillsAnalyst={skillsAnalyst}
+        setSkillsAnalyst={setSkillsAnalyst}
       />
       <RegisterHourlyRate
         hourlyRateAnalyst={hourlyRateAnalyst}
