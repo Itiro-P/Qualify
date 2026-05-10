@@ -1,0 +1,1 @@
+export { EditAnalyst } from "./EditAnalyst";

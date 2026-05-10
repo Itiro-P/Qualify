@@ -15,7 +15,7 @@ import { getSessionUser, clearSession } from "@/libs/session";
 import type { SessionUser } from "@/libs/session";
 
 export function Header() {
-  const [user, setUser] = useState<SessionUser | null>(null);
+  const [user, setUser] = useState<SessionUser | null>(()=>getSessionUser());
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -25,7 +25,6 @@ export function Header() {
         setMenuOpen(false);
       }
     }
-    setUser(getSessionUser());
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
