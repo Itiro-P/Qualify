@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { IUserRegisterForm, IUserRegisterFormErrors } from "@/types/user/userRegisterForm";
+import type {
+  IUserRegisterForm,
+  IUserRegisterFormErrors,
+} from "@/types/user/userRegisterForm";
 import { validateRegisterForm } from "@/libs/validation";
 import { userService } from "@/libs/services";
 import { setSessionUser } from "@/libs/session";
@@ -207,14 +210,21 @@ export function RegisterUser() {
           required
         />
 
-        <FormButton type="submit" loading={loading} loadingText="Cadastrando..." className="mt-2">
+        <FormButton
+          type="submit"
+          loading={loading}
+          loadingText="Cadastrando..."
+          className="mt-2"
+        >
           Cadastrar
         </FormButton>
       </form>
 
       <p className="text-center text-sm text-neutral-slate mt-6">
         Já tem uma conta?{" "}
-        <Link href="#" className="text-accent hover:underline">Entrar</Link>
+        <Link href="#" className="text-accent hover:underline">
+          Entrar
+        </Link>
       </p>
     </FormPanel>
   );

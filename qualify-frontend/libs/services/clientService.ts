@@ -30,7 +30,10 @@ export const clientService = {
     return api.get(`/users/${userId}/client`);
   },
 
-  create(userId: number, data: { proposed_budget: number }): Promise<ClientResponse> {
+  create(
+    userId: number,
+    data: { proposed_budget: number },
+  ): Promise<ClientResponse> {
     return api.post(`/users/${userId}/client`, data);
   },
 
@@ -51,11 +54,17 @@ export const clientService = {
     return api.get(`/users/${userId}/client/profile`);
   },
 
-  createProfile(userId: number, data: ClientProfile): Promise<ClientProfileResponse> {
+  createProfile(
+    userId: number,
+    data: ClientProfile,
+  ): Promise<ClientProfileResponse> {
     return api.post(`/users/${userId}/client/profile`, data);
   },
 
-  updateProfile(userId: number, data: ClientProfile): Promise<ClientProfileResponse> {
+  updateProfile(
+    userId: number,
+    data: ClientProfile,
+  ): Promise<ClientProfileResponse> {
     return api.put(`/users/${userId}/client/profile`, data);
   },
 

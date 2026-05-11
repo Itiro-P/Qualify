@@ -19,8 +19,12 @@ export function FormInput({
 
   return (
     <div>
-      <label htmlFor={inputId} className="block text-sm font-medium text-white/80 mb-1">
-        {label}{required && " *"}
+      <label
+        htmlFor={inputId}
+        className="block text-sm font-medium text-white/80 mb-1"
+      >
+        {label}
+        {required && " *"}
       </label>
       <input
         id={inputId}
@@ -32,7 +36,9 @@ export function FormInput({
         }`}
       />
       {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
-      {hint && !error && <p className="text-neutral-slate text-xs mt-1">{hint}</p>}
+      {hint && !error && (
+        <p className="text-neutral-slate text-xs mt-1">{hint}</p>
+      )}
     </div>
   );
 }

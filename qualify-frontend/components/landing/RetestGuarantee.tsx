@@ -4,7 +4,7 @@ export function RetestGuarantee() {
   return (
     <section id="guarantee" className="px-6 md:px-20 py-24 bg-primary/10">
       <div className="max-w-5xl mx-auto glass-panel p-12 rounded-2xl border-white/20 text-center relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-accent to-transparent" />
+        <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-accent to-transparent" />
         <ShieldCheck className="w-16 h-16 text-accent mx-auto mb-6" />
         <h2 className="text-4xl font-bold mb-6">Garantia de Reteste</h2>
         <p className="text-neutral-slate text-xl mb-10 max-w-2xl mx-auto leading-relaxed">

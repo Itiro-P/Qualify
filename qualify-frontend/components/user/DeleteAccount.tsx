@@ -52,12 +52,13 @@ export function DeleteAccount() {
   return (
     <FormPanel title="Excluir conta" maxWidth="max-w-md">
       <p className="text-sm text-neutral-slate mb-4">
-        Esta ação é <strong className="text-red-400">irreversível</strong>. Todos os seus
-        dados serão permanentemente removidos.
+        Esta ação é <strong className="text-red-400">irreversível</strong>.
+        Todos os seus dados serão permanentemente removidos.
       </p>
 
       <Alert variant="error">
-        Você está prestes a excluir a conta de <strong className="text-white">{user.email}</strong>.
+        Você está prestes a excluir a conta de{" "}
+        <strong className="text-white">{user.email}</strong>.
       </Alert>
 
       {error && <Alert variant="error">{error}</Alert>}

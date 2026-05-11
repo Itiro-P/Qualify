@@ -20,11 +20,17 @@ export const certificationService = {
     return api.post("/certifications", data);
   },
 
-  update(id: number, data: Omit<Certification, "id">): Promise<CertificationResponse> {
+  update(
+    id: number,
+    data: Omit<Certification, "id">,
+  ): Promise<CertificationResponse> {
     return api.put(`/certifications/${id}`, data);
   },
 
-  patch(id: number, data: CertificationUpdateRequest): Promise<CertificationResponse> {
+  patch(
+    id: number,
+    data: CertificationUpdateRequest,
+  ): Promise<CertificationResponse> {
     return api.patch(`/certifications/${id}`, data);
   },
 

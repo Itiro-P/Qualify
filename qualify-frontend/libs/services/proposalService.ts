@@ -28,7 +28,10 @@ export const proposalService = {
     return api.put(`/proposals/${id}`, data);
   },
 
-  patch(id: number, data: ProposalLetterUpdateRequest): Promise<ProposalLetterResponse> {
+  patch(
+    id: number,
+    data: ProposalLetterUpdateRequest,
+  ): Promise<ProposalLetterResponse> {
     return api.patch(`/proposals/${id}`, data);
   },
 

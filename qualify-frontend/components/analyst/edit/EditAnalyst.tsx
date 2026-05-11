@@ -15,7 +15,7 @@ import {
 import type { ApiError } from "@/libs/api";
 import { FormButton, FormPanel, Alert } from "@/components/ui";
 
-export function RegisterAnalyst() {
+export function EditAnalyst() {
   const [certificationsAnalyst, setCertificationsAnalyst] = useState<
     Certification[]
   >([]);
@@ -25,7 +25,7 @@ export function RegisterAnalyst() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // TODO: pegar o userId da sessão/auth
+  // TODO: pegar o userId da sessão/auth (ex: useSession do NextAuth)
   const userId = 1;
 
   async function handleSubmitAll() {
@@ -36,42 +36,18 @@ export function RegisterAnalyst() {
       // 1. Promover usuário a analista
       await analystService.create(userId, { hourly_rate: hourlyRateAnalyst });
 
-      // 2. Colocar Certificações
+      // 2. Colocar Certificações //necessario mudar depois
       for (const certification of certificationsAnalyst) {
-        // 'anda' por cada certificado em certificationAnalyst
-        const certificationOfDataBase = await certificationService.list(
-          certification.name,
-        ); // pega certificação que correspondem ao nome da certificação
-        let createdCertication: Certification;
-        if (certificationOfDataBase.count == 0) {
-          // não tem certificação no banco de dados
-          createdCertication = (
-            await certificationService.create(certification)
-          ).certification; // cria certificação no banco de dados
-        } else {
-          // tem certificação no banco de dados
-          createdCertication = certificationOfDataBase.certifications[0]; // pega primeira correspondência
-        }
-
+        const temp = await certificationService.create(certification);
         await analystService.addCertification(userId, {
-          certification_id: createdCertication.id,
-        }); // adiciona certificação ao analista
+          certification_id: temp.certification.id,
+        });
       }
 
       // 3. Colocar Skills //necessario mudar depois
       for (const skill of skillsAnalyst) {
-        const skillOfDataBase = await skillService.list(skill.name); // pega skill que correspondem ao nome da skill
-        let createdSkill: Skill;
-        if (skillOfDataBase.count == 0) {
-          // não tem skill no banco de dados
-          createdSkill = (await skillService.create(skill)).skill; // cria skill no banco de dados
-        } else {
-          // tem skill no banco de dados
-          createdSkill = skillOfDataBase.skills[0]; // pega primeira correspondência
-        }
-        await analystService.addSkill(userId, {
-          skill_id: createdSkill.id,
-        }); // adiciona
+        const temp = await skillService.create(skill);
+        await analystService.addSkill(userId, { skill_id: temp.skill.id });
       }
 
       setSuccess("Cadastro de analista realizado com sucesso!");

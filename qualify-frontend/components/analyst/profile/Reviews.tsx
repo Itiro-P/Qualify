@@ -1,23 +1,5 @@
 import { SquarePen } from "lucide-react";
-import { IReview } from "@/types/analyst/profile/review";
-
-const reviewCardsVector: IReview[] = [
-  {
-    rating: 2.5,
-    comment: "Bons testes aletórios",
-    date: "10/03/2026",
-  },
-  {
-    rating: 3.2,
-    comment: "É um exelente guardião da qualidade",
-    date: "21/01/2026",
-  },
-  {
-    rating: 2.7,
-    comment: "Auxiliou muito com seus testes de botões",
-    date: "15/02/2026",
-  },
-];
+import { Review } from "@/types/services/review";
 
 function Stars({ type }: { type: string }) {
   if (type === "full") return <span>⭐</span>;
@@ -38,7 +20,7 @@ function StarRange({ rating }: { rating: number }) {
   return <div>{StarRange}</div>;
 }
 
-function Card({ rating, comment, date }: IReview) {
+function Card({ rating, comment, time_created }: Review) {
   return (
     <div id="comment" className="flex flex-col p-4 mb-6">
       <p className="text-zinc-200">{comment}</p>
@@ -46,13 +28,13 @@ function Card({ rating, comment, date }: IReview) {
         <div className="my-4 mr-4">
           <StarRange rating={rating} />
         </div>
-        <p className="my-4 ml-4">{date}</p>
+        <p className="my-4 ml-4">{time_created}</p>
       </div>
     </div>
   );
 }
 
-export function Review() {
+export function Reviews({ reviewCardsVector }: { reviewCardsVector: Review[] }) {
   return (
     <div id="review" className="flex flex-col p-4 mb-6">
       <div className="flex">
