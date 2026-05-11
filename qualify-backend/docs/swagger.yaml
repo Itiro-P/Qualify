@@ -1130,46 +1130,6 @@ paths:
       summary: Listar clientes
       tags:
       - Clientes
-  /login:
-    get:
-      consumes:
-      - application/json
-      description: Faz login com os dados fornecidos
-      parameters:
-      - description: Objeto do usuário
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/pkg.UserLogin'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/pkg.UserResponse'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Fazer login
-      tags:
-      - Usuários
   /proposals:
     get:
       consumes:
@@ -2820,6 +2780,11 @@ paths:
       - description: ID do analista
         in: path
         name: id
+        required: true
+        type: integer
+      - description: ID da skill
+        in: query
+        name: skill_id
         required: true
         type: integer
       produces:
