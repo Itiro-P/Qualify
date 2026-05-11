@@ -160,7 +160,7 @@ export function RegisterCertifications({
   >;
 }) {
   const [certification, setCertification] = useState<Certification>({
-    id: 0,
+    id: -1,
     name: "",
     description: "",
     institution: "",

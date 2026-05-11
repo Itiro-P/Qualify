@@ -84,7 +84,7 @@ export function RegisterSkills({
 }) {
   const [errors, setErrors] = useState<string>("");
   const [skill, setskill] = useState<Skill>({
-    id: 0,
+    id: -1,
     name: "",
   });
 

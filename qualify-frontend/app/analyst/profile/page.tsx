@@ -28,7 +28,7 @@ export default function Profile() {
     time_created: "",
   });
 
-  //tem que implementar forma de pegar o usuario da seessão e ver se é analista ou não e colocar no 'analyst'
+  //tem que implementar forma de pegar o usuario da sessão e ver se é analista ou não e colocar no 'analyst'
 
   return (
     <section id="profile" className="px-6 md:px-20 py-14">

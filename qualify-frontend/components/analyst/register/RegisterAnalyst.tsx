@@ -58,7 +58,7 @@ export function RegisterAnalyst() {
         }); // adiciona certificação ao analista
       }
 
-      // 3. Colocar Skills //necessario mudar depois
+      // 3. Colocar Skills
       for (const skill of skillsAnalyst) {
         const skillOfDataBase = await skillService.list(skill.name); // pega skill que correspondem ao nome da skill
         let createdSkill: Skill;
