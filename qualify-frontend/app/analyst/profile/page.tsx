@@ -1,6 +1,7 @@
 "use client";
 
 import { Footer, Header } from "@/components";
+import { useRouter } from "next/navigation";
 import {
   ImageProfile,
   StatisticProfile,
@@ -8,27 +9,40 @@ import {
   Informations,
   ContactButtons,
 } from "@/components/analyst/profile";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Analyst } from "@/types/services";
+import { analystService } from "@/libs";
+import { getSessionUser } from "@/libs/session";
 
 export default function Profile() {
-  const [analyst, setAnalyst] = useState<Analyst | null>({
-    id: 0,
-    name: "",
-    email: "",
-    phone: "",
-    city: "",
-    country_code: "",
-    country_name: "",
-    country_state: "",
-    timezone: "",
-    hourly_rate: 0,
-    mean_rating: 0,
-    total_reviews: 0,
-    time_created: "",
-  });
+  const router = useRouter();
+  const [analyst, setAnalyst] = useState<Analyst | null>(null);
 
-  //tem que implementar forma de pegar o usuario da sessão e ver se é analista ou não e colocar no 'analyst'
+  async function getAnalyst(id_user: number): Promise<Analyst> {
+    return (await analystService.getByUserId(id_user)).analyst;
+  }
+
+  useEffect(() => {
+    async function fetchAnalyst() {
+      const session = getSessionUser();
+
+      if (!session) {
+        router.push("/user/register");
+        return;
+      }
+      console.log(session);
+      try {
+        const analyst = await getAnalyst(session.id);
+        setAnalyst(analyst);
+      } catch (error) {
+        console.error("Erro ao buscar analyst:", error);
+      }
+    }
+
+    fetchAnalyst();
+    console.log(analyst);
+    console.log("asdadsadsadasd");
+  }, []);
 
   return (
     <section id="profile" className="px-6 md:px-20 py-14">

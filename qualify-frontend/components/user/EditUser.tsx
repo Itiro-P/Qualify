@@ -38,7 +38,7 @@ export function EditUser() {
   useEffect(() => {
     const session = getSessionUser();
     if (!session) {
-      router.push("/User/register");
+      router.push("/user/register");
       return;
     }
     setUser(session);

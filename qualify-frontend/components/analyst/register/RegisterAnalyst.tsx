@@ -1,7 +1,11 @@
 "use client";
-import { useState } from "react";
+
+import { useRouter } from "next/navigation";
+import { getSessionUser } from "@/libs/session";
+import { useState, useEffect } from "react";
 import { Certification } from "@/types/services/certification";
 import { Skill } from "@/types/services/skill";
+import { User } from "@/types/services";
 import {
   RegisterCertifications,
   RegisterHourlyRate,
@@ -24,11 +28,31 @@ export function RegisterAnalyst() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    async function fetchAnalyst() {
+      const session = getSessionUser();
+
+      if (!session) {
+        router.push("/user/register");
+        return;
+      }
+      setUser(session);
+    }
+
+    fetchAnalyst();
+  }, []);
 
   // TODO: pegar o userId da sessão/auth
-  const userId = 1;
+  const userId = user?.id;
 
   async function handleSubmitAll() {
+    if (!userId) {
+      setError("Usuário não autenticado.");
+      return;
+    }
     setLoading(true);
     setError("");
     setSuccess("");
@@ -71,7 +95,7 @@ export function RegisterAnalyst() {
         }
         await analystService.addSkill(userId, {
           skill_id: createdSkill.id,
-        }); // adiciona
+        }); // adiciona skill no analista
       }
 
       setSuccess("Cadastro de analista realizado com sucesso!");
