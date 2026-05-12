@@ -253,8 +253,6 @@ definitions:
         type: string
       token_type:
         type: string
-      user:
-        $ref: '#/definitions/pkg.User'
     type: object
   pkg.PasswordChangeRequest:
     properties:
@@ -659,17 +657,9 @@ paths:
       description: Autentica usuário com email e senha, retornando tokens JWT de acesso
         e refresh.
       parameters:
-      - description: Email do usuário
-        in: query
-        name: email
-        type: string
-      - description: Senha do usuário
-        in: query
-        name: password
-        type: string
       - description: Objeto login
         in: body
-        name: analyst
+        name: user
         required: true
         schema:
           $ref: '#/definitions/pkg.UserLogin'

@@ -16,9 +16,7 @@ import (
 // @Tags Autenticação
 // @Accept json
 // @Produce json
-// @Param email query string false "Email do usuário"
-// @Param password query string false "Senha do usuário"
-// @Param analyst body pkg.UserLogin true "Objeto login"
+// @Param user body pkg.UserLogin true "Objeto login"
 // @Success 200 {object} pkg.LoginResponse "Autenticado com sucesso e tokens retornados"
 // @Failure 400 {object} pkg.ErrorResponse "Entrada inválida ou erro de validação"
 // @Failure 401 {object} pkg.ErrorResponse "Credenciais inválidas"
@@ -173,7 +171,6 @@ func Login(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		// Return login response
 		c.JSON(http.StatusOK, pkg.LoginResponse{
-			User:         user,
 			AccessToken:  accessToken,
 			RefreshToken: refreshToken,
 			TokenType:    "Bearer",

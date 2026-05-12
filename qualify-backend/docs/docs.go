@@ -184,20 +184,8 @@ const docTemplate = `{
                 "summary": "Login de usuário com geração de JWT",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Email do usuário",
-                        "name": "email",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Senha do usuário",
-                        "name": "password",
-                        "in": "query"
-                    },
-                    {
                         "description": "Objeto login",
-                        "name": "analyst",
+                        "name": "user",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -4860,9 +4848,6 @@ const docTemplate = `{
                 },
                 "token_type": {
                     "type": "string"
-                },
-                "user": {
-                    "$ref": "#/definitions/pkg.User"
                 }
             }
         },
