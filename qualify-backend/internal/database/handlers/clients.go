@@ -92,7 +92,7 @@ func GetClients(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error fetching clients: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 		defer rows.Close()
@@ -114,14 +114,14 @@ func GetClients(conn *pgxpool.Pool) gin.HandlerFunc {
 				&client.Proposed_budget,
 			)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Error scanning client data: " + err.Error()})
+				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
 			}
 			clients = append(clients, client)
 		}
 
 		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error iterating clients: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -149,7 +149,7 @@ func GetClient(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		clientID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid client id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		var client pkg.Client
@@ -174,10 +174,10 @@ func GetClient(conn *pgxpool.Pool) gin.HandlerFunc {
 		)
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "client not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -203,7 +203,7 @@ func CreateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 		userIDParam := c.Param("id")
 		userID, err := strconv.Atoi(userIDParam)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -211,17 +211,17 @@ func CreateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 			Proposed_budget float64 `json:"proposed_budget"`
 		}
 		if err := c.BindJSON(&request); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		client, err := services.AssignClientRole(c.Request.Context(), conn, userID, request.Proposed_budget)
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to assign client role: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -248,33 +248,33 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		clientID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid client id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		var client pkg.Client
 		if err := c.BindJSON(&client); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		// Validando parâmetros obrigatórios
 		if client.Name == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "user name is required"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty name"))
 			return
 		}
 		if client.Email == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "user email is required"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty email"))
 			return
 		}
 		if len(client.Country_code) != 2 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "country_code must be exactly 2 characters"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty country code"))
 			return
 		}
 
 		// Make update atomic across user + client tables
 		tx, err := conn.Begin(c.Request.Context())
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to begin transaction: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 		// ensure rollback on error
@@ -292,7 +292,7 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 			client.Name, client.Email, client.Phone, client.Country_code, client.Country_name, client.Country_state,
 			client.City, client.Timezone, clientID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -301,7 +301,7 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 			 WHERE id = $2`,
 			client.Proposed_budget, clientID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update client: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -327,15 +327,15 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 		)
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "client not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch updated client: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
 		if err = tx.Commit(c.Request.Context()); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to commit transaction: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 		committed = true
@@ -362,18 +362,18 @@ func DeleteClient(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		clientID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid client id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		result, err := conn.Exec(c.Request.Context(), `DELETE FROM client WHERE id = $1`, clientID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
 		if result.RowsAffected() == 0 {
-			c.JSON(http.StatusNotFound, gin.H{"error": "client not found"})
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Client not found"))
 			return
 		}
 
@@ -400,13 +400,13 @@ func UpdateClientPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		clientID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid client id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		var req pkg.ClientUpdateRequest
 		if err := c.BindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -463,13 +463,13 @@ func UpdateClientPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		if len(userSet) == 0 && len(clientSet) == 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "no fields to update"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		tx, err := conn.Begin(c.Request.Context())
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to begin transaction: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 		defer func() {
@@ -483,7 +483,7 @@ func UpdateClientPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			userQuery := fmt.Sprintf(`UPDATE "user" SET %s WHERE id = $%d`, strings.Join(userSet, ", "), len(userArgs))
 			if _, err := tx.Exec(c.Request.Context(), userQuery, userArgs...); err != nil {
 				_ = tx.Rollback(c.Request.Context())
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
 			}
 		}
@@ -494,7 +494,7 @@ func UpdateClientPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			clientQuery := fmt.Sprintf(`UPDATE client SET %s WHERE id = $%d`, strings.Join(clientSet, ", "), len(clientArgs))
 			if _, err := tx.Exec(c.Request.Context(), clientQuery, clientArgs...); err != nil {
 				_ = tx.Rollback(c.Request.Context())
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
 			}
 		}
@@ -522,15 +522,15 @@ func UpdateClientPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		if err != nil {
 			_ = tx.Rollback(c.Request.Context())
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "client not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
 		if err = tx.Commit(c.Request.Context()); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to commit transaction: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 

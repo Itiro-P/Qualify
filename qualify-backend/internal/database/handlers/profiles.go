@@ -29,7 +29,7 @@ func GetUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		var profile pkg.UserProfile
@@ -39,10 +39,10 @@ func GetUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "user profile not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -68,13 +68,13 @@ func CreateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		var profile pkg.UserProfile
 		if err := c.BindJSON(&profile); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		profile.User_id = userID
@@ -87,7 +87,7 @@ func CreateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			Scan(&profile.User_id)
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -114,18 +114,18 @@ func UpdateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		var profile pkg.UserProfile
 		if err := c.BindJSON(&profile); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		// Validando parâmetros obrigatórios
 		if profile.Biography == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "biography is required"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty biography"))
 			return
 		}
 
@@ -138,10 +138,10 @@ func UpdateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "user profile not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -167,7 +167,7 @@ func DeleteUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -175,12 +175,12 @@ func DeleteUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			`DELETE FROM user_profile WHERE user_id = $1`,
 			userID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
 		if result.RowsAffected() == 0 {
-			c.JSON(http.StatusNotFound, gin.H{"error": "user profile not found"})
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "User profule not found"))
 			return
 		}
 
@@ -207,7 +207,7 @@ func GetAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		var profile pkg.AnalystProfile
@@ -217,10 +217,10 @@ func GetAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "analyst profile not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -246,13 +246,13 @@ func CreateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		var profile pkg.AnalystProfile
 		if err := c.BindJSON(&profile); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		profile.User_id = userID
@@ -265,7 +265,7 @@ func CreateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			Scan(&profile.User_id)
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -292,18 +292,18 @@ func UpdateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		var profile pkg.AnalystProfile
 		if err := c.BindJSON(&profile); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		// Validando parâmetros obrigatórios
 		if profile.Biography == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "biography is required"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty biography"))
 			return
 		}
 
@@ -316,10 +316,10 @@ func UpdateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "analyst profile not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -345,7 +345,7 @@ func DeleteAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -353,12 +353,12 @@ func DeleteAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			`DELETE FROM user_profile WHERE user_id = $1`,
 			userID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
 		if result.RowsAffected() == 0 {
-			c.JSON(http.StatusNotFound, gin.H{"error": "analyst profile not found"})
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst profile not found"))
 			return
 		}
 
@@ -385,7 +385,7 @@ func GetClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		var profile pkg.ClientProfile
@@ -395,10 +395,10 @@ func GetClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "client profile not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -424,19 +424,19 @@ func CreateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		var profile pkg.ClientProfile
 		if err := c.BindJSON(&profile); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		// Validando parâmetros obrigatórios
 		if profile.Biography == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "biography is required"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty biography"))
 			return
 		}
 		profile.User_id = userID
@@ -449,7 +449,7 @@ func CreateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			Scan(&profile.User_id)
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -476,12 +476,12 @@ func UpdateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		var profile pkg.ClientProfile
 		if err := c.BindJSON(&profile); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -494,10 +494,10 @@ func UpdateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "client profile not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -523,7 +523,7 @@ func DeleteClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -531,12 +531,12 @@ func DeleteClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			`DELETE FROM user_profile WHERE user_id = $1`,
 			userID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
 		if result.RowsAffected() == 0 {
-			c.JSON(http.StatusNotFound, gin.H{"error": "client profile not found"})
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Client profile not found"))
 			return
 		}
 

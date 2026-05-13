@@ -1,6 +1,8 @@
 package pkg
 
-import "time"
+import (
+	"time"
+)
 
 // Token response with access and refresh tokens
 type TokenResponse struct {
