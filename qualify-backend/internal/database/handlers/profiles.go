@@ -20,9 +20,9 @@ import (
 // @Produce json
 // @Param id path int true "ID do usuário"
 // @Success 200 {object} pkg.UserProfileResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 pkg.ErrorResponse
+// @Failure 404 pkg.ErrorResponse
+// @Failure 500 pkg.ErrorResponse
 // @Router /users/{id}/profile [get]
 func GetUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -59,8 +59,8 @@ func GetUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do usuário"
 // @Param profile body pkg.UserProfile true "Objeto perfil"
 // @Success 201 {object} pkg.UserProfileResponse
-// @Failure 400 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 pkg.ErrorResponse
+// @Failure 500 pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/profile [post]
 func CreateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -104,9 +104,9 @@ func CreateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do usuário"
 // @Param profile body pkg.UserProfile true "Objeto perfil"
 // @Success 200 {object} pkg.UserProfileResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 pkg.ErrorResponse
+// @Failure 404 pkg.ErrorResponse
+// @Failure 500 pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/profile [put]
 func UpdateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -157,9 +157,9 @@ func UpdateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário"
 // @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 pkg.ErrorResponse
+// @Failure 404 pkg.ErrorResponse
+// @Failure 500 pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/profile [delete]
 func DeleteUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -198,9 +198,9 @@ func DeleteUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário (analista)"
 // @Success 200 {object} pkg.AnalystProfileResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 pkg.ErrorResponse
+// @Failure 404 pkg.ErrorResponse
+// @Failure 500 pkg.ErrorResponse
 // @Router /users/{id}/analyst/profile [get]
 func GetAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -237,8 +237,8 @@ func GetAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do usuário (analista)"
 // @Param profile body pkg.AnalystProfile true "Objeto perfil"
 // @Success 201 {object} pkg.AnalystProfileResponse
-// @Failure 400 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 pkg.ErrorResponse
+// @Failure 500 pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/analyst/profile [post]
 func CreateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -282,9 +282,9 @@ func CreateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do usuário (analista)"
 // @Param profile body pkg.AnalystProfile true "Objeto perfil"
 // @Success 200 {object} pkg.AnalystProfileResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 pkg.ErrorResponse
+// @Failure 404 pkg.ErrorResponse
+// @Failure 500 pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/analyst/profile [put]
 func UpdateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -335,9 +335,9 @@ func UpdateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário (analista)"
 // @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 pkg.ErrorResponse
+// @Failure 404 pkg.ErrorResponse
+// @Failure 500 pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/analyst/profile [delete]
 func DeleteAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -376,9 +376,9 @@ func DeleteAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário (cliente)"
 // @Success 200 {object} pkg.ClientProfileResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 pkg.ErrorResponse
+// @Failure 404 pkg.ErrorResponse
+// @Failure 500 pkg.ErrorResponse
 // @Router /users/{id}/client/profile [get]
 func GetClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -415,8 +415,8 @@ func GetClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do usuário (cliente)"
 // @Param profile body pkg.ClientProfile true "Objeto perfil"
 // @Success 201 {object} pkg.ClientProfileResponse
-// @Failure 400 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 pkg.ErrorResponse
+// @Failure 500 pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/client/profile [post]
 func CreateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -466,9 +466,9 @@ func CreateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do usuário (cliente)"
 // @Param profile body pkg.ClientProfile true "Objeto perfil"
 // @Success 200 {object} pkg.ClientProfileResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 pkg.ErrorResponse
+// @Failure 404 pkg.ErrorResponse
+// @Failure 500 pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/client/profile [put]
 func UpdateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -513,9 +513,9 @@ func UpdateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário (cliente)"
 // @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 pkg.ErrorResponse
+// @Failure 404 pkg.ErrorResponse
+// @Failure 500 pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/client/profile [delete]
 func DeleteClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {

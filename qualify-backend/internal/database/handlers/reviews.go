@@ -27,7 +27,7 @@ import (
 // @Param page query int false "Página"
 // @Param page_size query int false "Tamanho da página"
 // @Success 200 {object} pkg.ReviewsResponse
-// @Failure 500 {object} map[string]string
+// @Failure 500 pkg.ErrorResponse
 // @Router /reviews [get]
 func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -201,9 +201,9 @@ func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID da avaliação"
 // @Success 200 {object} pkg.ReviewResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 pkg.ErrorResponse
+// @Failure 404 pkg.ErrorResponse
+// @Failure 500 pkg.ErrorResponse
 // @Router /reviews/{id} [get]
 func GetReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -236,8 +236,8 @@ func GetReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param review body pkg.Review true "Objeto avaliação"
 // @Success 201 {object} pkg.ReviewResponse
-// @Failure 400 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 pkg.ErrorResponse
+// @Failure 500 pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /reviews [post]
 func CreateReview(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -279,9 +279,9 @@ func CreateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID da avaliação"
 // @Param review body pkg.Review true "Objeto avaliação"
 // @Success 200 {object} pkg.ReviewResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 pkg.ErrorResponse
+// @Failure 404 pkg.ErrorResponse
+// @Failure 500 pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /reviews/{id} [put]
 func UpdateReview(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -333,9 +333,9 @@ func UpdateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID da avaliação"
 // @Param review body pkg.ReviewUpdateRequest true "Objeto avaliação"
 // @Success 200 {object} pkg.ReviewResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 pkg.ErrorResponse
+// @Failure 404 pkg.ErrorResponse
+// @Failure 500 pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /reviews/{id} [patch]
 func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -405,9 +405,9 @@ func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID da avaliação"
 // @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 pkg.ErrorResponse
+// @Failure 404 pkg.ErrorResponse
+// @Failure 500 pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /reviews/{id} [delete]
 func DeleteReview(conn *pgxpool.Pool) gin.HandlerFunc {

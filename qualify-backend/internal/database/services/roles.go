@@ -15,7 +15,7 @@ import (
 // @Produce json
 // @Param user body pkg.User true "Objeto do usuário"
 // @Success 200 {object} pkg.UserRegister
-// @Failure 500 {object} map[string]string
+// @Failure 500 pkg.ErrorResponse
 func CreateUser(ctx context.Context, conn *pgxpool.Pool, user *pkg.User) error {
 	tx, err := conn.Begin(ctx)
 	if err != nil {
@@ -62,7 +62,7 @@ func CreateUser(ctx context.Context, conn *pgxpool.Pool, user *pkg.User) error {
 // @Param userID path int true "ID do usuário"
 // @Param hourlyRate query number true "Valor por hora"
 // @Success 200 {object} pkg.Analyst
-// @Failure 500 {object} map[string]string
+// @Failure 500 pkg.ErrorResponse
 func AssignAnalystRole(ctx context.Context, conn *pgxpool.Pool, userID int, hourlyRate float64) (*pkg.Analyst, error) {
 	tx, err := conn.Begin(ctx)
 	if err != nil {
@@ -122,7 +122,7 @@ func AssignAnalystRole(ctx context.Context, conn *pgxpool.Pool, userID int, hour
 // @Param userID path int true "ID do usuário"
 // @Param proposedBudget query number true "Orçamento proposto"
 // @Success 200 {object} pkg.Client
-// @Failure 500 {object} map[string]string
+// @Failure 500 pkg.ErrorResponse
 func AssignClientRole(ctx context.Context, conn *pgxpool.Pool, userID int, proposedBudget float64) (*pkg.Client, error) {
 	tx, err := conn.Begin(ctx)
 	if err != nil {
