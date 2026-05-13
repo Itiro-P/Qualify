@@ -22,9 +22,9 @@ import (
 // @Produce json
 // @Param id path int true "ID do usuário"
 // @Success 200 {object} pkg.UserResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Router /users/{id} [get]
 func GetUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -62,8 +62,8 @@ func GetUser(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param user body pkg.UserRegister true "Objeto do usuário"
 // @Success 201 {object} pkg.UserResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /register [post]
 func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -116,9 +116,9 @@ func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do usuário"
 // @Param user body pkg.User true "Objeto do usuário"
 // @Success 200 {object} pkg.UserResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id} [put]
 func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -167,9 +167,9 @@ func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do usuário"
 // @Param user body pkg.UserUpdateRequest true "Objeto do usuário"
 // @Success 200 {object} pkg.UserResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id} [patch]
 func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -248,9 +248,9 @@ func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário"
 // @Success 200 {object} map[string]string
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id} [delete]
 func DeleteUser(conn *pgxpool.Pool) gin.HandlerFunc {

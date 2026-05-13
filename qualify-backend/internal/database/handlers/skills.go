@@ -21,8 +21,8 @@ import (
 // @Produce json
 // @Param name query string false "Nome parcial"
 // @Success 200 {object} pkg.SkillsResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Router /skills [get]
 func GetSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -72,9 +72,9 @@ func GetSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID da habilidade"
 // @Success 200 {object} pkg.SkillResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Router /skills/{id} [get]
 func GetSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -110,8 +110,8 @@ func GetSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param skill body pkg.Skill true "Objeto habilidade"
 // @Success 201 {object} pkg.SkillResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /skills [post]
 func CreateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -147,9 +147,9 @@ func CreateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID da habilidade"
 // @Param skill body pkg.Skill true "Objeto habilidade"
 // @Success 200 {object} pkg.SkillResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /skills/{id} [put]
 func UpdateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -200,9 +200,9 @@ func UpdateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID da habilidade"
 // @Success 200 {object} map[string]string
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /skills/{id} [delete]
 func DeleteSkill(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -240,9 +240,9 @@ func DeleteSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do analista"
 // @Success 200 {object} pkg.AnalystSkillsResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Router /users/{id}/analyst/skills [get]
 func GetAnalystSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -295,9 +295,9 @@ func GetAnalystSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do analista"
 // @Param certification body pkg.AnalystSkill true "Objeto associação"
 // @Success 200 {object} pkg.AnalystSkillResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/analyst/skills [post]
 func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -364,9 +364,9 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do analista"
 // @Param skill_id query int true "ID da skill"
 // @Success 200 {object} map[string]string
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/analyst/skills [delete]
 func DeleteAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {

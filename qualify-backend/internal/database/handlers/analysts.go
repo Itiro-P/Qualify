@@ -394,8 +394,8 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do usuário"
 // @Param analyst body pkg.Analyst true "Objeto analista (envie apenas `hourly_rate`)"
 // @Success 201 {object} pkg.AnalystResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/analyst [post]
 func CreateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -440,9 +440,9 @@ func CreateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do usuário"
 // @Param analyst body pkg.Analyst true "Objeto analista"
 // @Success 200 {object} pkg.AnalystResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/analyst [put]
 func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -555,9 +555,9 @@ func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário"
 // @Success 200 {object} map[string]string
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/analyst [delete]
 func DeleteAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {

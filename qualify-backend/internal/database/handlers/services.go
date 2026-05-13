@@ -21,7 +21,7 @@ import (
 // @Param status query string false "Status do serviço"
 // @Param proposal_letter_id query int false "ID da proposta"
 // @Success 200 {object} pkg.ServicesResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Router /services [get]
 func GetServices(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -78,9 +78,9 @@ func GetServices(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do serviço"
 // @Success 200 {object} pkg.ServiceResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Router /services/{id} [get]
 func GetService(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -118,8 +118,8 @@ func GetService(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param service body pkg.Service true "Objeto serviço"
 // @Success 201 {object} pkg.ServiceResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /services [post]
 func CreateService(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -155,9 +155,9 @@ func CreateService(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do serviço"
 // @Param service body pkg.Service true "Objeto serviço"
 // @Success 200 {object} pkg.ServiceResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /services/{id} [put]
 func UpdateService(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -214,9 +214,9 @@ func UpdateService(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do serviço"
 // @Param service body pkg.ServiceUpdateRequest true "Objeto serviço"
 // @Success 200 {object} pkg.ServiceResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /services/{id} [patch]
 func UpdateServicePartial(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -299,9 +299,9 @@ func UpdateServicePartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do serviço"
 // @Success 200 {object} map[string]string
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /services/{id} [delete]
 func DeleteService(conn *pgxpool.Pool) gin.HandlerFunc {

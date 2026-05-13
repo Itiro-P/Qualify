@@ -21,7 +21,7 @@ import (
 // @Param client_id query int false "ID do cliente"
 // @Param analyst_id query int false "ID do analista"
 // @Success 200 {object} pkg.ProposalLettersResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Router /proposals [get]
 func GetProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -81,9 +81,9 @@ func GetProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID da proposta"
 // @Success 200 {object} pkg.ProposalLetterResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Router /proposals/{id} [get]
 func GetProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -122,8 +122,8 @@ func GetProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param proposal body pkg.ProposalLetter true "Objeto proposta"
 // @Success 201 {object} pkg.ProposalLetterResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /proposals [post]
 func CreateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -159,9 +159,9 @@ func CreateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID da proposta"
 // @Param proposal body pkg.ProposalLetter true "Objeto proposta"
 // @Success 200 {object} pkg.ProposalLetterResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /proposals/{id} [put]
 func UpdateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -213,9 +213,9 @@ func UpdateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID da proposta"
 // @Param proposal body pkg.ProposalLetterUpdateRequest true "Objeto proposta"
 // @Success 200 {object} pkg.ProposalLetterResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /proposals/{id} [patch]
 func UpdateProposalLetterPartial(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -297,9 +297,9 @@ func UpdateProposalLetterPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID da proposta"
 // @Success 200 {object} map[string]string
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /proposals/{id} [delete]
 func DeleteProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {

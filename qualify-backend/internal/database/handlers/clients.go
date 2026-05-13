@@ -25,8 +25,8 @@ import (
 // @Param min_proposed_budget query number false "Orçamento mínimo"
 // @Param max_proposed_budget query number false "Orçamento máximo"
 // @Success 200 {object} pkg.ClientsResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Router /clients [get]
 func GetClients(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -140,9 +140,9 @@ func GetClients(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário"
 // @Success 200 {object} pkg.ClientResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Router /users/{id}/client [get]
 func GetClient(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -194,8 +194,8 @@ func GetClient(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do usuário"
 // @Param proposed_budget body object true "{\"proposed_budget\": number}"
 // @Success 201 {object} pkg.ClientResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/client [post]
 func CreateClient(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -238,9 +238,9 @@ func CreateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do usuário"
 // @Param client body pkg.Client true "Objeto cliente"
 // @Success 200 {object} pkg.ClientResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/client [put]
 func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -352,9 +352,9 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário"
 // @Success 200 {object} map[string]string
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/client [delete]
 func DeleteClient(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -390,9 +390,9 @@ func DeleteClient(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do usuário"
 // @Param client body pkg.ClientUpdateRequest true "Campos opcionais para atualização"
 // @Success 200 {object} pkg.ClientResponse
-// @Failure 400 pkg.ErrorResponse
-// @Failure 404 pkg.ErrorResponse
-// @Failure 500 pkg.ErrorResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/client [patch]
 func UpdateClientPartial(conn *pgxpool.Pool) gin.HandlerFunc {
