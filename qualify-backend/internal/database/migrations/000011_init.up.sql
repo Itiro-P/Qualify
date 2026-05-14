@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS user_profile ADD COLUMN IF NOT EXISTS picture TEXT DEFAULT 'default_picture.png';

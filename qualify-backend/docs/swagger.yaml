@@ -44,6 +44,8 @@ definitions:
     properties:
       biography:
         type: string
+      picture:
+        type: string
       user_id:
         type: integer
     type: object
@@ -179,6 +181,8 @@ definitions:
   pkg.ClientProfile:
     properties:
       biography:
+        type: string
+      picture:
         type: string
       user_id:
         type: integer
@@ -479,6 +483,8 @@ definitions:
   pkg.UserProfile:
     properties:
       biography:
+        type: string
+      picture:
         type: string
       user_id:
         type: integer
@@ -3104,6 +3110,42 @@ paths:
       security:
       - BearerAuth: []
       summary: Atualizar perfil do usuário
+      tags:
+      - Perfis
+  /users/{id}/profile/picture:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Realiza o upload de uma imagem e retorna o perfil atualizado
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Arquivo de imagem
+        in: formData
+        name: picture
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.UserProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Upload da foto de perfil
       tags:
       - Perfis
 securityDefinitions:

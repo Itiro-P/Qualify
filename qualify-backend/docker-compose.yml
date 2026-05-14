@@ -30,6 +30,7 @@ services:
     container_name: qualify_migrate_cli
     volumes:
       - ./internal/database/migrations:/migrations
+      - ./internal/database/uploads:/uploads
     profiles:
       - tools
     depends_on:
