@@ -21,8 +21,8 @@ import (
 // @Produce json
 // @Param name query string false "Nome parcial"
 // @Success 200 {object} pkg.SkillsResponse
-// @Failure 400 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Router /skills [get]
 func GetSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -40,7 +40,7 @@ func GetSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 		defer rows.Close()
@@ -49,14 +49,14 @@ func GetSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 		for rows.Next() {
 			var skill pkg.Skill
 			if err := rows.Scan(&skill.Id, &skill.Name); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
 			}
 			skills = append(skills, skill)
 		}
 
 		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -72,16 +72,16 @@ func GetSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID da habilidade"
 // @Success 200 {object} pkg.SkillResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Router /skills/{id} [get]
 func GetSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		skillID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid skill id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		var skill pkg.Skill
@@ -91,10 +91,10 @@ func GetSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "skill not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -110,15 +110,15 @@ func GetSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param skill body pkg.Skill true "Objeto habilidade"
 // @Success 201 {object} pkg.SkillResponse
-// @Failure 400 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /skills [post]
 func CreateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var skill pkg.Skill
 		if err := c.BindJSON(&skill); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -130,7 +130,7 @@ func CreateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			Scan(&skill.Id)
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -147,9 +147,9 @@ func CreateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID da habilidade"
 // @Param skill body pkg.Skill true "Objeto habilidade"
 // @Success 200 {object} pkg.SkillResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /skills/{id} [put]
 func UpdateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -157,18 +157,18 @@ func UpdateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		skillID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid skill id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		var skill pkg.Skill
 		if err := c.BindJSON(&skill); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		// Validando parâmetros obrigatórios
 		if skill.Name == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "skill name is required"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty name"))
 			return
 		}
 
@@ -181,10 +181,10 @@ func UpdateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "skill not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -200,9 +200,9 @@ func UpdateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID da habilidade"
 // @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /skills/{id} [delete]
 func DeleteSkill(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -210,19 +210,19 @@ func DeleteSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		skillID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid skill id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		result, err := conn.Exec(c.Request.Context(),
 			`DELETE FROM skill WHERE id = $1`, skillID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
 		if result.RowsAffected() == 0 {
-			c.JSON(http.StatusNotFound, gin.H{"error": "skill not found"})
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Skill not found"))
 			return
 		}
 
@@ -240,9 +240,9 @@ func DeleteSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do analista"
 // @Success 200 {object} pkg.AnalystSkillsResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Router /users/{id}/analyst/skills [get]
 func GetAnalystSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -250,7 +250,7 @@ func GetAnalystSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 		analystIDVal, err := strconv.Atoi(analystID)
 
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid analyst id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -263,7 +263,7 @@ func GetAnalystSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 			analystIDVal,
 		)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 		defer rows.Close()
@@ -271,14 +271,14 @@ func GetAnalystSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 		for rows.Next() {
 			var skill pkg.Skill
 			if err := rows.Scan(&skill.Id, &skill.Name); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao escanear habilidade: " + err.Error()})
+				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
 			}
 			skills = append(skills, skill)
 		}
 
 		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao iterar habilidades: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -295,9 +295,9 @@ func GetAnalystSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do analista"
 // @Param certification body pkg.AnalystSkill true "Objeto associação"
 // @Success 200 {object} pkg.AnalystSkillResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/analyst/skills [post]
 func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -305,13 +305,13 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		analystID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		var as pkg.AnalystSkill
 		if err := c.BindJSON(&as); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		as.Analyst_id = analystID
@@ -322,11 +322,11 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, as.Analyst_id,
 		).Scan(&analystExists)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 		if !analystExists {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "analyst not found"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Analyst does not exist"))
 			return
 		}
 
@@ -335,11 +335,11 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			`SELECT EXISTS(SELECT 1 FROM skill WHERE id = $1)`, as.Skill_id,
 		).Scan(&skillExists)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 		if !skillExists {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "skill not found"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Skill does not exist"))
 			return
 		}
 
@@ -348,7 +348,7 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			as.Analyst_id, as.Skill_id,
 		)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 		c.JSON(http.StatusCreated, pkg.AnalystSkillResponse{Analyst_skill: as})
@@ -364,9 +364,9 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do analista"
 // @Param skill_id query int true "ID da skill"
 // @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/analyst/skills [delete]
 func DeleteAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -374,18 +374,18 @@ func DeleteAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 		userID := c.Param("id")
 		userIDVal, err := strconv.Atoi(userID)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		skillID := c.Query("skill_id")
 		if skillID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "skill_id query parameter required"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty skill id"))
 			return
 		}
 		skillIDVal, err := strconv.Atoi(skillID)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid skill_id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -394,12 +394,12 @@ func DeleteAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			userIDVal, skillIDVal,
 		)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
 		if result.RowsAffected() == 0 {
-			c.JSON(http.StatusNotFound, gin.H{"error": "analyst skill not found"})
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst skill not found"))
 			return
 		}
 

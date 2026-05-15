@@ -22,16 +22,16 @@ import (
 // @Produce json
 // @Param id path int true "ID do usuário"
 // @Success 200 {object} pkg.UserResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Router /users/{id} [get]
 func GetUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		var user pkg.User
@@ -43,10 +43,10 @@ func GetUser(conn *pgxpool.Pool) gin.HandlerFunc {
 		)
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -62,21 +62,21 @@ func GetUser(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param user body pkg.UserRegister true "Objeto do usuário"
 // @Success 201 {object} pkg.UserResponse
-// @Failure 400 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /register [post]
 func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var reg pkg.UserRegister
 		if err := c.ShouldBindJSON(&reg); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Campos obrigatórios ausentes ou inválidos"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(reg.Password), bcrypt.DefaultCost)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao processar segurança da senha"})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -98,7 +98,7 @@ func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 				c.JSON(http.StatusConflict, gin.H{"error": "Este e-mail já está cadastrado"})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao salvar usuário no banco"})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -116,9 +116,9 @@ func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do usuário"
 // @Param user body pkg.User true "Objeto do usuário"
 // @Success 200 {object} pkg.UserResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id} [put]
 func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -126,12 +126,12 @@ func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		var user pkg.User
 		if err := c.BindJSON(&user); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -147,10 +147,10 @@ func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -167,9 +167,9 @@ func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do usuário"
 // @Param user body pkg.UserUpdateRequest true "Objeto do usuário"
 // @Success 200 {object} pkg.UserResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id} [patch]
 func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -177,13 +177,13 @@ func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		var req pkg.UserUpdateRequest
 		if err := c.BindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -210,7 +210,7 @@ func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		addToSet("timezone", req.Timezone)
 
 		if len(set) == 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "no fields to update"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Invalid arguments"))
 			return
 		}
 
@@ -229,10 +229,10 @@ func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -248,9 +248,9 @@ func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário"
 // @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id} [delete]
 func DeleteUser(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -258,18 +258,18 @@ func DeleteUser(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		userID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		result, err := conn.Exec(c.Request.Context(), `DELETE FROM "user" WHERE id = $1`, userID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
 		if result.RowsAffected() == 0 {
-			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "User not found"))
 			return
 		}
 

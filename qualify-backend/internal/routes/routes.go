@@ -34,6 +34,9 @@ func SetupRoutes(router *gin.Engine, conn *pgxpool.Pool) {
 		MaxAge: 12 * 3600,
 	}))
 
+	// Fotos de perfil
+	router.Static("/uploads", "./uploads")
+
 	// Rate limiters
 	authRateLimiter := middleware.NewRateLimiter(5, 15*time.Minute)
 	loginRateLimiter := middleware.NewRateLimiter(5, 5*time.Minute)
@@ -95,6 +98,7 @@ func SetupRoutes(router *gin.Engine, conn *pgxpool.Pool) {
 				profile.POST("", handlers.CreateUserProfile(conn))
 				profile.PUT("", handlers.UpdateUserProfile(conn))
 				profile.DELETE("", handlers.DeleteUserProfile(conn))
+				profile.POST("/picture", handlers.UploadProfilePicture(conn))
 			}
 
 			analyst := users.Group("/:id/analyst")

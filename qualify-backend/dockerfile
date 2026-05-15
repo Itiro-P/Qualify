@@ -10,9 +10,11 @@ RUN go build -o main ./cmd
 
 FROM alpine:latest
 
-WORKDIR /root/
+WORKDIR /app
 
 COPY --from=builder /app/main .
+
+RUN mkdir -p uploads
 
 EXPOSE 3001
 

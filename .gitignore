@@ -44,6 +44,8 @@ next-env.d.ts
 *.dll
 *.so
 *.dylib
+# Uploads
+uploads/
 
 # Test binary, built with `go test -c`
 *.test
