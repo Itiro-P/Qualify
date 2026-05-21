@@ -27,7 +27,7 @@ import (
 // @Param page query int false "Página"
 // @Param page_size query int false "Tamanho da página"
 // @Success 200 {object} pkg.ReviewsResponse
-// @Failure 500 {object} map[string]string
+// @Failure 500 {object} pkg.ErrorResponse
 // @Router /reviews [get]
 func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -151,7 +151,7 @@ func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 		// Execute query
 		rows, err := conn.Query(c.Request.Context(), query, args...)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error fetching reviews: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 		defer rows.Close()
@@ -171,7 +171,7 @@ func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 				&review.Time_created,
 			)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Error scanning review data: " + err.Error()})
+				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
 			}
 			reviews = append(reviews, review)
@@ -179,7 +179,7 @@ func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		// Check for errors from iterating over rows
 		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error iterating reviews: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -201,26 +201,26 @@ func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID da avaliação"
 // @Success 200 {object} pkg.ReviewResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Router /reviews/{id} [get]
 func GetReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		reviewID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid review id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		var review pkg.Review
 		err = conn.QueryRow(c.Request.Context(), "SELECT id, analyst_id, client_id, service_id, rating, comment, time_created FROM review WHERE id = $1", reviewID).Scan(&review.Id, &review.Analyst_id, &review.Client_id, &review.Service_id, &review.Rating, &review.Comment, &review.Time_created)
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "review not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -236,21 +236,21 @@ func GetReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param review body pkg.Review true "Objeto avaliação"
 // @Success 201 {object} pkg.ReviewResponse
-// @Failure 400 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /reviews [post]
 func CreateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var review pkg.Review
 		if err := c.BindJSON(&review); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		// Validando que a avaliação esteja entre 1-5
 		if review.Rating < 1 || review.Rating > 5 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Rating must be between 1 and 5"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Rating should be between 1 and 5"))
 			return
 		}
 
@@ -262,7 +262,7 @@ func CreateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 			Scan(&review.Id, &review.Time_created)
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -279,9 +279,9 @@ func CreateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID da avaliação"
 // @Param review body pkg.Review true "Objeto avaliação"
 // @Success 200 {object} pkg.ReviewResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /reviews/{id} [put]
 func UpdateReview(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -289,18 +289,18 @@ func UpdateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		reviewID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid review id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		var review pkg.Review
 		if err := c.BindJSON(&review); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		// Validando que a avaliação esteja entre 1-5
 		if review.Rating < 1 || review.Rating > 5 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Rating must be between 1 and 5"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Rating should be between 1 and 5"))
 			return
 		}
 
@@ -313,10 +313,10 @@ func UpdateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "review not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -333,9 +333,9 @@ func UpdateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID da avaliação"
 // @Param review body pkg.ReviewUpdateRequest true "Objeto avaliação"
 // @Success 200 {object} pkg.ReviewResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /reviews/{id} [patch]
 func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -343,12 +343,12 @@ func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		reviewID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid review id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		var review pkg.ReviewUpdateRequest
 		if err := c.BindJSON(&review); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -363,7 +363,7 @@ func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 		if review.Rating != nil {
 			if *review.Rating < 1 || *review.Rating > 5 {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Rating must be between 1 and 5"})
+				c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Rating should be between 1 and 5"))
 				return
 			}
 			set = append(set, fmt.Sprintf("rating = $%d", i))
@@ -372,7 +372,7 @@ func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		if len(set) == 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "no fields to update"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Invalid arguments"))
 			return
 		}
 
@@ -386,10 +386,10 @@ func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "review not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -405,9 +405,9 @@ func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID da avaliação"
 // @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /reviews/{id} [delete]
 func DeleteReview(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -415,18 +415,18 @@ func DeleteReview(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		reviewID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid review id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		result, err := conn.Exec(c.Request.Context(), `DELETE FROM review WHERE id = $1`, reviewID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
 		if result.RowsAffected() == 0 {
-			c.JSON(http.StatusNotFound, gin.H{"error": "review not found"})
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Review not found"))
 			return
 		}
 

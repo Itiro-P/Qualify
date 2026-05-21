@@ -5,6 +5,7 @@ import (
 	"main/internal/middleware"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	swaggerFiles "github.com/swaggo/files"
@@ -15,7 +16,26 @@ func SetupRoutes(router *gin.Engine, conn *pgxpool.Pool) {
 	router.Use(middleware.SecurityHeadersMiddleware())
 	router.Use(middleware.ErrorHandlingMiddleware())
 	router.Use(middleware.LoggingMiddleware())
-	router.Use(middleware.EnhancedCORSMiddleware())
+	router.Use(cors.New(cors.Config{
+		AllowOrigins: []string{"http://localhost:3000"},
+
+		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+
+		AllowHeaders: []string{
+			"Origin",
+			"Content-Type",
+			"Accept",
+			"Authorization",
+			"X-Requested-With",
+		},
+
+		AllowCredentials: true,
+
+		MaxAge: 12 * 3600,
+	}))
+
+	// Fotos de perfil
+	router.Static("/uploads", "./uploads")
 
 	// Rate limiters
 	authRateLimiter := middleware.NewRateLimiter(5, 15*time.Minute)
@@ -78,6 +98,7 @@ func SetupRoutes(router *gin.Engine, conn *pgxpool.Pool) {
 				profile.POST("", handlers.CreateUserProfile(conn))
 				profile.PUT("", handlers.UpdateUserProfile(conn))
 				profile.DELETE("", handlers.DeleteUserProfile(conn))
+				profile.POST("/picture", handlers.UploadProfilePicture(conn))
 			}
 
 			analyst := users.Group("/:id/analyst")

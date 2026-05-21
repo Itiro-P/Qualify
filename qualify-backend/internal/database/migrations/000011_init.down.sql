@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS user_profile DROP COLUMN IF EXISTS picture;
