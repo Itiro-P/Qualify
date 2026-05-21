@@ -41,7 +41,6 @@ export default function Profile() {
 
     fetchAnalyst();
     console.log(analyst);
-    console.log("asdadsadsadasd");
   }, []);
 
   return (
@@ -51,7 +50,13 @@ export default function Profile() {
         <div>
           <div className="flex justify-between ml-3 mt-10">
             <ImageProfile />
-            <Informations />
+            <Informations
+              name={analyst.name}
+              city={analyst.city}
+              rating={analyst.mean_rating}
+              reviews={analyst.total_reviews}
+              date={analyst.time_created}
+            />
             <ContactButtons />
           </div>
 
