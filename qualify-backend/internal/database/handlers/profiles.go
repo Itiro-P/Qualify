@@ -120,7 +120,8 @@ func UploadProfilePicture(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		ext := filepath.Ext(file.Filename)
 		newFileName := fmt.Sprintf("user_%d_%d%s", userID, time.Now().Unix(), ext)
-		savePath := filepath.Join("uploads", newFileName)
+		savePath := filepath.Join("/app/uploads", newFileName)
+		dbPath := "/uploads/" + newFileName
 
 		if err := c.SaveUploadedFile(file, savePath); err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Falha ao salvar arquivo físico"))
@@ -130,16 +131,16 @@ func UploadProfilePicture(conn *pgxpool.Pool) gin.HandlerFunc {
 		var profile pkg.UserProfile
 		err = conn.QueryRow(c.Request.Context(),
 			`UPDATE user_profile SET picture = $1 WHERE user_id = $2 
-             RETURNING user_id, biography, picture`,
-			newFileName, userID).Scan(&profile.User_id, &profile.Biography, &profile.Picture)
+			RETURNING user_id, biography, picture`,
+			dbPath, userID).Scan(&profile.User_id, &profile.Biography, &profile.Picture)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Erro ao atualizar banco"))
 			return
 		}
 
-		if oldFileName != nil && *oldFileName != "" && *oldFileName != "default_picture.png" {
-			_ = os.Remove(filepath.Join("uploads", *oldFileName))
+		if oldFileName != nil && *oldFileName != "" && *oldFileName != "/uploads/default_picture.png" {
+			_ = os.Remove("." + *oldFileName)
 		}
 
 		c.JSON(http.StatusOK, pkg.UserProfileResponse{User_profile: profile})

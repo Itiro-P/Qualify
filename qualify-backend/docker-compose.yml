@@ -40,6 +40,8 @@ services:
   app:
     build: .
     container_name: qualify_app
+    volumes:
+      - ./internal/database/uploads:/app/uploads:/app/uploads
     ports:
       - "${OUT_PORT}:${OUT_PORT}"
     environment:
