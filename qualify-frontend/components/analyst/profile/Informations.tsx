@@ -1,7 +1,7 @@
 import { Briefcase, MapPin, Star } from "lucide-react";
 
-function getTimeOnPlatform(createdAt: string) {
-  const createdDate = new Date(createdAt);
+function getTimeOnPlatform(createdDateTex: string) {
+  const createdDate = new Date(createdDateTex);
   const now = new Date();
 
   const diffMs = now.getTime() - createdDate.getTime();
