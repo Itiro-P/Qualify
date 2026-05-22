@@ -20,6 +20,12 @@ import (
 // @Produce json
 // @Param status query string false "Status do serviço"
 // @Param proposal_letter_id query int false "ID da proposta"
+// @Param title query string false "Título parcial"
+// @Param content query string false "Conteúdo parcial"
+// @Param min_hourly_rate query number false "Valor mínimo por hora"
+// @Param max_hourly_rate query number false "Valor máximo por hora"
+// @Param sort_by query string false "Campo para ordenar: title,hourly_rate,status,time_created"
+// @Param order query string false "Direção: ASC ou DESC"
 // @Success 200 {object} pkg.ServicesResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Router /services [get]
@@ -43,7 +49,47 @@ func GetServices(conn *pgxpool.Pool) gin.HandlerFunc {
 			}
 		}
 
-		query += " ORDER BY time_created DESC"
+		if title := c.Query("title"); title != "" {
+			query += fmt.Sprintf(" AND title ILIKE $%d", argCounter)
+			args = append(args, "%"+title+"%")
+			argCounter++
+		}
+
+		if content := c.Query("content"); content != "" {
+			query += fmt.Sprintf(" AND content ILIKE $%d", argCounter)
+			args = append(args, "%"+content+"%")
+			argCounter++
+		}
+
+		if minRate := c.Query("min_hourly_rate"); minRate != "" {
+			if minRateVal, err := strconv.ParseFloat(minRate, 64); err == nil {
+				query += fmt.Sprintf(" AND hourly_rate >= $%d", argCounter)
+				args = append(args, minRateVal)
+				argCounter++
+			}
+		}
+
+		if maxRate := c.Query("max_hourly_rate"); maxRate != "" {
+			if maxRateVal, err := strconv.ParseFloat(maxRate, 64); err == nil {
+				query += fmt.Sprintf(" AND hourly_rate <= $%d", argCounter)
+				args = append(args, maxRateVal)
+				argCounter++
+			}
+		}
+
+		allowedSortFields := map[string]bool{
+			"title": true, "hourly_rate": true, "status": true, "time_created": true,
+		}
+		if sortBy := c.Query("sort_by"); sortBy != "" {
+			if allowedSortFields[sortBy] {
+				order := c.DefaultQuery("order", "ASC")
+				if order == "ASC" || order == "DESC" {
+					query += fmt.Sprintf(" ORDER BY %s %s", sortBy, order)
+				}
+			}
+		} else {
+			query += " ORDER BY time_created DESC"
+		}
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
 		if err != nil {

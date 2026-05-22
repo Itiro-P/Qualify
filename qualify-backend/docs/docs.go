@@ -37,14 +37,38 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "Email parcial para busca",
+                        "name": "email",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "País",
                         "name": "country",
                         "in": "query"
                     },
                     {
                         "type": "string",
+                        "description": "Código do país",
+                        "name": "country_code",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Estado",
+                        "name": "country_state",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "Cidade",
                         "name": "city",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Fuso horário",
+                        "name": "timezone",
                         "in": "query"
                     },
                     {
@@ -73,7 +97,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Campo para ordenar: name,country_name,city,hourly_rate,total_reviews,mean_rating,time_created",
+                        "description": "Campo para ordenar: name,country_name,country_state,city,timezone,hourly_rate,total_reviews,mean_rating,time_created",
                         "name": "sort_by",
                         "in": "query"
                     },
@@ -281,6 +305,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna os dados do usuário autenticado a partir do token JWT",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Usuários"
+                ],
+                "summary": "Obter usuário atual",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.UserResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/refresh": {
             "post": {
                 "security": [
@@ -466,6 +536,42 @@ const docTemplate = `{
                         "description": "Nome parcial",
                         "name": "name",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Instituição parcial",
+                        "name": "institution",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Ano",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Ano inicial",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Ano final",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Campo para ordenar: name,year,institution",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Direção: ASC ou DESC",
+                        "name": "order",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -535,7 +641,7 @@ const docTemplate = `{
         },
         "/certifications/{id}": {
             "get": {
-                "description": "Retorna certificação por ID",
+                "description": "Retorna uma certificação pelo ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -785,14 +891,38 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "Email parcial para busca",
+                        "name": "email",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "País",
                         "name": "country",
                         "in": "query"
                     },
                     {
                         "type": "string",
+                        "description": "Código do país",
+                        "name": "country_code",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Estado",
+                        "name": "country_state",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "Cidade",
                         "name": "city",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Fuso horário",
+                        "name": "timezone",
                         "in": "query"
                     },
                     {
@@ -854,6 +984,42 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "ID do analista",
                         "name": "analyst_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Título parcial",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Conteúdo parcial",
+                        "name": "content",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor mínimo por hora proposto",
+                        "name": "min_proposed_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor máximo por hora proposto",
+                        "name": "max_proposed_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Campo para ordenar: title,proposed_hourly_rate,time_created",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Direção: ASC ou DESC",
+                        "name": "order",
                         "in": "query"
                     }
                 ],
@@ -1585,6 +1751,42 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "ID da proposta",
                         "name": "proposal_letter_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Título parcial",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Conteúdo parcial",
+                        "name": "content",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor mínimo por hora",
+                        "name": "min_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor máximo por hora",
+                        "name": "max_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Campo para ordenar: title,hourly_rate,status,time_created",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Direção: ASC ou DESC",
+                        "name": "order",
                         "in": "query"
                     }
                 ],

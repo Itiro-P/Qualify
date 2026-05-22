@@ -20,13 +20,17 @@ import (
 // @Accept json
 // @Produce json
 // @Param name query string false "Nome parcial para busca"
+// @Param email query string false "Email parcial para busca"
 // @Param country query string false "País"
+// @Param country_code query string false "Código do país"
+// @Param country_state query string false "Estado"
 // @Param city query string false "Cidade"
+// @Param timezone query string false "Fuso horário"
 // @Param min_hourly_rate query number false "Valor mínimo por hora"
 // @Param max_hourly_rate query number false "Valor máximo por hora"
 // @Param min_total_reviews query int false "Quantidade mínima de avaliações totais"
 // @Param min_mean_rating query number false "Avaliação média mínima"
-// @Param sort_by query string false "Campo para ordenar: name,country_name,city,hourly_rate,total_reviews,mean_rating,time_created"
+// @Param sort_by query string false "Campo para ordenar: name,country_name,country_state,city,timezone,hourly_rate,total_reviews,mean_rating,time_created"
 // @Param order query string false "Direção: ASC ou DESC"
 // @Success 200 {object} pkg.AnalystsResponse
 // @Failure 500 {object} pkg.ErrorResponse
@@ -50,15 +54,39 @@ func GetAnalysts(conn *pgxpool.Pool) gin.HandlerFunc {
 			argCounter++
 		}
 
+		if email := c.Query("email"); email != "" {
+			query += fmt.Sprintf(" AND u.email ILIKE $%d", argCounter)
+			args = append(args, "%"+email+"%")
+			argCounter++
+		}
+
 		if country := c.Query("country"); country != "" {
 			query += fmt.Sprintf(" AND u.country_name ILIKE $%d", argCounter)
 			args = append(args, "%"+country+"%")
 			argCounter++
 		}
 
+		if countryCode := c.Query("country_code"); countryCode != "" {
+			query += fmt.Sprintf(" AND u.country_code ILIKE $%d", argCounter)
+			args = append(args, "%"+countryCode+"%")
+			argCounter++
+		}
+
+		if countryState := c.Query("country_state"); countryState != "" {
+			query += fmt.Sprintf(" AND u.country_state ILIKE $%d", argCounter)
+			args = append(args, "%"+countryState+"%")
+			argCounter++
+		}
+
 		if city := c.Query("city"); city != "" {
 			query += fmt.Sprintf(" AND u.city ILIKE $%d", argCounter)
 			args = append(args, "%"+city+"%")
+			argCounter++
+		}
+
+		if timezone := c.Query("timezone"); timezone != "" {
+			query += fmt.Sprintf(" AND u.timezone ILIKE $%d", argCounter)
+			args = append(args, "%"+timezone+"%")
 			argCounter++
 		}
 

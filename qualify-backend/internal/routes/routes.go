@@ -86,6 +86,7 @@ func SetupRoutes(router *gin.Engine, conn *pgxpool.Pool) {
 		// Auth Privado
 		authenticated.POST("/auth/logout", handlers.Logout(conn))
 		authenticated.POST("/auth/change-password", handlers.ChangePassword(conn))
+		authenticated.GET("/auth/me", handlers.GetCurrentUser(conn))
 
 		users := authenticated.Group("/users")
 		{

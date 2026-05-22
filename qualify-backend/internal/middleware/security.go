@@ -73,7 +73,7 @@ func (rl *RateLimiter) IsAllowed(clientIP string) bool {
 
 	// Check if locked
 	if client.locked {
-		if now.Sub(client.lockTime) > 15*time.Minute {
+		if now.Sub(client.lockTime) > 1*time.Minute { // lock expira após 1 minuto por motivos de teste
 			client.locked = false
 			client.count = 0
 		} else {

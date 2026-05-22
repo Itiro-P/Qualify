@@ -20,8 +20,12 @@ import (
 // @Accept json
 // @Produce json
 // @Param name query string false "Nome parcial para busca"
+// @Param email query string false "Email parcial para busca"
 // @Param country query string false "País"
+// @Param country_code query string false "Código do país"
+// @Param country_state query string false "Estado"
 // @Param city query string false "Cidade"
+// @Param timezone query string false "Fuso horário"
 // @Param min_proposed_budget query number false "Orçamento mínimo"
 // @Param max_proposed_budget query number false "Orçamento máximo"
 // @Success 200 {object} pkg.ClientsResponse
@@ -47,15 +51,39 @@ func GetClients(conn *pgxpool.Pool) gin.HandlerFunc {
 			argCounter++
 		}
 
+		if email := c.Query("email"); email != "" {
+			query += fmt.Sprintf(" AND u.email ILIKE $%d", argCounter)
+			args = append(args, "%"+email+"%")
+			argCounter++
+		}
+
 		if country := c.Query("country"); country != "" {
 			query += fmt.Sprintf(" AND u.country_name ILIKE $%d", argCounter)
 			args = append(args, "%"+country+"%")
 			argCounter++
 		}
 
+		if countryCode := c.Query("country_code"); countryCode != "" {
+			query += fmt.Sprintf(" AND u.country_code ILIKE $%d", argCounter)
+			args = append(args, "%"+countryCode+"%")
+			argCounter++
+		}
+
+		if countryState := c.Query("country_state"); countryState != "" {
+			query += fmt.Sprintf(" AND u.country_state ILIKE $%d", argCounter)
+			args = append(args, "%"+countryState+"%")
+			argCounter++
+		}
+
 		if city := c.Query("city"); city != "" {
 			query += fmt.Sprintf(" AND u.city ILIKE $%d", argCounter)
 			args = append(args, "%"+city+"%")
+			argCounter++
+		}
+
+		if timezone := c.Query("timezone"); timezone != "" {
+			query += fmt.Sprintf(" AND u.timezone ILIKE $%d", argCounter)
+			args = append(args, "%"+timezone+"%")
 			argCounter++
 		}
 
