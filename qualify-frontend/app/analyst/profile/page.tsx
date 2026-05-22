@@ -19,6 +19,22 @@ export default function Profile() {
   const [analyst, setAnalyst] = useState<Analyst | null>(null);
 
   async function getAnalyst(id_user: number): Promise<Analyst> {
+    setAnalyst({
+      id: 0,
+      name: "a",
+      email: "a",
+      phone: "a",
+      city: "a",
+      country_code: "a",
+      country_name: "a",
+      country_state: "a",
+      timezone: "a",
+      hourly_rate: 0,
+      mean_rating: 0,
+      total_reviews: 0,
+      time_created: "a",
+    });
+
     return (await analystService.getByUserId(id_user)).analyst;
   }
 
@@ -62,7 +78,10 @@ export default function Profile() {
 
           <div className="flex mt-10">
             <About analyst={analyst} />
-            <StatisticProfile />
+            <StatisticProfile
+              analyst_id={analyst.id}
+              hourly_rate={analyst.hourly_rate}
+            />
           </div>
         </div>
       ) : (
