@@ -13,28 +13,15 @@ import { useState, useEffect } from "react";
 import { Analyst } from "@/types/services";
 import { analystService } from "@/libs";
 import { getSessionUser } from "@/libs/session";
+import type { ApiError } from "@/libs/api";
+import { Alert } from "@/components/ui";
 
 export default function Profile() {
   const router = useRouter();
   const [analyst, setAnalyst] = useState<Analyst | null>(null);
+  const [error, setError] = useState("");
 
   async function getAnalyst(id_user: number): Promise<Analyst> {
-    setAnalyst({
-      id: 0,
-      name: "a",
-      email: "a",
-      phone: "a",
-      city: "a",
-      country_code: "a",
-      country_name: "a",
-      country_state: "a",
-      timezone: "a",
-      hourly_rate: 0,
-      mean_rating: 0,
-      total_reviews: 0,
-      time_created: "a",
-    });
-
     return (await analystService.getByUserId(id_user)).analyst;
   }
 
@@ -50,8 +37,13 @@ export default function Profile() {
       try {
         const analyst = await getAnalyst(session.id);
         setAnalyst(analyst);
-      } catch (error) {
-        console.error("Erro ao buscar analyst:", error);
+      } catch (err) {
+        const apiError = err as ApiError;
+        if (apiError.status === 401) {
+          setError("E-mail ou senha incorretos.");
+        } else if (apiError.status === 400) {
+          setError(apiError.message || "Dados inválidos.");
+        }
       }
     }
 
@@ -62,6 +54,7 @@ export default function Profile() {
   return (
     <section id="profile" className="px-6 md:px-20 py-14">
       <Header />
+      {error && <Alert variant="error">{error}</Alert>}
       {analyst ? (
         <div>
           <div className="flex justify-between ml-3 mt-10">

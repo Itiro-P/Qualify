@@ -11,6 +11,8 @@ import { Skill } from "@/types/services";
 import { Review } from "@/types/services/review";
 import { Certification } from "@/types/services/certification";
 import { skillService } from "@/libs";
+import type { ApiError } from "@/libs/api";
+import { Alert } from "@/components/ui";
 
 function TabsSystem({ analyst }: { analyst: Analyst }) {
   const [biography, setBiography] = useState<string>("");
@@ -26,6 +28,8 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
   const [abaAtiva, setAbaAtiva] = useState<
     "biography" | "reviews" | "skills" | "certifications"
   >("biography");
+
+  const [error, setError] = useState("");
 
   useEffect(() => {
     async function loadData() {
@@ -55,11 +59,12 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
         const certResp = await analystService.listCertifications(analyst.id);
 
         setCertificationsCardsVector(certResp.certifications);
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          console.error(error.message);
-        } else {
-          //implementar erros
+      } catch (err) {
+        const apiError = err as ApiError;
+        if (apiError.status === 401) {
+          setError("E-mail ou senha incorretos.");
+        } else if (apiError.status === 400) {
+          setError(apiError.message || "Dados inválidos.");
         }
       }
     }
