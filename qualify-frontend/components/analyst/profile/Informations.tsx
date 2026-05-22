@@ -25,12 +25,16 @@ function getTimeOnPlatform(createdDateTex: string) {
 export function Informations({
   name,
   city,
+  state,
+  country,
   rating,
   reviews,
   date,
 }: {
   name: string;
   city: string;
+  state: string;
+  country: string;
   rating: number;
   reviews: number;
   date: string;
@@ -41,7 +45,9 @@ export function Informations({
       <div className="flex m-6 justify-start">
         <div className="flex">
           <MapPin className="text-accent mr-2" />
-          <p className="mr-12 text-zinc-400">{city}</p>
+          <p className="mr-12 text-zinc-400">
+            {city}, {state}, {country}
+          </p>
         </div>
         <div className="flex">
           <Briefcase className="text-accent mr-2" />

@@ -1,7 +1,7 @@
 "use client";
 
 import { Footer, Header } from "@/components";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import {
   ImageProfile,
   StatisticProfile,
@@ -13,17 +13,11 @@ import { useState, useEffect } from "react";
 import { Analyst } from "@/types/services";
 import { analystService } from "@/libs";
 import { getSessionUser } from "@/libs/session";
-import type { ApiError } from "@/libs/api";
-import { Alert } from "@/components/ui";
+import { Loading } from "@/components/ui";
 
 export default function Profile() {
   const router = useRouter();
   const [analyst, setAnalyst] = useState<Analyst | null>(null);
-  const [error, setError] = useState("");
-
-  async function getAnalyst(id_user: number): Promise<Analyst> {
-    return (await analystService.getByUserId(id_user)).analyst;
-  }
 
   useEffect(() => {
     async function fetchAnalyst() {
@@ -33,35 +27,29 @@ export default function Profile() {
         router.push("/user/register");
         return;
       }
-      console.log(session);
-      try {
-        const analyst = await getAnalyst(session.id);
+      const analyst = await analystService.getByUserId(session.id);
+      if (analyst == null) {
+        redirect("/user/login");
+      } else {
         setAnalyst(analyst);
-      } catch (err) {
-        const apiError = err as ApiError;
-        if (apiError.status === 401) {
-          setError("E-mail ou senha incorretos.");
-        } else if (apiError.status === 400) {
-          setError(apiError.message || "Dados inválidos.");
-        }
       }
     }
 
     fetchAnalyst();
-    console.log(analyst);
   }, []);
 
   return (
     <section id="profile" className="px-6 md:px-20 py-14">
       <Header />
-      {error && <Alert variant="error">{error}</Alert>}
-      {analyst ? (
+      {analyst != null ? (
         <div>
           <div className="flex justify-between ml-3 mt-10">
             <ImageProfile />
             <Informations
               name={analyst.name}
               city={analyst.city}
+              state={analyst.country_state}
+              country={analyst.country_name}
               rating={analyst.mean_rating}
               reviews={analyst.total_reviews}
               date={analyst.time_created}
@@ -78,7 +66,7 @@ export default function Profile() {
           </div>
         </div>
       ) : (
-        <p>Usuário não logado ou não é analista</p>
+        <Loading />
       )}
 
       <Footer />

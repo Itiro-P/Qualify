@@ -30,8 +30,15 @@ export const analystService = {
     return api.get(`/analysts${buildQuery(params as Record<string, unknown>)}`);
   },
 
-  getByUserId(userId: number): Promise<AnalystResponse> {
-    return api.get(`/users/${userId}/analyst`);
+  getByUserId(userId: number): Promise<Analyst | null> {
+    return api.get<AnalystResponse>(`/users/${userId}/analyst`).then(
+      (resp) => {
+        return resp.analyst;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
   create(
