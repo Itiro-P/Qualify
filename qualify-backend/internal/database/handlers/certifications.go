@@ -19,6 +19,12 @@ import (
 // @Accept json
 // @Produce json
 // @Param name query string false "Nome parcial"
+// @Param institution query string false "Instituição parcial"
+// @Param year query int false "Ano"
+// @Param from_year query int false "Ano inicial"
+// @Param to_year query int false "Ano final"
+// @Param sort_by query string false "Campo para ordenar: name,year,institution"
+// @Param order query string false "Direção: ASC ou DESC"
 // @Success 200 {object} pkg.CertificationsResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Router /certifications [get]
@@ -34,7 +40,49 @@ func GetCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 			argCounter++
 		}
 
-		query += " ORDER BY year DESC"
+		if institution := c.Query("institution"); institution != "" {
+			query += fmt.Sprintf(" AND institution ILIKE $%d", argCounter)
+			args = append(args, "%"+institution+"%")
+			argCounter++
+		}
+
+		if year := c.Query("year"); year != "" {
+			if yearVal, err := strconv.Atoi(year); err == nil {
+				query += fmt.Sprintf(" AND year = $%d", argCounter)
+				args = append(args, yearVal)
+				argCounter++
+			}
+		}
+
+		if fromYear := c.Query("from_year"); fromYear != "" {
+			if fromYearVal, err := strconv.Atoi(fromYear); err == nil {
+				query += fmt.Sprintf(" AND year >= $%d", argCounter)
+				args = append(args, fromYearVal)
+				argCounter++
+			}
+		}
+
+		if toYear := c.Query("to_year"); toYear != "" {
+			if toYearVal, err := strconv.Atoi(toYear); err == nil {
+				query += fmt.Sprintf(" AND year <= $%d", argCounter)
+				args = append(args, toYearVal)
+				argCounter++
+			}
+		}
+
+		allowedSortFields := map[string]bool{
+			"name": true, "year": true, "institution": true,
+		}
+		if sortBy := c.Query("sort_by"); sortBy != "" {
+			if allowedSortFields[sortBy] {
+				order := c.DefaultQuery("order", "ASC")
+				if order == "ASC" || order == "DESC" {
+					query += fmt.Sprintf(" ORDER BY %s %s", sortBy, order)
+				}
+			}
+		} else {
+			query += " ORDER BY year DESC"
+		}
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
 		if err != nil {
@@ -67,7 +115,7 @@ func GetCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 
 // GetCertification godoc
 // @Summary Obter certificação
-// @Description Retorna certificação por ID
+// @Description Retorna uma certificação pelo ID
 // @Tags Certificações
 // @Accept json
 // @Produce json
@@ -80,16 +128,18 @@ func GetCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 func GetCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
-		certID, err := strconv.Atoi(id)
+		certificationID, err := strconv.Atoi(id)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		var cert pkg.Certification
+		var certification pkg.Certification
 		err = conn.QueryRow(c.Request.Context(),
-			`SELECT id, name, year, description, institution FROM certification WHERE id = $1`, certID,
-		).Scan(&cert.Id, &cert.Name, &cert.Year, &cert.Description, &cert.Institution)
+			`SELECT id, name, year, description, institution
+			 FROM certification WHERE id = $1`, certificationID,
+		).Scan(&certification.Id, &certification.Name, &certification.Year,
+			&certification.Description, &certification.Institution)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -98,9 +148,8 @@ func GetCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
-		c.JSON(http.StatusOK, pkg.CertificationResponse{
-			Certification: cert,
-		})
+
+		c.JSON(http.StatusOK, pkg.CertificationResponse{Certification: certification})
 	}
 }
 

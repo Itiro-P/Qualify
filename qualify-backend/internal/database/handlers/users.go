@@ -54,6 +54,52 @@ func GetUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	}
 }
 
+// GetCurrentUser godoc
+// @Summary Obter usuário atual
+// @Description Retorna os dados do usuário autenticado a partir do token JWT
+// @Tags Usuários
+// @Accept json
+// @Produce json
+// @Security     BearerAuth
+// @Success 200 {object} pkg.UserResponse
+// @Failure 401 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
+// @Router /auth/me [get]
+func GetCurrentUser(conn *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userIDValue, exists := c.Get("user_id")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, pkg.Unauthorized(c.FullPath(), "user_id not found in token"))
+			return
+		}
+
+		userID, ok := userIDValue.(int)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, pkg.Unauthorized(c.FullPath(), "invalid user_id in token"))
+			return
+		}
+
+		var user pkg.User
+		err := conn.QueryRow(c.Request.Context(),
+			`SELECT id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone 
+             FROM "user" WHERE id = $1`, userID).Scan(
+			&user.Id, &user.Name, &user.Email, &user.Phone, &user.Time_created,
+			&user.Country_code, &user.Country_name, &user.Country_state, &user.City, &user.Timezone,
+		)
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
+				return
+			}
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			return
+		}
+
+		c.JSON(http.StatusOK, pkg.UserResponse{User: user})
+	}
+}
+
 // CreateUser godoc
 // @Summary Criar usuário
 // @Description Registra e cria um novo usuário

@@ -20,6 +20,12 @@ import (
 // @Produce json
 // @Param client_id query int false "ID do cliente"
 // @Param analyst_id query int false "ID do analista"
+// @Param title query string false "Título parcial"
+// @Param content query string false "Conteúdo parcial"
+// @Param min_proposed_hourly_rate query number false "Valor mínimo por hora proposto"
+// @Param max_proposed_hourly_rate query number false "Valor máximo por hora proposto"
+// @Param sort_by query string false "Campo para ordenar: title,proposed_hourly_rate,time_created"
+// @Param order query string false "Direção: ASC ou DESC"
 // @Success 200 {object} pkg.ProposalLettersResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Router /proposals [get]
@@ -46,7 +52,47 @@ func GetProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 			}
 		}
 
-		query += " ORDER BY time_created DESC"
+		if title := c.Query("title"); title != "" {
+			query += fmt.Sprintf(" AND title ILIKE $%d", argCounter)
+			args = append(args, "%"+title+"%")
+			argCounter++
+		}
+
+		if content := c.Query("content"); content != "" {
+			query += fmt.Sprintf(" AND content ILIKE $%d", argCounter)
+			args = append(args, "%"+content+"%")
+			argCounter++
+		}
+
+		if minRate := c.Query("min_proposed_hourly_rate"); minRate != "" {
+			if minRateVal, err := strconv.ParseFloat(minRate, 64); err == nil {
+				query += fmt.Sprintf(" AND proposed_hourly_rate >= $%d", argCounter)
+				args = append(args, minRateVal)
+				argCounter++
+			}
+		}
+
+		if maxRate := c.Query("max_proposed_hourly_rate"); maxRate != "" {
+			if maxRateVal, err := strconv.ParseFloat(maxRate, 64); err == nil {
+				query += fmt.Sprintf(" AND proposed_hourly_rate <= $%d", argCounter)
+				args = append(args, maxRateVal)
+				argCounter++
+			}
+		}
+
+		allowedSortFields := map[string]bool{
+			"title": true, "proposed_hourly_rate": true, "time_created": true,
+		}
+		if sortBy := c.Query("sort_by"); sortBy != "" {
+			if allowedSortFields[sortBy] {
+				order := c.DefaultQuery("order", "ASC")
+				if order == "ASC" || order == "DESC" {
+					query += fmt.Sprintf(" ORDER BY %s %s", sortBy, order)
+				}
+			}
+		} else {
+			query += " ORDER BY time_created DESC"
+		}
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
 		if err != nil {
@@ -65,10 +111,12 @@ func GetProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 			}
 			proposals = append(proposals, p)
 		}
+
 		if err = rows.Err(); err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
+
 		c.JSON(http.StatusOK, pkg.ProposalLettersResponse{Proposal_letters: proposals, Count: len(proposals)})
 	}
 }
