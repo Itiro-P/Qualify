@@ -44,6 +44,8 @@ definitions:
     properties:
       biography:
         type: string
+      picture:
+        type: string
       user_id:
         type: integer
     type: object
@@ -180,6 +182,8 @@ definitions:
     properties:
       biography:
         type: string
+      picture:
+        type: string
       user_id:
         type: integer
     type: object
@@ -253,8 +257,6 @@ definitions:
         type: string
       token_type:
         type: string
-      user:
-        $ref: '#/definitions/pkg.User'
     type: object
   pkg.PasswordChangeRequest:
     properties:
@@ -482,6 +484,8 @@ definitions:
     properties:
       biography:
         type: string
+      picture:
+        type: string
       user_id:
         type: integer
     type: object
@@ -562,13 +566,29 @@ paths:
         in: query
         name: name
         type: string
+      - description: Email parcial para busca
+        in: query
+        name: email
+        type: string
       - description: País
         in: query
         name: country
         type: string
+      - description: Código do país
+        in: query
+        name: country_code
+        type: string
+      - description: Estado
+        in: query
+        name: country_state
+        type: string
       - description: Cidade
         in: query
         name: city
+        type: string
+      - description: Fuso horário
+        in: query
+        name: timezone
         type: string
       - description: Valor mínimo por hora
         in: query
@@ -586,7 +606,7 @@ paths:
         in: query
         name: min_mean_rating
         type: number
-      - description: 'Campo para ordenar: name,country_name,city,hourly_rate,total_reviews,mean_rating,time_created'
+      - description: 'Campo para ordenar: name,country_name,country_state,city,timezone,hourly_rate,total_reviews,mean_rating,time_created'
         in: query
         name: sort_by
         type: string
@@ -604,9 +624,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       summary: Listar analistas
       tags:
       - Analistas
@@ -659,17 +677,9 @@ paths:
       description: Autentica usuário com email e senha, retornando tokens JWT de acesso
         e refresh.
       parameters:
-      - description: Email do usuário
-        in: query
-        name: email
-        type: string
-      - description: Senha do usuário
-        in: query
-        name: password
-        type: string
       - description: Objeto login
         in: body
-        name: analyst
+        name: user
         required: true
         schema:
           $ref: '#/definitions/pkg.UserLogin'
@@ -740,6 +750,35 @@ paths:
       summary: Logout e invalidação de tokens
       tags:
       - Autenticação
+  /auth/me:
+    get:
+      consumes:
+      - application/json
+      description: Retorna os dados do usuário autenticado a partir do token JWT
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.UserResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Obter usuário atual
+      tags:
+      - Usuários
   /auth/refresh:
     post:
       consumes:
@@ -858,6 +897,30 @@ paths:
         in: query
         name: name
         type: string
+      - description: Instituição parcial
+        in: query
+        name: institution
+        type: string
+      - description: Ano
+        in: query
+        name: year
+        type: integer
+      - description: Ano inicial
+        in: query
+        name: from_year
+        type: integer
+      - description: Ano final
+        in: query
+        name: to_year
+        type: integer
+      - description: 'Campo para ordenar: name,year,institution'
+        in: query
+        name: sort_by
+        type: string
+      - description: 'Direção: ASC ou DESC'
+        in: query
+        name: order
+        type: string
       produces:
       - application/json
       responses:
@@ -868,9 +931,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       summary: Listar certificações
       tags:
       - Certificações
@@ -895,15 +956,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Criar certificação
@@ -932,21 +989,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Excluir certificação
@@ -955,7 +1006,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Retorna certificação por ID
+      description: Retorna uma certificação pelo ID
       parameters:
       - description: ID da certificação
         in: path
@@ -972,21 +1023,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       summary: Obter certificação
       tags:
       - Certificações
@@ -1016,21 +1061,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Atualizar certificação parcialmente
@@ -1062,21 +1101,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Atualizar certificação
@@ -1092,13 +1125,29 @@ paths:
         in: query
         name: name
         type: string
+      - description: Email parcial para busca
+        in: query
+        name: email
+        type: string
       - description: País
         in: query
         name: country
         type: string
+      - description: Código do país
+        in: query
+        name: country_code
+        type: string
+      - description: Estado
+        in: query
+        name: country_state
+        type: string
       - description: Cidade
         in: query
         name: city
+        type: string
+      - description: Fuso horário
+        in: query
+        name: timezone
         type: string
       - description: Orçamento mínimo
         in: query
@@ -1118,58 +1167,14 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       summary: Listar clientes
       tags:
       - Clientes
-  /login:
-    get:
-      consumes:
-      - application/json
-      description: Faz login com os dados fornecidos
-      parameters:
-      - description: Objeto do usuário
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/pkg.UserLogin'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/pkg.UserResponse'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Fazer login
-      tags:
-      - Usuários
   /proposals:
     get:
       consumes:
@@ -1184,6 +1189,30 @@ paths:
         in: query
         name: analyst_id
         type: integer
+      - description: Título parcial
+        in: query
+        name: title
+        type: string
+      - description: Conteúdo parcial
+        in: query
+        name: content
+        type: string
+      - description: Valor mínimo por hora proposto
+        in: query
+        name: min_proposed_hourly_rate
+        type: number
+      - description: Valor máximo por hora proposto
+        in: query
+        name: max_proposed_hourly_rate
+        type: number
+      - description: 'Campo para ordenar: title,proposed_hourly_rate,time_created'
+        in: query
+        name: sort_by
+        type: string
+      - description: 'Direção: ASC ou DESC'
+        in: query
+        name: order
+        type: string
       produces:
       - application/json
       responses:
@@ -1194,9 +1223,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       summary: Listar propostas
       tags:
       - Propostas
@@ -1221,15 +1248,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Criar proposta
@@ -1258,21 +1281,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Excluir proposta
@@ -1298,21 +1315,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       summary: Obter proposta
       tags:
       - Propostas
@@ -1342,21 +1353,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Atualizar parcialmente proposta
@@ -1388,21 +1393,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Atualizar proposta
@@ -1430,15 +1429,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Criar usuário
@@ -1492,9 +1487,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       summary: Listar avaliações
       tags:
       - Avaliações
@@ -1519,15 +1512,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Criar avaliação
@@ -1556,21 +1545,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Excluir avaliação
@@ -1596,21 +1579,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       summary: Obter avaliação
       tags:
       - Avaliações
@@ -1640,21 +1617,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Atualizar parcialmente avaliação
@@ -1686,21 +1657,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Atualizar avaliação
@@ -1720,6 +1685,30 @@ paths:
         in: query
         name: proposal_letter_id
         type: integer
+      - description: Título parcial
+        in: query
+        name: title
+        type: string
+      - description: Conteúdo parcial
+        in: query
+        name: content
+        type: string
+      - description: Valor mínimo por hora
+        in: query
+        name: min_hourly_rate
+        type: number
+      - description: Valor máximo por hora
+        in: query
+        name: max_hourly_rate
+        type: number
+      - description: 'Campo para ordenar: title,hourly_rate,status,time_created'
+        in: query
+        name: sort_by
+        type: string
+      - description: 'Direção: ASC ou DESC'
+        in: query
+        name: order
+        type: string
       produces:
       - application/json
       responses:
@@ -1730,9 +1719,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       summary: Listar serviços
       tags:
       - Serviços
@@ -1757,15 +1744,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Criar serviço
@@ -1794,21 +1777,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Excluir serviço
@@ -1834,21 +1811,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       summary: Obter serviço
       tags:
       - Serviços
@@ -1878,21 +1849,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Atualizar parcialmente um serviço
@@ -1924,21 +1889,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Atualizar serviço
@@ -1964,15 +1923,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       summary: Listar habilidades
       tags:
       - Habilidades
@@ -1997,15 +1952,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Criar habilidade
@@ -2034,21 +1985,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Excluir habilidade
@@ -2074,21 +2019,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       summary: Obter habilidade
       tags:
       - Habilidades
@@ -2118,21 +2057,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Atualizar habilidade
@@ -2161,21 +2094,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Excluir usuário
@@ -2201,21 +2128,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       summary: Obter usuário
       tags:
       - Usuários
@@ -2245,21 +2166,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Atualizar parcialmente um ou mais dados do usuário
@@ -2291,21 +2206,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Atualizar usuário
@@ -2334,21 +2243,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Excluir analista
@@ -2374,21 +2277,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       summary: Obter analista
       tags:
       - Analistas
@@ -2418,21 +2315,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Atualizar parcialmente um analista
@@ -2464,15 +2355,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Criar papel de analista
@@ -2504,21 +2391,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Atualizar analista
@@ -2552,21 +2433,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Remover certificação do analista
@@ -2592,15 +2467,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       summary: Listar certificações do analista
       tags:
       - Certificações
@@ -2630,15 +2501,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Associar certificação ao analista
@@ -2667,21 +2534,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Excluir perfil do analista
@@ -2707,21 +2568,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       summary: Obter perfil do analista
       tags:
       - Perfis
@@ -2751,15 +2606,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Criar perfil do analista
@@ -2791,21 +2642,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Atualizar perfil do analista
@@ -2822,6 +2667,11 @@ paths:
         name: id
         required: true
         type: integer
+      - description: ID da skill
+        in: query
+        name: skill_id
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
@@ -2834,21 +2684,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Excluir habilidade do analista
@@ -2874,21 +2718,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       summary: Obter habilidades do analista
       tags:
       - Habilidades
@@ -2918,21 +2756,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Criar habilidade para o analista
@@ -2961,21 +2793,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Excluir cliente
@@ -3001,21 +2827,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       summary: Obter cliente
       tags:
       - Clientes
@@ -3045,21 +2865,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Atualizar parcialmente um cliente
@@ -3091,15 +2905,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Criar papel de cliente
@@ -3131,21 +2941,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Atualizar cliente
@@ -3174,21 +2978,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Excluir perfil do cliente
@@ -3214,21 +3012,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       summary: Obter perfil do cliente
       tags:
       - Perfis
@@ -3258,15 +3050,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Criar perfil do cliente
@@ -3298,21 +3086,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Atualizar perfil do cliente
@@ -3341,21 +3123,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Excluir perfil do usuário
@@ -3381,21 +3157,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       summary: Obter perfil do usuário
       tags:
       - Perfis
@@ -3425,15 +3195,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Criar perfil do usuário
@@ -3465,24 +3231,54 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Atualizar perfil do usuário
+      tags:
+      - Perfis
+  /users/{id}/profile/picture:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Realiza o upload de uma imagem e retorna o perfil atualizado
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Arquivo de imagem
+        in: formData
+        name: picture
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.UserProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Upload da foto de perfil
       tags:
       - Perfis
 securityDefinitions:

@@ -48,6 +48,7 @@ type UserRegister struct {
 
 type UserProfile struct {
 	User_id   int    `json:"user_id"`
+	Picture   string `json:"picture"`
 	Biography string `json:"biography"`
 }
 

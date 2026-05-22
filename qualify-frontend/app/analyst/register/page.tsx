@@ -1,7 +1,4 @@
-import {
-  RegisterAnalyst
-} from "@/components/analyst/register";
-
+import { RegisterAnalyst } from "@/components/analyst/register";
 import { Footer, Header } from "@/components";
 
 export default function Register() {

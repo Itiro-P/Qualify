@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Smartphone, Watch, Tv, Router, ChevronRight } from "lucide-react";
+import { Smartphone, Watch, Tv, Router } from "lucide-react";
 import type { ReactNode } from "react";
 
 interface DeviceCategoryProps {

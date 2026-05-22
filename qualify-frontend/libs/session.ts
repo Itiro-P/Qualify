@@ -14,7 +14,7 @@ const SESSION_KEY = "qualify_user";
 
 export function getSessionUser(): SessionUser | null {
   if (typeof window === "undefined") return null;
-  const raw = sessionStorage.getItem(SESSION_KEY);
+  const raw = localStorage.getItem(SESSION_KEY);
   if (!raw) return null;
   try {
     return JSON.parse(raw) as SessionUser;
@@ -24,9 +24,9 @@ export function getSessionUser(): SessionUser | null {
 }
 
 export function setSessionUser(user: SessionUser): void {
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
+  localStorage.setItem(SESSION_KEY, JSON.stringify(user));
 }
 
 export function clearSession(): void {
-  sessionStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(SESSION_KEY);
 }

@@ -1,8 +1,5 @@
 import { api } from "@/libs/api";
-import type {
-  SkillResponse,
-  SkillsResponse,
-} from "@/types/services/skill";
+import type { SkillResponse, SkillsResponse } from "@/types/services/skill";
 
 export const skillService = {
   list(name?: string): Promise<SkillsResponse> {

@@ -163,3 +163,5 @@ swag init --parseDependency --parseInternal --dir ./cmd,./internal/database/hand
 
 ---
 Se quiser, eu executo a instalação do `swag` e gero os arquivos aqui no ambiente (se permitir), ou adapto o texto para outro idioma/estilo.
+
+PATH="$PATH:$(go env GOBIN):$(go env GOPATH)/bin" swag init --parseDependency --parseInternal --dir ./cmd,./internal/database/handlers,./pkg --generalInfo main.go --output ./docs

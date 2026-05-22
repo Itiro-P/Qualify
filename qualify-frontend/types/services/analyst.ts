@@ -1,17 +1,17 @@
 export interface Analyst {
-  id?: number;
-  name?: string;
-  email?: string;
-  phone?: string;
-  city?: string;
-  country_code?: string;
-  country_name?: string;
-  country_state?: string;
-  timezone?: string;
-  hourly_rate?: number;
-  mean_rating?: number;
-  total_reviews?: number;
-  time_created?: string;
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  city: string;
+  country_code: string;
+  country_name: string;
+  country_state: string;
+  timezone: string;
+  hourly_rate: number;
+  mean_rating: number;
+  total_reviews: number;
+  time_created: string;
 }
 
 export interface AnalystResponse {
@@ -39,7 +39,7 @@ export interface AnalystUpdateRequest {
 
 export interface AnalystProfile {
   user_id?: number;
-  biography?: string;
+  biography: string;
 }
 
 export interface AnalystProfileResponse {

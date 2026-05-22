@@ -20,16 +20,20 @@ import (
 // @Accept json
 // @Produce json
 // @Param name query string false "Nome parcial para busca"
+// @Param email query string false "Email parcial para busca"
 // @Param country query string false "País"
+// @Param country_code query string false "Código do país"
+// @Param country_state query string false "Estado"
 // @Param city query string false "Cidade"
+// @Param timezone query string false "Fuso horário"
 // @Param min_hourly_rate query number false "Valor mínimo por hora"
 // @Param max_hourly_rate query number false "Valor máximo por hora"
 // @Param min_total_reviews query int false "Quantidade mínima de avaliações totais"
 // @Param min_mean_rating query number false "Avaliação média mínima"
-// @Param sort_by query string false "Campo para ordenar: name,country_name,city,hourly_rate,total_reviews,mean_rating,time_created"
+// @Param sort_by query string false "Campo para ordenar: name,country_name,country_state,city,timezone,hourly_rate,total_reviews,mean_rating,time_created"
 // @Param order query string false "Direção: ASC ou DESC"
 // @Success 200 {object} pkg.AnalystsResponse
-// @Failure 500 {object} map[string]string
+// @Failure 500 {object} pkg.ErrorResponse
 // @Router /analysts [get]
 func GetAnalysts(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -50,15 +54,39 @@ func GetAnalysts(conn *pgxpool.Pool) gin.HandlerFunc {
 			argCounter++
 		}
 
+		if email := c.Query("email"); email != "" {
+			query += fmt.Sprintf(" AND u.email ILIKE $%d", argCounter)
+			args = append(args, "%"+email+"%")
+			argCounter++
+		}
+
 		if country := c.Query("country"); country != "" {
 			query += fmt.Sprintf(" AND u.country_name ILIKE $%d", argCounter)
 			args = append(args, "%"+country+"%")
 			argCounter++
 		}
 
+		if countryCode := c.Query("country_code"); countryCode != "" {
+			query += fmt.Sprintf(" AND u.country_code ILIKE $%d", argCounter)
+			args = append(args, "%"+countryCode+"%")
+			argCounter++
+		}
+
+		if countryState := c.Query("country_state"); countryState != "" {
+			query += fmt.Sprintf(" AND u.country_state ILIKE $%d", argCounter)
+			args = append(args, "%"+countryState+"%")
+			argCounter++
+		}
+
 		if city := c.Query("city"); city != "" {
 			query += fmt.Sprintf(" AND u.city ILIKE $%d", argCounter)
 			args = append(args, "%"+city+"%")
+			argCounter++
+		}
+
+		if timezone := c.Query("timezone"); timezone != "" {
+			query += fmt.Sprintf(" AND u.timezone ILIKE $%d", argCounter)
+			args = append(args, "%"+timezone+"%")
 			argCounter++
 		}
 
@@ -112,7 +140,7 @@ func GetAnalysts(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar analistas: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 		defer rows.Close()
@@ -137,14 +165,14 @@ func GetAnalysts(conn *pgxpool.Pool) gin.HandlerFunc {
 				&analyst.Mean_rating,
 			)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao escanear data: " + err.Error()})
+				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
 			}
 			analysts = append(analysts, analyst)
 		}
 
 		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao iterar analistas: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -163,16 +191,16 @@ func GetAnalysts(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário"
 // @Success 200 {object} pkg.AnalystResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Router /users/{id}/analyst [get]
 func GetAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		analystID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid analyst id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -200,10 +228,10 @@ func GetAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 		)
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "analyst not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -222,9 +250,9 @@ func GetAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do usuário"
 // @Param analyst body pkg.AnalystUpdateRequest true "Campos opcionais para atualização"
 // @Success 200 {object} pkg.AnalystResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/analyst [patch]
 func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -232,13 +260,13 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		analystID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid analyst id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		var req pkg.AnalystUpdateRequest
 		if err := c.BindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -305,13 +333,13 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		if len(userSet) == 0 && len(analystSet) == 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "no fields to update"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		tx, err := conn.Begin(c.Request.Context())
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to begin transaction: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 		defer func() {
@@ -326,7 +354,7 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			userQuery := fmt.Sprintf(`UPDATE "user" SET %s WHERE id = $%d`, strings.Join(userSet, ", "), len(userArgs))
 			if _, err := tx.Exec(c.Request.Context(), userQuery, userArgs...); err != nil {
 				_ = tx.Rollback(c.Request.Context())
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
 			}
 		}
@@ -339,7 +367,7 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			analystQuery := fmt.Sprintf(`UPDATE analyst SET %s WHERE id = $%d`, strings.Join(analystSet, ", "), len(analystArgs))
 			if _, err := tx.Exec(c.Request.Context(), analystQuery, analystArgs...); err != nil {
 				_ = tx.Rollback(c.Request.Context())
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
 			}
 		}
@@ -369,15 +397,15 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		if err != nil {
 			_ = tx.Rollback(c.Request.Context())
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "analyst not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
 		if err = tx.Commit(c.Request.Context()); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to commit transaction: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -394,8 +422,8 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do usuário"
 // @Param analyst body pkg.Analyst true "Objeto analista (envie apenas `hourly_rate`)"
 // @Success 201 {object} pkg.AnalystResponse
-// @Failure 400 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/analyst [post]
 func CreateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -403,7 +431,7 @@ func CreateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 		userIDParam := c.Param("id")
 		userID, err := strconv.Atoi(userIDParam)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -411,17 +439,17 @@ func CreateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 			Hourly_rate float64 `json:"hourly_rate"`
 		}
 		if err := c.BindJSON(&request); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		analyst, err := services.AssignAnalystRole(c.Request.Context(), conn, userID, request.Hourly_rate)
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to assign analyst role: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -440,9 +468,9 @@ func CreateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do usuário"
 // @Param analyst body pkg.Analyst true "Objeto analista"
 // @Success 200 {object} pkg.AnalystResponse
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/analyst [put]
 func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -450,33 +478,33 @@ func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		analystID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid analyst id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		var analyst pkg.Analyst
 		if err := c.BindJSON(&analyst); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		// Validando parâmetros obrigatórios
 		if analyst.Name == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "user name is required"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		if analyst.Email == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "user email is required"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		if len(analyst.Country_code) != 2 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "country_code must be exactly 2 characters"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		// Usar transação para garantir atomicidade entre updates nas tabelas
 		tx, err := conn.Begin(c.Request.Context())
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to begin transaction: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 		defer func() {
@@ -493,7 +521,7 @@ func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 			analyst.City, analyst.Timezone, analystID)
 		if err != nil {
 			_ = tx.Rollback(c.Request.Context())
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -503,7 +531,7 @@ func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 			analyst.Hourly_rate, analyst.Total_reviews, analyst.Mean_rating, analystID)
 		if err != nil {
 			_ = tx.Rollback(c.Request.Context())
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update analyst: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -531,15 +559,15 @@ func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 		if err != nil {
 			_ = tx.Rollback(c.Request.Context())
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "analyst not found"})
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch updated analyst: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
 		if err = tx.Commit(c.Request.Context()); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to commit transaction: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -555,9 +583,9 @@ func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do usuário"
 // @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/analyst [delete]
 func DeleteAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -565,18 +593,18 @@ func DeleteAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 		id := c.Param("id")
 		analystID, err := strconv.Atoi(id)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid analyst id"})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		result, err := conn.Exec(c.Request.Context(), `DELETE FROM analyst WHERE id = $1`, analystID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
 		if result.RowsAffected() == 0 {
-			c.JSON(http.StatusNotFound, gin.H{"error": "analyst not found"})
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst not found"))
 			return
 		}
 

@@ -1,4 +1,4 @@
-import { Terminal, Share2, Mail } from "lucide-react";
+import { Terminal } from "lucide-react";
 
 export function Footer() {
   return (

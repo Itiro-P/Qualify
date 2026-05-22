@@ -14,7 +14,10 @@ export function LoginUser() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<{
+    email?: string;
+    password?: string;
+  }>({});
 
   function validate(): boolean {
     const errors: { email?: string; password?: string } = {};
@@ -100,7 +103,7 @@ export function LoginUser() {
 
         <div className="flex justify-end">
           <Link
-            href="/User/recover-password"
+            href="/user/recover-password"
             className="text-xs text-accent hover:underline"
           >
             Esqueceu a senha?
@@ -114,7 +117,10 @@ export function LoginUser() {
 
       <p className="text-center text-sm text-neutral-slate mt-6">
         Não tem uma conta?{" "}
-        <Link href="/User/register" className="text-accent hover:underline font-medium">
+        <Link
+          href="/user/register"
+          className="text-accent hover:underline font-medium"
+        >
           Cadastre-se
         </Link>
       </p>

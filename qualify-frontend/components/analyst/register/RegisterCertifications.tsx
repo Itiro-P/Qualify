@@ -1,14 +1,19 @@
 "use client";
 
-import { ICertification } from "@/types/analyst/profile/certification";
-import { ICertificationSavesProps } from "@/types/analyst/register/certificationSavesProps";
-import { IRegisterCertifications } from "@/types/analyst/register/registerCertification";
+import { Certification } from "@/types/services/certification";
 import { useState } from "react";
 import { FormInput, FormButton, Alert } from "@/components/ui";
 
+interface CertificationError {
+  name: string;
+  description: string;
+  institution: string;
+  year: string;
+}
+
 function handleChange(
   e: React.ChangeEvent<HTMLInputElement>,
-  setForm: React.Dispatch<React.SetStateAction<ICertification>>,
+  setForm: React.Dispatch<React.SetStateAction<Certification>>,
 ) {
   const { name, value } = e.target;
 
@@ -18,8 +23,8 @@ function handleChange(
   }));
 }
 
-function validate(certification: ICertification): Partial<ICertification> {
-  const newErrors: Partial<ICertification> = {};
+function validate(certification: Certification): Partial<CertificationError> {
+  const newErrors: Partial<CertificationError> = {};
 
   if (!certification.name) {
     newErrors.name = "Nome é obrigatório";
@@ -43,8 +48,8 @@ function validate(certification: ICertification): Partial<ICertification> {
 }
 
 function isEqualCertification(
-  certification1: ICertification,
-  certification2: ICertification,
+  certification1: Certification,
+  certification2: Certification,
 ): boolean {
   return (
     certification1.name === certification2.name &&
@@ -55,8 +60,8 @@ function isEqualCertification(
 }
 
 function validateCertification(
-  certifications: ICertification[],
-  certification: ICertification,
+  certifications: Certification[],
+  certification: Certification,
 ): string {
   let newErrors = "";
 
@@ -76,14 +81,14 @@ function handleSubmit(
   e: React.FormEvent,
   setError: React.Dispatch<React.SetStateAction<string>>,
   setErrorsCertification: React.Dispatch<
-    React.SetStateAction<Partial<ICertification>>
+    React.SetStateAction<Partial<CertificationError>>
   >,
   setCertificationsAnalyst: React.Dispatch<
-    React.SetStateAction<ICertification[]>
+    React.SetStateAction<Certification[]>
   >,
-  certificationsAnalyst: ICertification[],
-  setCertification: React.Dispatch<React.SetStateAction<ICertification>>,
-  certification: ICertification,
+  certificationsAnalyst: Certification[],
+  setCertification: React.Dispatch<React.SetStateAction<Certification>>,
+  certification: Certification,
 ) {
   e.preventDefault();
 
@@ -99,10 +104,11 @@ function handleSubmit(
     if (!error) {
       setCertificationsAnalyst((prev) => [...prev, certification]);
       setCertification({
+        id: 0,
         name: "",
         description: "",
         institution: "",
-        year: "",
+        year: -1,
       });
       console.log("Dados salvados:", certification);
     }
@@ -111,9 +117,9 @@ function handleSubmit(
 
 function removeCertification(
   setCertificationsAnalyst: React.Dispatch<
-    React.SetStateAction<ICertification[]>
+    React.SetStateAction<Certification[]>
   >,
-  certification: ICertification,
+  certification: Certification,
 ) {
   setCertificationsAnalyst((prev) => [
     ...prev.filter((item) => !isEqualCertification(item, certification)),
@@ -123,7 +129,12 @@ function removeCertification(
 function CertificationSaves({
   certification,
   setCertificationsAnalyst,
-}: ICertificationSavesProps) {
+}: {
+  certification: Certification;
+  setCertificationsAnalyst: React.Dispatch<
+    React.SetStateAction<Certification[]>
+  >;
+}) {
   return (
     <FormButton
       variant="outline"
@@ -131,7 +142,7 @@ function CertificationSaves({
       onClick={() =>
         removeCertification(setCertificationsAnalyst, certification)
       }
-      className="m-1 !py-2 !px-4 text-sm"
+      className="m-1 py-2! px-4! text-sm"
       type="button"
     >
       {certification.name}/{certification.year} ✕
@@ -142,18 +153,24 @@ function CertificationSaves({
 export function RegisterCertifications({
   certificationsAnalyst,
   setCertificationsAnalyst,
-}: IRegisterCertifications) {
-  const [certification, setCertification] = useState<ICertification>({
+}: {
+  certificationsAnalyst: Certification[];
+  setCertificationsAnalyst: React.Dispatch<
+    React.SetStateAction<Certification[]>
+  >;
+}) {
+  const [certification, setCertification] = useState<Certification>({
+    id: 0,
     name: "",
     description: "",
     institution: "",
-    year: "",
+    year: 0,
   });
 
   const [error, setError] = useState<string>("");
 
   const [errorsCertification, setErrorsCertification] = useState<
-    Partial<ICertification>
+    Partial<CertificationError>
   >({});
 
   return (
@@ -201,7 +218,7 @@ export function RegisterCertifications({
           <FormInput
             label="Ano"
             name="year"
-            value={certification.year}
+            value={certification.year > 0 ? certification.year : ""}
             onChange={(e) => handleChange(e, setCertification)}
             error={errorsCertification.year}
             required

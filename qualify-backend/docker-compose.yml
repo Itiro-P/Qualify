@@ -30,6 +30,7 @@ services:
     container_name: qualify_migrate_cli
     volumes:
       - ./internal/database/migrations:/migrations
+      - ./internal/database/uploads:/uploads
     profiles:
       - tools
     depends_on:
@@ -39,6 +40,8 @@ services:
   app:
     build: .
     container_name: qualify_app
+    volumes:
+      - ./internal/database/uploads:/app/uploads:/app/uploads
     ports:
       - "${OUT_PORT}:${OUT_PORT}"
     environment:

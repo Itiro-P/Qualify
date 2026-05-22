@@ -2,10 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import type { IUserEditForm, IUserEditFormErrors } from "@/types/user/userEditForm";
+import type {
+  IUserEditForm,
+  IUserEditFormErrors,
+} from "@/types/user/userEditForm";
 import { validateEditForm } from "@/libs/validation";
 import { userService } from "@/libs/services";
-import { getSessionUser, setSessionUser, type SessionUser } from "@/libs/session";
+import {
+  getSessionUser,
+  setSessionUser,
+  type SessionUser,
+} from "@/libs/session";
 import type { ApiError } from "@/libs/api";
 import { FormInput, FormButton, FormPanel, Alert } from "@/components/ui";
 
@@ -202,7 +209,12 @@ export function EditUser() {
           />
         </div>
 
-        <FormButton type="submit" loading={loading} loadingText="Salvando..." className="mt-2">
+        <FormButton
+          type="submit"
+          loading={loading}
+          loadingText="Salvando..."
+          className="mt-2"
+        >
           Salvar alterações
         </FormButton>
       </form>

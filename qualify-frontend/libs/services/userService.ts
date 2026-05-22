@@ -13,7 +13,7 @@ export const userService = {
   },
 
   login(data: UserLogin): Promise<UserResponse> {
-    return api.post("/login", data);
+    return api.post("/auth/login", data);
   },
 
   getById(id: number): Promise<UserResponse> {
