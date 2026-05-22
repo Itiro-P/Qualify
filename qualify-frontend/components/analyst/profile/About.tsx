@@ -6,6 +6,7 @@ import { Biography } from "@/components/analyst/profile/Biography";
 import { Skills } from "@/components/analyst/profile/Skills";
 import { Certifications } from "@/components/analyst/profile/Certifications";
 import { analystService } from "@/libs/services/analystService";
+import { reviewService } from "@/libs/services/reviewService";
 import { Analyst } from "@/types/services";
 import { Skill } from "@/types/services";
 import { Review } from "@/types/services/review";
@@ -40,18 +41,23 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
         setBiography(profileResp.analyst_profile.biography);
 
         // Reviews
-        // precisa implementar
+        const reviewsResp = await reviewService.list({
+          analyst_id: analyst.id,
+        });
+
+        setReviewCardsVector(reviewsResp.reviews);
 
         // Skills
-        const skillsResp = await analystService.listSkills(analyst.id);
+        const skills: Skill[] = [];
 
-        const skills = await Promise.all(
-          skillsResp.analyst_skills.map(async (skillid) => {
-            const respskill = await skillService.getById(skillid.skill_id);
-
-            return respskill.skill;
-          }),
-        );
+        analystService.listSkills(analyst.id).then((resp) => {
+          return resp.analyst_skills.map(async (ref) => {
+            const skill = await skillService.getById(ref.skill_id);
+            if (skill != null) {
+              skills.push(skill.skill);
+            }
+          });
+        });
 
         setSkillsCardsVector(skills);
 

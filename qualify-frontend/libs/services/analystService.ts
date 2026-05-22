@@ -48,12 +48,26 @@ export const analystService = {
     return api.post(`/users/${userId}/analyst`, data);
   },
 
-  update(userId: number, data: Analyst): Promise<AnalystResponse> {
-    return api.put(`/users/${userId}/analyst`, data);
+  update(userId: number, data: Analyst): Promise<Analyst | null> {
+    return api.put<AnalystResponse>(`/users/${userId}/analyst`, data).then(
+      (resp) => {
+        return resp.analyst;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
-  patch(userId: number, data: AnalystUpdateRequest): Promise<AnalystResponse> {
-    return api.patch(`/users/${userId}/analyst`, data);
+  patch(userId: number, data: AnalystUpdateRequest): Promise<Analyst | null> {
+    return api.patch<AnalystResponse>(`/users/${userId}/analyst`, data).then(
+      (resp) => {
+        return resp.analyst;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
   delete(userId: number): Promise<Record<string, string>> {
