@@ -43,7 +43,7 @@ export function RegisterAnalyst() {
     }
 
     fetchAnalyst();
-  }, []);
+  }, [router]);
 
   // TODO: pegar o userId da sessão/auth
   const userId = user?.id;

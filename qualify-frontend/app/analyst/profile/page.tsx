@@ -36,7 +36,7 @@ export default function Profile() {
     }
 
     fetchAnalyst();
-  }, []);
+  }, [router]);
 
   return (
     <section id="profile" className="px-6 md:px-20 py-14">

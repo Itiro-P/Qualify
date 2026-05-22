@@ -30,7 +30,8 @@ export default function Edit() {
     }
 
     fetchAnalyst();
-  }, []);
+  }, [router]);
+
   return (
     <div>
       <Header />

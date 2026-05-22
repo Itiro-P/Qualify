@@ -11,6 +11,8 @@ import type {
   AnalystSkillsResponse,
   ListAnalystsParams,
   Analyst,
+  AnalystCertification,
+  AnalystSkill,
 } from "@/types/services/analyst";
 
 function buildQuery(params?: Record<string, unknown>): string {
@@ -44,8 +46,15 @@ export const analystService = {
   create(
     userId: number,
     data: { hourly_rate: number },
-  ): Promise<AnalystResponse> {
-    return api.post(`/users/${userId}/analyst`, data);
+  ): Promise<Analyst | null> {
+    return api.post<AnalystResponse>(`/users/${userId}/analyst`, data).then(
+      (resp) => {
+        return resp.analyst;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
   update(userId: number, data: Analyst): Promise<Analyst | null> {
@@ -75,22 +84,49 @@ export const analystService = {
   },
 
   // Profile
-  getProfile(userId: number): Promise<AnalystProfileResponse> {
-    return api.get(`/users/${userId}/analyst/profile`);
+  getProfile(userId: number): Promise<AnalystProfile | null> {
+    return api
+      .get<AnalystProfileResponse>(`/users/${userId}/analyst/profile`)
+      .then(
+        (resp) => {
+          return resp.analyst_profile;
+        },
+        () => {
+          return null;
+        },
+      );
   },
 
   createProfile(
     userId: number,
     data: AnalystProfile,
-  ): Promise<AnalystProfileResponse> {
-    return api.post(`/users/${userId}/analyst/profile`, data);
+  ): Promise<AnalystProfile | null> {
+    return api
+      .post<AnalystProfileResponse>(`/users/${userId}/analyst/profile`, data)
+      .then(
+        (resp) => {
+          return resp.analyst_profile;
+        },
+        () => {
+          return null;
+        },
+      );
   },
 
   updateProfile(
     userId: number,
     data: AnalystProfile,
-  ): Promise<AnalystProfileResponse> {
-    return api.put(`/users/${userId}/analyst/profile`, data);
+  ): Promise<AnalystProfile | null> {
+    return api
+      .put<AnalystProfileResponse>(`/users/${userId}/analyst/profile`, data)
+      .then(
+        (resp) => {
+          return resp.analyst_profile;
+        },
+        () => {
+          return null;
+        },
+      );
   },
 
   deleteProfile(userId: number): Promise<Record<string, string>> {
@@ -107,8 +143,20 @@ export const analystService = {
   addCertification(
     userId: number,
     data: { certification_id: number },
-  ): Promise<AnalystCertificationResponse> {
-    return api.post(`/users/${userId}/analyst/certifications`, data);
+  ): Promise<AnalystCertification | null> {
+    return api
+      .post<AnalystCertificationResponse>(
+        `/users/${userId}/analyst/certifications`,
+        data,
+      )
+      .then(
+        (resp) => {
+          return resp.analyst_certification;
+        },
+        () => {
+          return null;
+        },
+      );
   },
 
   removeCertification(
@@ -121,15 +169,33 @@ export const analystService = {
   },
 
   // Skills
-  listSkills(userId: number): Promise<AnalystSkillsResponse> {
-    return api.get(`/users/${userId}/analyst/skills`);
+  listSkills(userId: number): Promise<AnalystSkill[] | null> {
+    return api
+      .get<AnalystSkillsResponse>(`/users/${userId}/analyst/skills`)
+      .then(
+        (resp) => {
+          return resp.analyst_skills;
+        },
+        () => {
+          return null;
+        },
+      );
   },
 
   addSkill(
     userId: number,
     data: { skill_id: number },
-  ): Promise<AnalystSkillResponse> {
-    return api.post(`/users/${userId}/analyst/skills`, data);
+  ): Promise<AnalystSkill | null> {
+    return api
+      .post<AnalystSkillResponse>(`/users/${userId}/analyst/skills`, data)
+      .then(
+        (resp) => {
+          return resp.analyst_skill;
+        },
+        () => {
+          return null;
+        },
+      );
   },
 
   removeSkill(userId: number): Promise<Record<string, string>> {

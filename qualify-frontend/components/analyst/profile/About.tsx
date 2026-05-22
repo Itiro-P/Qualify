@@ -37,8 +37,9 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
       try {
         // Biography
         const profileResp = await analystService.getProfile(analyst.id);
-
-        setBiography(profileResp.analyst_profile.biography);
+        if (profileResp != null) {
+          setBiography(profileResp.biography);
+        }
 
         // Reviews
         const reviewsResp = await reviewService.list({
@@ -49,17 +50,17 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
 
         // Skills
         const skills: Skill[] = [];
-
-        analystService.listSkills(analyst.id).then((resp) => {
-          return resp.analyst_skills.map(async (ref) => {
+        const indexedList = await analystService.listSkills(analyst.id);
+        if (indexedList != null) {
+          indexedList.forEach(async (ref) => {
             const skill = await skillService.getById(ref.skill_id);
             if (skill != null) {
               skills.push(skill.skill);
             }
           });
-        });
 
-        setSkillsCardsVector(skills);
+          setSkillsCardsVector(skills);
+        }
 
         // Certifications
         const certResp = await analystService.listCertifications(analyst.id);

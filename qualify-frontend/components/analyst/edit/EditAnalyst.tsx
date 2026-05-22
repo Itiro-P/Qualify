@@ -26,7 +26,6 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // TODO: pegar o userId da sessão/auth (ex: useSession do NextAuth)
   const analystId = analyst.id;
   async function get_info(analystId: number) {
     const analyst = await analystService.getByUserId(analystId); // pega analista do banco de dados
@@ -38,13 +37,14 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
         await analystService.listCertifications(analystId); // pega as certificações e quantas tem com o id do analista
       setCertificationsAnalyst(analystCertifications.certifications); // pega apenas as certificações e coloca elas na variavel
 
-      const analysytSkills = (await analystService.listSkills(analystId))
-        .analyst_skills; // pega os ids das skills do analist
-      for (const skillResponse of analysytSkills) {
-        // para cada item dos ids dos analistas
-        const skill = (await skillService.getById(skillResponse.skill_id))
-          .skill; // passa para a função apenas o id e pega apenas a skill
-        setSkillsAnalyst((prev) => [...prev, skill]); // coloca a skill na variavel preservando as skills anteriores na variavel
+      const analysytSkills = await analystService.listSkills(analystId); // pega os ids das skills do analist
+      if (analysytSkills != null) {
+        for (const skillResponse of analysytSkills) {
+          // para cada item dos ids dos analistas
+          const skill = (await skillService.getById(skillResponse.skill_id))
+            .skill; // passa para a função apenas o id e pega apenas a skill
+          setSkillsAnalyst((prev) => [...prev, skill]); // coloca a skill na variavel preservando as skills anteriores na variavel
+        }
       }
     }
   }
@@ -100,19 +100,20 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
       }
 
       // 3. atualiza skills
-      const analystSkills = (await analystService.listSkills(analystId))
-        .analyst_skills; // pega skills do analista no banco de dados
+      const analystSkills = await analystService.listSkills(analystId); // pega skills do analista no banco de dados
 
-      const removedSkills = analystSkills.filter(
-        (dbSkill) =>
-          !skillsAnalyst.some(
-            (analystSkill) => analystSkill.id === dbSkill.skill_id,
-          ),
-      ); // pega skills que foram removidas pelo analista
+      if (analystSkills != null) {
+        const removedSkills = analystSkills.filter(
+          (dbSkill) =>
+            !skillsAnalyst.some(
+              (analystSkill) => analystSkill.id === dbSkill.skill_id,
+            ),
+        ); // pega skills que foram removidas pelo analista
 
-      for (const skill of removedSkills) {
-        // analystService.removeSkill(analystId, skill.skill_id); // tem que corrigir no back pois não esta pegando o id da skill
-      } // remove as skills do analista
+        for (const skill of removedSkills) {
+          //analystService.removeSkill(analystId, skill.skill_id); // tem que corrigir a interface do remover skill do analista, pois não esta pegando o id da skill
+        } // remove as skills do analista
+      }
 
       for (const skill of skillsAnalyst) {
         if (skill.id != -1) {

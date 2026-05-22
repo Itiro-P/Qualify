@@ -10,7 +10,7 @@ function handleChange(
 ) {
   const { value } = e.target;
 
-  setForm({ id: 0, name: value });
+  setForm({ id: -1, name: value });
 }
 
 function validateSkill(skills: Skill[], skill: string): string {
@@ -40,9 +40,9 @@ function handleSubmit(
   if (!validationErrors) {
     console.log("Dados salvados:", skill.name);
 
-    setSkillsAnalyst((prev) => [...prev, { id: 0, name: skill.name }]);
+    setSkillsAnalyst((prev) => [...prev, { id: -1, name: skill.name }]);
 
-    setskill({ id: 0, name: "" });
+    setskill({ id: -1, name: "" });
   }
 }
 
