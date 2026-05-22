@@ -29,7 +29,7 @@ export default function Profile() {
       }
       const analyst = await analystService.getByUserId(session.id);
       if (analyst == null) {
-        redirect("/user/login");
+        router.push("/user/login");
       } else {
         setAnalyst(analyst);
       }

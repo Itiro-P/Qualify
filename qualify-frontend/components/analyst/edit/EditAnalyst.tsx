@@ -28,19 +28,23 @@ export function EditAnalyst() {
   // TODO: pegar o userId da sessão/auth (ex: useSession do NextAuth)
   const analystId = 1;
   async function get_info(analystId: number) {
-    const analyst = (await analystService.getByUserId(analystId)).analyst; // pega analista do banco de dados
-    setHourlyRateAnalyst(analyst.hourly_rate); // pega preço por hora do analista e coloca na variavel
+    const analyst = await analystService.getByUserId(analystId); // pega analista do banco de dados
 
-    const analystCertifications =
-      await analystService.listCertifications(analystId); // pega as certificações e quantas tem com o id do analista
-    setCertificationsAnalyst(analystCertifications.certifications); // pega apenas as certificações e coloca elas na variavel
+    if (analyst != null) {
+      setHourlyRateAnalyst(analyst?.hourly_rate); // pega preço por hora do analista e coloca na variavel
 
-    const analysytSkills = (await analystService.listSkills(analystId))
-      .analyst_skills; // pega os ids das skills do analist
-    for (const skillResponse of analysytSkills) {
-      // para cada item dos ids dos analistas
-      const skill = (await skillService.getById(skillResponse.skill_id)).skill; // passa para a função apenas o id e pega apenas a skill
-      setSkillsAnalyst((prev) => [...prev, skill]); // coloca a skill na variavel preservando as skills anteriores na variavel
+      const analystCertifications =
+        await analystService.listCertifications(analystId); // pega as certificações e quantas tem com o id do analista
+      setCertificationsAnalyst(analystCertifications.certifications); // pega apenas as certificações e coloca elas na variavel
+
+      const analysytSkills = (await analystService.listSkills(analystId))
+        .analyst_skills; // pega os ids das skills do analist
+      for (const skillResponse of analysytSkills) {
+        // para cada item dos ids dos analistas
+        const skill = (await skillService.getById(skillResponse.skill_id))
+          .skill; // passa para a função apenas o id e pega apenas a skill
+        setSkillsAnalyst((prev) => [...prev, skill]); // coloca a skill na variavel preservando as skills anteriores na variavel
+      }
     }
   }
 
