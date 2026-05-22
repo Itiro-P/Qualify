@@ -387,7 +387,7 @@ func UpdateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do usuário (analista)"
-// @Success 200 {object} map[string]string
+// @Success 204 "Deleção com sucesso"
 // @Failure 400 {object} pkg.ErrorResponse
 // @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
@@ -424,7 +424,7 @@ func DeleteAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "analyst profile deleted successfully"})
+		c.Status(http.StatusNoContent)
 	}
 }
 
@@ -567,7 +567,7 @@ func UpdateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do usuário (cliente)"
-// @Success 200 {object} map[string]string
+// @Success 204 "Deleção com sucesso"
 // @Failure 400 {object} pkg.ErrorResponse
 // @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
@@ -603,6 +603,6 @@ func DeleteClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "client profile deleted successfully"})
+		c.Status(http.StatusNoContent)
 	}
 }

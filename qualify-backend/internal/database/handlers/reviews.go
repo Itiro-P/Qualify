@@ -404,7 +404,7 @@ func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID da avaliação"
-// @Success 200 {object} map[string]string
+// @Success 204 "Deleção com sucesso"
 // @Failure 400 {object} pkg.ErrorResponse
 // @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
@@ -430,6 +430,6 @@ func DeleteReview(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "review deleted successfully"})
+		c.Status(http.StatusNoContent)
 	}
 }

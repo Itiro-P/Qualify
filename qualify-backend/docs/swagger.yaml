@@ -980,12 +980,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
+        "204":
+          description: Deleção com sucesso
         "400":
           description: Bad Request
           schema:
@@ -1272,12 +1268,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
+        "204":
+          description: Deleção com sucesso
         "400":
           description: Bad Request
           schema:
@@ -1536,12 +1528,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
+        "204":
+          description: Deleção com sucesso
         "400":
           description: Bad Request
           schema:
@@ -1768,12 +1756,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
+        "204":
+          description: Deleção com sucesso
         "400":
           description: Bad Request
           schema:
@@ -1976,12 +1960,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
+        "204":
+          description: Deleção com sucesso
         "400":
           description: Bad Request
           schema:
@@ -2085,12 +2065,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
+        "204":
+          description: Deleção com sucesso
         "400":
           description: Bad Request
           schema:
@@ -2234,12 +2210,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
+        "204":
+          description: Deleção com sucesso
         "400":
           description: Bad Request
           schema:
@@ -2424,12 +2396,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
+        "204":
+          description: Deleção com sucesso
         "400":
           description: Bad Request
           schema:
@@ -2525,12 +2493,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
+        "204":
+          description: Deleção com sucesso
         "400":
           description: Bad Request
           schema:
@@ -2675,12 +2639,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
+        "204":
+          description: Deleção com sucesso
         "400":
           description: Bad Request
           schema:
@@ -2784,12 +2744,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
+        "204":
+          description: Deleção com sucesso
         "400":
           description: Bad Request
           schema:
@@ -2969,12 +2925,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
+        "204":
+          description: Deleção com sucesso
         "400":
           description: Bad Request
           schema:
