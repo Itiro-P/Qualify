@@ -14,8 +14,9 @@ import {
 } from "@/libs/services";
 import type { ApiError } from "@/libs/api";
 import { FormButton, FormPanel, Alert } from "@/components/ui";
+import { Analyst } from "@/types/services";
 
-export function EditAnalyst() {
+export function EditAnalyst({ analyst }: { analyst: Analyst }) {
   const [certificationsAnalyst, setCertificationsAnalyst] = useState<
     Certification[]
   >([]);
@@ -26,7 +27,7 @@ export function EditAnalyst() {
   const [success, setSuccess] = useState("");
 
   // TODO: pegar o userId da sessão/auth (ex: useSession do NextAuth)
-  const analystId = 1;
+  const analystId = analyst.id;
   async function get_info(analystId: number) {
     const analyst = await analystService.getByUserId(analystId); // pega analista do banco de dados
 
@@ -110,7 +111,7 @@ export function EditAnalyst() {
       ); // pega skills que foram removidas pelo analista
 
       for (const skill of removedSkills) {
-        // analystService.removeSkill(analystId, skill.skill_id); tem que corrigir no back pois não esta pegando o id da skill
+        // analystService.removeSkill(analystId, skill.skill_id); // tem que corrigir no back pois não esta pegando o id da skill
       } // remove as skills do analista
 
       for (const skill of skillsAnalyst) {

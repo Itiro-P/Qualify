@@ -1,7 +1,7 @@
 "use client";
 
 import { Footer, Header } from "@/components";
-import { redirect, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   ImageProfile,
   StatisticProfile,
