@@ -75,6 +75,7 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
   return (
     <div>
       <div className="flex">
+        {error && <Alert variant="error">{error}</Alert>}
         <button
           className="p-2 m-2 bg-blue-950"
           onClick={() => setAbaAtiva("biography")}
