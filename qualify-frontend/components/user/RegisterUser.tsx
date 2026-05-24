@@ -63,18 +63,19 @@ export function RegisterUser() {
         country_state: form.country_state.trim(),
         timezone: form.timezone.trim(),
       });
-
-      setSessionUser({
-        id: response.user.id!,
-        name: response.user.name!,
-        email: response.user.email!,
-        phone: response.user.phone,
-        city: response.user.city,
-        country_code: response.user.country_code,
-        country_name: response.user.country_name,
-        country_state: response.user.country_state,
-        timezone: response.user.timezone,
-      });
+      if (response != null) {
+        setSessionUser({
+          id: response.id!,
+          name: response.name!,
+          email: response.email!,
+          phone: response.phone,
+          city: response.city,
+          country_code: response.country_code,
+          country_name: response.country_name,
+          country_state: response.country_state,
+          timezone: response.timezone,
+        });
+      }
 
       router.push("/");
     } catch (err) {

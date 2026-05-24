@@ -12,8 +12,6 @@ import { Skill } from "@/types/services";
 import { Review } from "@/types/services/review";
 import { Certification } from "@/types/services/certification";
 import { skillService } from "@/libs";
-import type { ApiError } from "@/libs/api";
-import { Alert } from "@/components/ui";
 
 function TabsSystem({ analyst }: { analyst: Analyst }) {
   const [biography, setBiography] = useState<string>("");
@@ -30,59 +28,46 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
     "biography" | "reviews" | "skills" | "certifications"
   >("biography");
 
-  const [error, setError] = useState("");
-
   useEffect(() => {
     async function loadData() {
-      try {
-        // Biography
-        const profileResp = await analystService.getProfile(analyst.id);
-        if (profileResp != null) {
-          setBiography(profileResp.biography);
-        }
+      // Biography
+      const profileResp = await analystService.getProfile(analyst.id);
+      if (profileResp != null) {
+        setBiography(profileResp.biography);
+      }
 
-        // Reviews
-        const reviewsResp = await reviewService.list({
-          analyst_id: analyst.id,
+      // Reviews
+      const reviewsResp = await reviewService.list({
+        analyst_id: analyst.id,
+      });
+
+      setReviewCardsVector(reviewsResp.reviews);
+
+      // Skills
+      const anlystSkillIds = await analystService.listSkills(analyst.id);
+      if (anlystSkillIds != null) {
+        const analystSkills: Skill[] = [];
+        anlystSkillIds.forEach(async (ref) => {
+          const analystSkill = await skillService.getById(ref.skill_id);
+          if (analystSkill != null) {
+            analystSkills.push(analystSkill);
+          }
         });
 
-        setReviewCardsVector(reviewsResp.reviews);
-
-        // Skills
-        const skills: Skill[] = [];
-        const indexedList = await analystService.listSkills(analyst.id);
-        if (indexedList != null) {
-          indexedList.forEach(async (ref) => {
-            const skill = await skillService.getById(ref.skill_id);
-            if (skill != null) {
-              skills.push(skill.skill);
-            }
-          });
-
-          setSkillsCardsVector(skills);
-        }
-
-        // Certifications
-        const certResp = await analystService.listCertifications(analyst.id);
-
-        setCertificationsCardsVector(certResp.certifications);
-      } catch (err) {
-        const apiError = err as ApiError;
-        if (apiError.status === 401) {
-          setError("E-mail ou senha incorretos.");
-        } else if (apiError.status === 400) {
-          setError(apiError.message || "Dados inválidos.");
-        }
+        setSkillsCardsVector(analystSkills);
       }
-    }
 
+      // Certifications
+      const certResp = await analystService.listCertifications(analyst.id);
+
+      setCertificationsCardsVector(certResp.certifications);
+    }
     loadData();
   }, [analyst.id]);
 
   return (
     <div>
       <div className="flex">
-        {error && <Alert variant="error">{error}</Alert>}
         <button
           className="p-2 m-2 bg-blue-950"
           onClick={() => setAbaAtiva("biography")}

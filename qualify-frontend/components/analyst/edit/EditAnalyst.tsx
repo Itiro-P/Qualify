@@ -41,9 +41,11 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
       if (analysytSkills != null) {
         for (const skillResponse of analysytSkills) {
           // para cada item dos ids dos analistas
-          const skill = (await skillService.getById(skillResponse.skill_id))
-            .skill; // passa para a função apenas o id e pega apenas a skill
-          setSkillsAnalyst((prev) => [...prev, skill]); // coloca a skill na variavel preservando as skills anteriores na variavel
+          const skill = await skillService.getById(skillResponse.skill_id); // passa para a função apenas o id e pega apenas a skill
+          if (skill != null) {
+            // verifica se retornou uma skill
+            setSkillsAnalyst((prev) => [...prev, skill]); // coloca a skill na variavel preservando as skills anteriores na variavel
+          }
         }
       }
     }
@@ -82,20 +84,21 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
           const certificationOfDataBase = await certificationService.list(
             certification.name,
           ); // pega certificação que correspondem ao nome da certificação
-          let createdCertication: Certification;
-          if (certificationOfDataBase.count == 0) {
+          let createdCertication: Certification | null;
+          if (certificationOfDataBase == null) {
             // não tem certificação no banco de dados
-            createdCertication = (
-              await certificationService.create(certification)
-            ).certification; // cria certificação no banco de dados
+            createdCertication =
+              await certificationService.create(certification); // cria certificação no banco de dados
           } else {
             // tem certificação no banco de dados
-            createdCertication = certificationOfDataBase.certifications[0]; // pega primeira correspondência
+            createdCertication = certificationOfDataBase[0]; // pega primeira correspondência
           }
-
-          await analystService.addCertification(analystId, {
-            certification_id: createdCertication.id,
-          }); // adiciona certificação ao analista
+          if (createdCertication != null) {
+            // verifica se criou ou pegou certification corretamente
+            await analystService.addCertification(analystId, {
+              certification_id: createdCertication.id,
+            }); // adiciona certificação ao analista
+          }
         }
       }
 
@@ -120,18 +123,21 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
           // se o id for igual a -1 significa que foi criado, se for diferente de -1 já foi criado
           continue;
         }
-        const skillOfDataBase = await skillService.list(skill.name); // pega skill que correspondem ao nome da skill
-        let createdSkill: Skill;
-        if (skillOfDataBase.count == 0) {
+        const skillsOfDataBase = await skillService.list(skill.name); // pega skill que correspondem ao nome da skill
+        let dataBaseSkill: Skill | null;
+        if (skillsOfDataBase == null) {
           // não tem skill no banco de dados
-          createdSkill = (await skillService.create(skill)).skill; // cria skill no banco de dados
+          dataBaseSkill = await skillService.create(skill); // cria skill no banco de dados
         } else {
           // tem skill no banco de dados
-          createdSkill = skillOfDataBase.skills[0]; // pega primeira correspondência
+          dataBaseSkill = skillsOfDataBase[0]; // pega primeira correspondência
         }
-        await analystService.addSkill(analystId, {
-          skill_id: createdSkill.id,
-        }); // adiciona ao analista
+        if (dataBaseSkill != null) {
+          // verifica se criou ou pegou skill corretamente
+          await analystService.addSkill(analystId, {
+            skill_id: dataBaseSkill.id,
+          }); // adiciona ao analista
+        }
       }
 
       setSuccess("Cadastro de analista realizado com sucesso!");

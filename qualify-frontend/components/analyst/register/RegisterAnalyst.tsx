@@ -66,36 +66,39 @@ export function RegisterAnalyst() {
         const certificationOfDataBase = await certificationService.list(
           certification.name,
         ); // pega certificação que correspondem ao nome da certificação
-        let createdCertication: Certification;
-        if (certificationOfDataBase.count == 0) {
+        let createdCertication: Certification | null;
+        if (certificationOfDataBase == null) {
           // não tem certificação no banco de dados
-          createdCertication = (
-            await certificationService.create(certification)
-          ).certification; // cria certificação no banco de dados
+          createdCertication = await certificationService.create(certification); // cria certificação no banco de dados
         } else {
           // tem certificação no banco de dados
-          createdCertication = certificationOfDataBase.certifications[0]; // pega primeira correspondência
+          createdCertication = certificationOfDataBase[0]; // pega primeira correspondência
         }
-
-        await analystService.addCertification(userId, {
-          certification_id: createdCertication.id,
-        }); // adiciona certificação ao analista
+        if (createdCertication != null) {
+          // verifica se criou ou pegou certification corretamente
+          await analystService.addCertification(userId, {
+            certification_id: createdCertication.id,
+          }); // adiciona certificação ao analista
+        }
       }
 
       // 3. Colocar Skills
       for (const skill of skillsAnalyst) {
         const skillOfDataBase = await skillService.list(skill.name); // pega skill que correspondem ao nome da skill
-        let createdSkill: Skill;
-        if (skillOfDataBase.count == 0) {
+        let createdSkill: Skill | null;
+        if (skillOfDataBase == null) {
           // não tem skill no banco de dados
-          createdSkill = (await skillService.create(skill)).skill; // cria skill no banco de dados
+          createdSkill = await skillService.create(skill); // cria skill no banco de dados
         } else {
           // tem skill no banco de dados
-          createdSkill = skillOfDataBase.skills[0]; // pega primeira correspondência
+          createdSkill = skillOfDataBase[0]; // pega primeira correspondência
         }
-        await analystService.addSkill(userId, {
-          skill_id: createdSkill.id,
-        }); // adiciona skill no analista
+        if (createdSkill != null) {
+          // verifica se criou ou pegou skill corretamente
+          await analystService.addSkill(userId, {
+            skill_id: createdSkill.id,
+          }); // adiciona skill no analista
+        }
       }
 
       setSuccess("Cadastro de analista realizado com sucesso!");

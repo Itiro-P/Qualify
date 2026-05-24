@@ -8,31 +8,68 @@ import type {
 } from "@/types/services/proposal";
 
 export const proposalService = {
-  list(params?: ListProposalsParams): Promise<ProposalLettersResponse> {
+  list(params?: ListProposalsParams): Promise<ProposalLetter[] | null> {
     const search = new URLSearchParams();
     if (params?.client_id) search.set("client_id", String(params.client_id));
     if (params?.analyst_id) search.set("analyst_id", String(params.analyst_id));
     const qs = search.toString();
-    return api.get(`/proposals${qs ? `?${qs}` : ""}`);
+    return api
+      .get<ProposalLettersResponse>(`/proposals${qs ? `?${qs}` : ""}`)
+      .then(
+        (resp) => {
+          return resp.proposal_letters;
+        },
+        () => {
+          return null;
+        },
+      );
   },
 
-  getById(id: number): Promise<ProposalLetterResponse> {
-    return api.get(`/proposals/${id}`);
+  getById(id: number): Promise<ProposalLetter | null> {
+    return api.get<ProposalLetterResponse>(`/proposals/${id}`).then(
+      (resp) => {
+        return resp.proposal_letter;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
-  create(data: ProposalLetter): Promise<ProposalLetterResponse> {
-    return api.post("/proposals", data);
+  create(data: ProposalLetter): Promise<ProposalLetter | null> {
+    return api.post<ProposalLetterResponse>("/proposals", data).then(
+      (resp) => {
+        return resp.proposal_letter;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
-  update(id: number, data: ProposalLetter): Promise<ProposalLetterResponse> {
-    return api.put(`/proposals/${id}`, data);
+  update(id: number, data: ProposalLetter): Promise<ProposalLetter | null> {
+    return api.put<ProposalLetterResponse>(`/proposals/${id}`, data).then(
+      (resp) => {
+        return resp.proposal_letter;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
   patch(
     id: number,
     data: ProposalLetterUpdateRequest,
-  ): Promise<ProposalLetterResponse> {
-    return api.patch(`/proposals/${id}`, data);
+  ): Promise<ProposalLetter | null> {
+    return api.patch<ProposalLetterResponse>(`/proposals/${id}`, data).then(
+      (resp) => {
+        return resp.proposal_letter;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
   delete(id: number): Promise<Record<string, string>> {
