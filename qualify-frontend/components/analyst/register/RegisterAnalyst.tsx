@@ -19,7 +19,7 @@ import {
 import type { ApiError } from "@/libs/api";
 import { FormButton, FormPanel, Alert } from "@/components/ui";
 
-export function RegisterAnalyst() {
+export function RegisterAnalyst({ userSession }: { userSession: User }) {
   const [certificationsAnalyst, setCertificationsAnalyst] = useState<
     Certification[]
   >([]);
@@ -29,7 +29,7 @@ export function RegisterAnalyst() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User>(userSession);
 
   useEffect(() => {
     async function fetchAnalyst() {
@@ -45,11 +45,8 @@ export function RegisterAnalyst() {
     fetchAnalyst();
   }, [router]);
 
-  // TODO: pegar o userId da sessão/auth
-  const userId = user?.id;
-
   async function handleSubmitAll() {
-    if (!userId) {
+    if (!user.id) {
       setError("Usuário não autenticado.");
       return;
     }
@@ -58,7 +55,7 @@ export function RegisterAnalyst() {
     setSuccess("");
     try {
       // 1. Promover usuário a analista
-      await analystService.create(userId, { hourly_rate: hourlyRateAnalyst });
+      await analystService.create(user.id, { hourly_rate: hourlyRateAnalyst });
 
       // 2. Colocar Certificações
       for (const certification of certificationsAnalyst) {
@@ -76,7 +73,7 @@ export function RegisterAnalyst() {
         }
         if (createdCertication != null) {
           // verifica se criou ou pegou certification corretamente
-          await analystService.addCertification(userId, {
+          await analystService.addCertification(user.id, {
             certification_id: createdCertication.id,
           }); // adiciona certificação ao analista
         }
@@ -95,7 +92,7 @@ export function RegisterAnalyst() {
         }
         if (createdSkill != null) {
           // verifica se criou ou pegou skill corretamente
-          await analystService.addSkill(userId, {
+          await analystService.addSkill(user.id, {
             skill_id: createdSkill.id,
           }); // adiciona skill no analista
         }
@@ -136,12 +133,12 @@ export function RegisterAnalyst() {
       {error && <Alert variant="error">{error}</Alert>}
       {success && <Alert variant="success">{success}</Alert>}
       <RegisterCertifications
-        certificationsAnalyst={certificationsAnalyst}
-        setCertificationsAnalyst={setCertificationsAnalyst}
+        analystCertifications={certificationsAnalyst}
+        setAnalystCertifications={setCertificationsAnalyst}
       />
       <RegisterSkills
-        skillsAnalyst={skillsAnalyst}
-        setSkillsAnalyst={setSkillsAnalyst}
+        analystSkills={skillsAnalyst}
+        setAnalystSkills={setSkillsAnalyst}
       />
       <RegisterHourlyRate
         hourlyRateAnalyst={hourlyRateAnalyst}
