@@ -14,7 +14,6 @@ import {
   certificationService,
   skillService,
 } from "@/libs/services";
-import type { ApiError } from "@/libs/api";
 import { FormButton, FormPanel, Alert } from "@/components/ui";
 
 export function RegisterAnalyst({ userSession }: { userSession: User }) {
@@ -29,7 +28,7 @@ export function RegisterAnalyst({ userSession }: { userSession: User }) {
 
   async function createAnalyst(): Promise<number> {
     const result = await analystService.create(userSession.id, {
-      hourly_rate: hourlyRateAnalyst,
+      hourly_rate: Number(hourlyRateAnalyst),
     });
     if (!result) {
       setError("Ocorreu um erro ao criar o analista. Tente novamente.");
@@ -44,27 +43,34 @@ export function RegisterAnalyst({ userSession }: { userSession: User }) {
       const certificationOfDataBase = await certificationService.list(
         certification.name,
       ); // pega certificação que correspondem ao nome da certificação
-      if (certificationOfDataBase == null) {
-        setError(
-          "Deu erro ao pegar a certificação no banco de dados. Tente novamente.",
-        );
-        return -1; // retorna -1 para indicar falha
-      }
-      let createdCertication: Certification | null;
+
+      let createdCertification: Certification | null;
+
       if (certificationOfDataBase == null) {
         // não tem certificação no banco de dados
-        createdCertication = await certificationService.create(certification); // cria certificação no banco de dados
+        createdCertification = await certificationService.create({
+          id: -1,
+          name: certification.name,
+          description: certification.description,
+          institution: certification.institution,
+          year: Number(certification.year),
+        }); // cria certificação no banco de dados
+
+        if (createdCertification == null) {
+          setError("Deu erro ao criar a certificação. Tente novamente.");
+          return -1; // retorna -1 para indicar falha
+        }
       } else {
         // tem certificação no banco de dados
-        createdCertication = certificationOfDataBase[0]; // pega primeira correspondência
+        createdCertification = certificationOfDataBase[0]; // pega primeira correspondência
       }
-      if (createdCertication == null) {
+      if (createdCertification == null) {
         // verifica se criou ou pegou certification incorretamente
         setError("Deu erro ao criar a certificação. Tente novamente.");
         return -1; // retorna -1 para indicar falha
       }
       await analystService.addCertification(userSession.id, {
-        certification_id: createdCertication.id,
+        certification_id: createdCertification.id,
       }); // adiciona certificação ao analista
     }
     return 0;
