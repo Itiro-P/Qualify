@@ -6,6 +6,7 @@ import { Biography } from "@/components/analyst/profile/Biography";
 import { Skills } from "@/components/analyst/profile/Skills";
 import { Certifications } from "@/components/analyst/profile/Certifications";
 import { analystService } from "@/libs/services/analystService";
+import { reviewService } from "@/libs/services/reviewService";
 import { Analyst } from "@/types/services";
 import { Skill } from "@/types/services";
 import { Review } from "@/types/services/review";
@@ -29,41 +30,38 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
 
   useEffect(() => {
     async function loadData() {
-      try {
-        // Biography
-        const profileResp = await analystService.getProfile(analyst.id);
-
-        setBiography(profileResp.analyst_profile.biography);
-
-        // Reviews
-        // precisa implementar
-
-        // Skills
-        const skillsResp = await analystService.listSkills(analyst.id);
-
-        const skills = await Promise.all(
-          skillsResp.analyst_skills.map(async (skillid) => {
-            const respskill = await skillService.getById(skillid.skill_id);
-
-            return respskill.skill;
-          }),
-        );
-
-        setSkillsCardsVector(skills);
-
-        // Certifications
-        const certResp = await analystService.listCertifications(analyst.id);
-
-        setCertificationsCardsVector(certResp.certifications);
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          console.error(error.message);
-        } else {
-          //implementar erros
-        }
+      // Biography
+      const profileResp = await analystService.getProfile(analyst.id);
+      if (profileResp != null) {
+        setBiography(profileResp.biography);
       }
-    }
 
+      // Reviews
+      const reviewsResp = await reviewService.list({
+        analyst_id: analyst.id,
+      });
+
+      setReviewCardsVector(reviewsResp.reviews);
+
+      // Skills
+      const anlystSkillIds = await analystService.listSkills(analyst.id);
+      if (anlystSkillIds != null) {
+        const analystSkills: Skill[] = [];
+        anlystSkillIds.forEach(async (ref) => {
+          const analystSkill = await skillService.getById(ref.skill_id);
+          if (analystSkill != null) {
+            analystSkills.push(analystSkill);
+          }
+        });
+
+        setSkillsCardsVector(analystSkills);
+      }
+
+      // Certifications
+      const certResp = await analystService.listCertifications(analyst.id);
+
+      setCertificationsCardsVector(certResp.certifications);
+    }
     loadData();
   }, [analyst.id]);
 

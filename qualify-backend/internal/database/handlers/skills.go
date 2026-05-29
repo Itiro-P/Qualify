@@ -199,7 +199,7 @@ func UpdateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID da habilidade"
-// @Success 200 {object} map[string]string
+// @Success 204 "Deleção com sucesso"
 // @Failure 400 {object} pkg.ErrorResponse
 // @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
@@ -226,7 +226,7 @@ func DeleteSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "skill deleted successfully"})
+		c.Status(http.StatusNoContent)
 	}
 }
 
@@ -294,7 +294,7 @@ func GetAnalystSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do analista"
 // @Param certification body pkg.AnalystSkill true "Objeto associação"
-// @Success 200 {object} pkg.AnalystSkillResponse
+// @Success 201 {object} pkg.AnalystSkillResponse
 // @Failure 400 {object} pkg.ErrorResponse
 // @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
@@ -363,7 +363,7 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do analista"
 // @Param skill_id query int true "ID da skill"
-// @Success 200 {object} map[string]string
+// @Success 204 "Deleção com sucesso"
 // @Failure 400 {object} pkg.ErrorResponse
 // @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
@@ -403,6 +403,6 @@ func DeleteAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "analyst skill deleted successfully"})
+		c.Status(http.StatusNoContent)
 	}
 }

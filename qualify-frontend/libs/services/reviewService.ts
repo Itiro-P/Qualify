@@ -24,20 +24,48 @@ export const reviewService = {
     return api.get(`/reviews${buildQuery(params as Record<string, unknown>)}`);
   },
 
-  getById(id: number): Promise<ReviewResponse> {
-    return api.get(`/reviews/${id}`);
+  getById(id: number): Promise<Review | null> {
+    return api.get<ReviewResponse>(`/reviews/${id}`).then(
+      (resp) => {
+        return resp.review;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
-  create(data: Review): Promise<ReviewResponse> {
-    return api.post("/reviews", data);
+  create(data: Review): Promise<Review | null> {
+    return api.post<ReviewResponse>("/reviews", data).then(
+      (resp) => {
+        return resp.review;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
-  update(id: number, data: Review): Promise<ReviewResponse> {
-    return api.put(`/reviews/${id}`, data);
+  update(id: number, data: Review): Promise<Review | null> {
+    return api.put<ReviewResponse>(`/reviews/${id}`, data).then(
+      (resp) => {
+        return resp.review;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
-  patch(id: number, data: ReviewUpdateRequest): Promise<ReviewResponse> {
-    return api.patch(`/reviews/${id}`, data);
+  patch(id: number, data: ReviewUpdateRequest): Promise<Review | null> {
+    return api.patch<ReviewResponse>(`/reviews/${id}`, data).then(
+      (resp) => {
+        return resp.review;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
   delete(id: number): Promise<Record<string, string>> {

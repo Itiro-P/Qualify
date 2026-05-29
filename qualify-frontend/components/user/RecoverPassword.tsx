@@ -3,13 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { FormInput, FormButton, FormPanel, Alert } from "@/components/ui";
+import { userService } from "@/libs/services";
 
 export function RecoverPassword() {
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setEmailError("");
 
@@ -23,8 +25,10 @@ export function RecoverPassword() {
       return;
     }
 
-    // TODO: integrar com endpoint de recuperação de senha quando disponível
+    setLoading(true);
+    await userService.resetPassword(email); // TODO: Precisamos entender esse fluxo aqui
     setSubmitted(true);
+    setLoading(false);
   }
 
   return (
@@ -44,7 +48,7 @@ export function RecoverPassword() {
             </p>
           </Alert>
           <Link
-            href="/User/register"
+            href="/user/register"
             className="inline-block mt-4 text-sm text-accent hover:underline"
           >
             Voltar ao cadastro
@@ -66,7 +70,7 @@ export function RecoverPassword() {
             required
           />
 
-          <FormButton type="submit" className="mt-2">
+          <FormButton type="submit" loading={loading} loadingText="Enviando..." className="mt-2">
             Enviar instruções
           </FormButton>
         </form>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Footer, Header } from "@/components";
+import { useRouter } from "next/navigation";
 import {
   ImageProfile,
   StatisticProfile,
@@ -8,46 +9,64 @@ import {
   Informations,
   ContactButtons,
 } from "@/components/analyst/profile";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Analyst } from "@/types/services";
+import { analystService } from "@/libs";
+import { getSessionUser } from "@/libs/session";
+import { Loading } from "@/components/ui";
 
 export default function Profile() {
-  const [analyst, setAnalyst] = useState<Analyst | null>({
-    id: 0,
-    name: "",
-    email: "",
-    phone: "",
-    city: "",
-    country_code: "",
-    country_name: "",
-    country_state: "",
-    timezone: "",
-    hourly_rate: 0,
-    mean_rating: 0,
-    total_reviews: 0,
-    time_created: "",
-  });
+  const router = useRouter();
+  const [analyst, setAnalyst] = useState<Analyst | null>(null);
 
-  //tem que implementar forma de pegar o usuario da seessão e ver se é analista ou não e colocar no 'analyst'
+  useEffect(() => {
+    async function fetchAnalyst() {
+      const session = await getSessionUser();
+
+      if (!session) {
+        router.push("/user/register");
+        return;
+      }
+      const analyst = await analystService.getByUserId(session.id);
+      if (analyst == null) {
+        router.push("/user/login");
+      } else {
+        setAnalyst(analyst);
+      }
+    }
+
+    fetchAnalyst();
+  }, [router]);
 
   return (
     <section id="profile" className="px-6 md:px-20 py-14">
       <Header />
-      {analyst ? (
+      {analyst != null ? (
         <div>
           <div className="flex justify-between ml-3 mt-10">
             <ImageProfile />
-            <Informations />
+            <Informations
+              name={analyst.name}
+              city={analyst.city}
+              state={analyst.country_state}
+              country={analyst.country_name}
+              rating={analyst.mean_rating}
+              reviews={analyst.total_reviews}
+              date={analyst.time_created}
+            />
             <ContactButtons />
           </div>
 
           <div className="flex mt-10">
             <About analyst={analyst} />
-            <StatisticProfile />
+            <StatisticProfile
+              analyst_id={analyst.id}
+              hourly_rate={analyst.hourly_rate}
+            />
           </div>
         </div>
       ) : (
-        <p>Usuário não logado ou não é analista</p>
+        <Loading />
       )}
 
       <Footer />

@@ -9,8 +9,6 @@ import type {
 } from "@/types/user/userRegisterForm";
 import { validateRegisterForm } from "@/libs/validation";
 import { userService } from "@/libs/services";
-import { setSessionUser } from "@/libs/session";
-import type { ApiError } from "@/libs/api";
 import { FormInput, FormButton, FormPanel, Alert } from "@/components/ui";
 
 const initialForm: IUserRegisterForm = {
@@ -50,39 +48,25 @@ export function RegisterUser() {
     if (Object.keys(validationErrors).length > 0) return;
 
     setLoading(true);
-    try {
-      const fullName = `${form.name.trim()} ${form.surname.trim()}`;
-      const response = await userService.register({
-        name: fullName,
-        email: form.email.trim(),
-        password: form.password,
-        phone: form.phone.trim(),
-        city: form.city.trim(),
-        country_code: form.country_code.trim(),
-        country_name: form.country_name.trim(),
-        country_state: form.country_state.trim(),
-        timezone: form.timezone.trim(),
-      });
+    const fullName = `${form.name.trim()} ${form.surname.trim()}`;
+    const created = await userService.register({
+      name: fullName,
+      email: form.email.trim(),
+      password: form.password,
+      phone: form.phone.trim(),
+      city: form.city.trim(),
+      country_code: form.country_code.trim(),
+      country_name: form.country_name.trim(),
+      country_state: form.country_state.trim(),
+      timezone: form.timezone.trim(),
+    });
 
-      setSessionUser({
-        id: response.user.id!,
-        name: response.user.name!,
-        email: response.user.email!,
-        phone: response.user.phone,
-        city: response.user.city,
-        country_code: response.user.country_code,
-        country_name: response.user.country_name,
-        country_state: response.user.country_state,
-        timezone: response.user.timezone,
-      });
-
-      router.push("/");
-    } catch (err) {
-      const apiErr = err as ApiError;
-      setSubmitError(apiErr.message || "Erro ao cadastrar. Tente novamente.");
-    } finally {
-      setLoading(false);
+    if (created) {
+      router.push("/user/login");
+    } else {
+      setSubmitError("Erro ao cadastrar. Tente novamente.");
     }
+    setLoading(false);
   }
 
   return (
@@ -222,7 +206,7 @@ export function RegisterUser() {
 
       <p className="text-center text-sm text-neutral-slate mt-6">
         Já tem uma conta?{" "}
-        <Link href="#" className="text-accent hover:underline">
+        <Link href="/user/login" className="text-accent hover:underline">
           Entrar
         </Link>
       </p>

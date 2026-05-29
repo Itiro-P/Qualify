@@ -8,29 +8,64 @@ import type {
 } from "@/types/services/service";
 
 export const serviceService = {
-  list(params?: ListServicesParams): Promise<ServicesResponse> {
+  list(params?: ListServicesParams): Promise<Service[] | null> {
     const search = new URLSearchParams();
     if (params?.status) search.set("status", params.status);
     if (params?.proposal_letter_id)
       search.set("proposal_letter_id", String(params.proposal_letter_id));
     const qs = search.toString();
-    return api.get(`/services${qs ? `?${qs}` : ""}`);
+    return api.get<ServicesResponse>(`/services${qs ? `?${qs}` : ""}`).then(
+      (resp) => {
+        return resp.services;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
-  getById(id: number): Promise<ServiceResponse> {
-    return api.get(`/services/${id}`);
+  getById(id: number): Promise<Service | null> {
+    return api.get<ServiceResponse>(`/services/${id}`).then(
+      (resp) => {
+        return resp.service;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
-  create(data: Service): Promise<ServiceResponse> {
-    return api.post("/services", data);
+  create(data: Service): Promise<Service | null> {
+    return api.post<ServiceResponse>("/services", data).then(
+      (resp) => {
+        return resp.service;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
-  update(id: number, data: Service): Promise<ServiceResponse> {
-    return api.put(`/services/${id}`, data);
+  update(id: number, data: Service): Promise<Service | null> {
+    return api.put<ServiceResponse>(`/services/${id}`, data).then(
+      (resp) => {
+        return resp.service;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
-  patch(id: number, data: ServiceUpdateRequest): Promise<ServiceResponse> {
-    return api.patch(`/services/${id}`, data);
+  patch(id: number, data: ServiceUpdateRequest): Promise<Service | null> {
+    return api.patch<ServiceResponse>(`/services/${id}`, data).then(
+      (resp) => {
+        return resp.service;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
   delete(id: number): Promise<Record<string, string>> {
