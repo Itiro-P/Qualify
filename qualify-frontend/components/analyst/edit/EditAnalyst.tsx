@@ -13,8 +13,7 @@ import {
   certificationService,
   skillService,
 } from "@/libs/services";
-import type { ApiError } from "@/libs/api";
-import { FormButton, FormPanel, Alert } from "@/components/ui";
+import { FormButton, FormPanel, Alert, Loading } from "@/components/ui";
 import { Analyst } from "@/types/services";
 
 export function EditAnalyst({ analyst }: { analyst: Analyst }) {
@@ -28,29 +27,45 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
   const [success, setSuccess] = useState("");
 
   useEffect(() => {
+    async function getInfo() {
+      setHourlyRateAnalyst(analyst?.hourly_rate); // pega preço por hora do analista e coloca na variavel
+
+      const analystCertifications = await analystService.listCertifications(
+        analyst.id,
+      ); // pega as certificações e quantas tem com o id do analista
+
+      setAnalystCertifications(analystCertifications.certifications); // pega apenas as certificações e coloca elas na variavel
+
+      const analysytSkills = await analystService.listSkills(analyst.id); // pega os ids das skills do analist
+      if (analysytSkills != null) {
+        for (const skillResponse of analysytSkills) {
+          // para cada item dos ids dos analistas
+          const skill = await skillService.getById(skillResponse.skill_id); // passa para a função apenas o id e pega apenas a skill
+
+          if (skill != null) {
+            // verifica se retornou uma skill
+            setAnalystSkills((prev) => [...prev, skill]); // coloca a skill na variavel preservando as skills anteriores na variavel
+          }
+        }
+      }
+    }
+
     getInfo();
   }, []);
 
-  async function getInfo() {
-    setHourlyRateAnalyst(analyst?.hourly_rate); // pega preço por hora do analista e coloca na variavel
+  async function updateHourlyRate(): Promise<number> {
+    try {
+      await analystService.patch(analyst.id, {
+        hourly_rate: hourlyRateAnalyst,
+      }); // atualiza o preço por hora do analista
 
-    const analystCertifications = await analystService.listCertifications(
-      analyst.id,
-    ); // pega as certificações e quantas tem com o id do analista
-
-    setAnalystCertifications(analystCertifications.certifications); // pega apenas as certificações e coloca elas na variavel
-
-    const analysytSkills = await analystService.listSkills(analyst.id); // pega os ids das skills do analist
-    if (analysytSkills != null) {
-      for (const skillResponse of analysytSkills) {
-        // para cada item dos ids dos analistas
-        const skill = await skillService.getById(skillResponse.skill_id); // passa para a função apenas o id e pega apenas a skill
-
-        if (skill != null) {
-          // verifica se retornou uma skill
-          setAnalystSkills((prev) => [...prev, skill]); // coloca a skill na variavel preservando as skills anteriores na variavel
-        }
-      }
+      return 0; // retorna 0 para indicar sucesso
+    } catch (err) {
+      console.error("Erro ao atualizar preço por hora:", err);
+      setError(
+        "Ocorreu um erro ao atualizar o preço por hora. Tente novamente.",
+      );
+      return -1; // retorna -1 para indicar falha
     }
   }
 
@@ -160,45 +175,33 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
     setLoading(true);
     setError("");
     setSuccess("");
-    try {
-      // 1. atualiza o preço por hora do analista
-      analystService.patch(analyst.id, { hourly_rate: hourlyRateAnalyst });
-
-      // 2. atualiza certificações
-      const certificationResult = await updateCertifications();
-
-      // 3. atualiza skills
-      const skillsResult = await updateSkills();
-      if (certificationResult != -1 && skillsResult != -1) {
-        setSuccess("Cadastro de analista realizado com sucesso!");
-      }
-    } catch (err) {
-      const apiError = err as ApiError;
-
-      if (apiError.status) {
-        switch (apiError.status) {
-          case 400:
-            setError(apiError.message || "Dados inválidos");
-            break;
-          case 401:
-            setError("Não autorizado");
-            break;
-          case 422:
-            setError("Dados mal formatados");
-            break;
-          default:
-            setError("Erro no servidor. Tente novamente.");
-        }
-      } else {
-        console.error(err);
-        setError("Ocorreu um erro inesperado. Verifique o console.");
-      }
-    } finally {
+    // 1. atualiza o preço por hora do analista
+    const hourlyRateResult = await updateHourlyRate();
+    if (hourlyRateResult == -1) {
       setLoading(false);
+      return; // se der erro na atualização do preço por hora, para o processo
     }
+
+    // 2. atualiza certificações
+    const certificationResult = await updateCertifications();
+    if (certificationResult == -1) {
+      setLoading(false);
+      return; // se der erro na atualização das certificações, para o processo
+    }
+
+    // 3. atualiza skills
+    const skillsResult = await updateSkills();
+    if (skillsResult == -1) {
+      setLoading(false);
+      return; // se der erro na atualização das skills, para o processo
+    }
+    setSuccess("Cadastro de analista realizado com sucesso!");
+    setLoading(false);
   }
 
-  return (
+  return loading ? (
+    <Loading />
+  ) : (
     <FormPanel
       title="Cadastro de Analista"
       description="Preencha suas certificações, tecnologias e valor por hora."
@@ -206,6 +209,7 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
     >
       {error && <Alert variant="error">{error}</Alert>}
       {success && <Alert variant="success">{success}</Alert>}
+
       <RegisterCertifications
         analystCertifications={analystCertifications}
         setAnalystCertifications={setAnalystCertifications}
