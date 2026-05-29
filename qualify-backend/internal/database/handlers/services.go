@@ -402,9 +402,10 @@ func GetClientServices(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		query := `SELECT s.id, s.title, s.content, s.proposal_letter_id, s.hourly_rate, s.status, s.time_created
-		          FROM service s
-		          JOIN proposal_letter p ON s.proposal_letter_id = p.id
-		          WHERE p.client_id = $1`
+          FROM service s
+          JOIN proposal_letter p ON s.proposal_letter_id = p.id
+          JOIN client c ON p.client_id = c.id
+          WHERE c.user_id = $1`
 		args := []interface{}{clientID}
 		argCounter := 2
 
@@ -511,9 +512,10 @@ func GetAnalystServices(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		query := `SELECT s.id, s.title, s.content, s.proposal_letter_id, s.hourly_rate, s.status, s.time_created
-		          FROM service s
-		          JOIN proposal_letter p ON s.proposal_letter_id = p.id
-		          WHERE p.analyst_id = $1`
+          FROM service s
+          JOIN proposal_letter p ON s.proposal_letter_id = p.id
+          JOIN analyst a ON p.analyst_id = a.id
+          WHERE a.user_id = $1`
 		args := []interface{}{analystID}
 		argCounter := 2
 

@@ -403,7 +403,9 @@ func GetClientProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		query := `SELECT p.id, p.client_id, p.analyst_id, p.proposed_hourly_rate,
           p.title, p.content, p.time_created
-          FROM proposal_letter p WHERE p.client_id = $1`
+          FROM proposal_letter p
+          JOIN client c ON p.client_id = c.id
+          WHERE c.user_id = $1`
 		args := []interface{}{clientID}
 		argCounter := 2
 
@@ -512,7 +514,9 @@ func GetAnalystProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		query := `SELECT p.id, p.client_id, p.analyst_id, p.proposed_hourly_rate,
           p.title, p.content, p.time_created
-          FROM proposal_letter p WHERE p.analyst_id = $1`
+          FROM proposal_letter p
+          JOIN analyst a ON p.analyst_id = a.id
+          WHERE a.user_id = $1`
 		args := []interface{}{analystID}
 		argCounter := 2
 

@@ -459,104 +459,86 @@ func GetClientReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		// Build query with filters
-		query := fmt.Sprintf(`SELECT r.id, r.analyst_id, r.client_id, r.service_id, r.rating, r.comment, r.time_created 
-                  FROM review r WHERE r.client_id = $%d`, clientID)
-
-		args := []interface{}{}
+		query := `SELECT r.id, r.analyst_id, r.client_id, r.service_id, r.rating, r.comment, r.time_created
+		          FROM review r
+		          JOIN client c ON r.client_id = c.id
+		          WHERE c.user_id = $1`
+		args := []interface{}{clientID}
 		argCounter := 2
 
-		// Filter by analyst_id
 		if analystID := c.Query("analyst_id"); analystID != "" {
 			if analystIDVal, err := strconv.Atoi(analystID); err == nil {
-				query += fmt.Sprintf(" AND analyst_id = $%d", argCounter)
+				query += fmt.Sprintf(" AND r.analyst_id = $%d", argCounter)
 				args = append(args, analystIDVal)
 				argCounter++
 			}
 		}
-
-		// Filter by service_id
 		if serviceID := c.Query("service_id"); serviceID != "" {
 			if serviceIDVal, err := strconv.Atoi(serviceID); err == nil {
-				query += fmt.Sprintf(" AND service_id = $%d", argCounter)
+				query += fmt.Sprintf(" AND r.service_id = $%d", argCounter)
 				args = append(args, serviceIDVal)
 				argCounter++
 			}
 		}
-
-		// Rating filter (exact match)
 		if rating := c.Query("rating"); rating != "" {
 			if ratingVal, err := strconv.Atoi(rating); err == nil && ratingVal >= 1 && ratingVal <= 5 {
-				query += fmt.Sprintf(" AND rating = $%d", argCounter)
+				query += fmt.Sprintf(" AND r.rating = $%d", argCounter)
 				args = append(args, ratingVal)
 				argCounter++
 			}
 		}
-
-		// Rating range filter
 		if minRating := c.Query("min_rating"); minRating != "" {
 			if minRatingVal, err := strconv.Atoi(minRating); err == nil {
-				query += fmt.Sprintf(" AND rating >= $%d", argCounter)
+				query += fmt.Sprintf(" AND r.rating >= $%d", argCounter)
 				args = append(args, minRatingVal)
 				argCounter++
 			}
 		}
-
 		if maxRating := c.Query("max_rating"); maxRating != "" {
 			if maxRatingVal, err := strconv.Atoi(maxRating); err == nil {
-				query += fmt.Sprintf(" AND rating <= $%d", argCounter)
+				query += fmt.Sprintf(" AND r.rating <= $%d", argCounter)
 				args = append(args, maxRatingVal)
 				argCounter++
 			}
 		}
-
-		// Comment filter (partial match)
 		if comment := c.Query("comment"); comment != "" {
-			query += fmt.Sprintf(" AND comment ILIKE $%d", argCounter)
+			query += fmt.Sprintf(" AND r.comment ILIKE $%d", argCounter)
 			args = append(args, "%"+comment+"%")
 			argCounter++
 		}
-
-		// Date range filters
 		if fromDate := c.Query("from_date"); fromDate != "" {
-			query += fmt.Sprintf(" AND time_created >= $%d", argCounter)
+			query += fmt.Sprintf(" AND r.time_created >= $%d", argCounter)
 			args = append(args, fromDate)
 			argCounter++
 		}
-
 		if toDate := c.Query("to_date"); toDate != "" {
-			query += fmt.Sprintf(" AND time_created <= $%d", argCounter)
+			query += fmt.Sprintf(" AND r.time_created <= $%d", argCounter)
 			args = append(args, toDate)
 			argCounter++
 		}
 
-		// Optional: Add sorting
+		allowedSortFields := map[string]bool{
+			"id": true, "analyst_id": true, "client_id": true, "service_id": true,
+			"rating": true, "time_created": true,
+		}
 		if sortBy := c.Query("sort_by"); sortBy != "" {
-			// Validando sortBy para evitar SQL injection - apenas campos permitidos
-			allowedSortFields := map[string]bool{
-				"id": true, "analyst_id": true, "client_id": true, "service_id": true,
-				"rating": true, "time_created": true,
-			}
 			if allowedSortFields[sortBy] {
-				order := c.DefaultQuery("order", "DESC") // Default DESC for reviews (newest first)
+				order := c.DefaultQuery("order", "DESC")
 				if order == "ASC" || order == "DESC" {
-					query += fmt.Sprintf(" ORDER BY %s %s", sortBy, order)
+					query += fmt.Sprintf(" ORDER BY r.%s %s", sortBy, order)
 				}
 			}
 		} else {
-			// Default sorting by newest first
-			query += " ORDER BY time_created DESC"
+			query += " ORDER BY r.time_created DESC"
 		}
 
-		// Pagination
 		page := 1
 		if p := c.Query("page"); p != "" {
 			if pVal, err := strconv.Atoi(p); err == nil && pVal > 0 {
 				page = pVal
 			}
 		}
-
-		pageSize := 20 // Default page size for reviews
+		pageSize := 20
 		if ps := c.Query("page_size"); ps != "" {
 			if psVal, err := strconv.Atoi(ps); err == nil && psVal > 0 && psVal <= 100 {
 				pageSize = psVal
@@ -567,7 +549,6 @@ func GetClientReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 		query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argCounter, argCounter+1)
 		args = append(args, pageSize, offset)
 
-		// Execute query
 		rows, err := conn.Query(c.Request.Context(), query, args...)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
@@ -576,39 +557,21 @@ func GetClientReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 		defer rows.Close()
 
 		var reviews []pkg.Review
-
-		// Iterate through results
 		for rows.Next() {
 			var review pkg.Review
-			err := rows.Scan(
-				&review.Id,
-				&review.Analyst_id,
-				&review.Client_id,
-				&review.Service_id,
-				&review.Rating,
-				&review.Comment,
-				&review.Time_created,
-			)
-			if err != nil {
+			if err := rows.Scan(&review.Id, &review.Analyst_id, &review.Client_id, &review.Service_id,
+				&review.Rating, &review.Comment, &review.Time_created); err != nil {
 				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
 			}
 			reviews = append(reviews, review)
 		}
-
-		// Check for errors from iterating over rows
 		if err = rows.Err(); err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
-		// Return results
-		c.JSON(http.StatusOK, pkg.ReviewsResponse{
-			Reviews:   reviews,
-			Count:     len(reviews),
-			Page:      page,
-			Page_size: pageSize,
-		})
+		c.JSON(http.StatusOK, pkg.ReviewsResponse{Reviews: reviews, Count: len(reviews), Page: page, Page_size: pageSize})
 	}
 }
 
@@ -637,104 +600,86 @@ func GetAnalystReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		// Build query with filters
-		query := fmt.Sprintf(`SELECT r.id, r.analyst_id, r.client_id, r.service_id, r.rating, r.comment, r.time_created 
-                  FROM review r WHERE r.analyst_id = $%d`, analystID)
-
-		args := []interface{}{}
+		query := `SELECT r.id, r.analyst_id, r.client_id, r.service_id, r.rating, r.comment, r.time_created
+		          FROM review r
+		          JOIN analyst a ON r.analyst_id = a.id
+		          WHERE a.user_id = $1`
+		args := []interface{}{analystID}
 		argCounter := 2
 
-		// Filter by client_id
 		if clientID := c.Query("client_id"); clientID != "" {
 			if clientIDVal, err := strconv.Atoi(clientID); err == nil {
-				query += fmt.Sprintf(" AND client_id = $%d", argCounter)
+				query += fmt.Sprintf(" AND r.client_id = $%d", argCounter)
 				args = append(args, clientIDVal)
 				argCounter++
 			}
 		}
-
-		// Filter by service_id
 		if serviceID := c.Query("service_id"); serviceID != "" {
 			if serviceIDVal, err := strconv.Atoi(serviceID); err == nil {
-				query += fmt.Sprintf(" AND service_id = $%d", argCounter)
+				query += fmt.Sprintf(" AND r.service_id = $%d", argCounter)
 				args = append(args, serviceIDVal)
 				argCounter++
 			}
 		}
-
-		// Rating filter (exact match)
 		if rating := c.Query("rating"); rating != "" {
 			if ratingVal, err := strconv.Atoi(rating); err == nil && ratingVal >= 1 && ratingVal <= 5 {
-				query += fmt.Sprintf(" AND rating = $%d", argCounter)
+				query += fmt.Sprintf(" AND r.rating = $%d", argCounter)
 				args = append(args, ratingVal)
 				argCounter++
 			}
 		}
-
-		// Rating range filter
 		if minRating := c.Query("min_rating"); minRating != "" {
 			if minRatingVal, err := strconv.Atoi(minRating); err == nil {
-				query += fmt.Sprintf(" AND rating >= $%d", argCounter)
+				query += fmt.Sprintf(" AND r.rating >= $%d", argCounter)
 				args = append(args, minRatingVal)
 				argCounter++
 			}
 		}
-
 		if maxRating := c.Query("max_rating"); maxRating != "" {
 			if maxRatingVal, err := strconv.Atoi(maxRating); err == nil {
-				query += fmt.Sprintf(" AND rating <= $%d", argCounter)
+				query += fmt.Sprintf(" AND r.rating <= $%d", argCounter)
 				args = append(args, maxRatingVal)
 				argCounter++
 			}
 		}
-
-		// Comment filter (partial match)
 		if comment := c.Query("comment"); comment != "" {
-			query += fmt.Sprintf(" AND comment ILIKE $%d", argCounter)
+			query += fmt.Sprintf(" AND r.comment ILIKE $%d", argCounter)
 			args = append(args, "%"+comment+"%")
 			argCounter++
 		}
-
-		// Date range filters
 		if fromDate := c.Query("from_date"); fromDate != "" {
-			query += fmt.Sprintf(" AND time_created >= $%d", argCounter)
+			query += fmt.Sprintf(" AND r.time_created >= $%d", argCounter)
 			args = append(args, fromDate)
 			argCounter++
 		}
-
 		if toDate := c.Query("to_date"); toDate != "" {
-			query += fmt.Sprintf(" AND time_created <= $%d", argCounter)
+			query += fmt.Sprintf(" AND r.time_created <= $%d", argCounter)
 			args = append(args, toDate)
 			argCounter++
 		}
 
-		// Optional: Add sorting
+		allowedSortFields := map[string]bool{
+			"id": true, "analyst_id": true, "client_id": true, "service_id": true,
+			"rating": true, "time_created": true,
+		}
 		if sortBy := c.Query("sort_by"); sortBy != "" {
-			// Validando sortBy para evitar SQL injection - apenas campos permitidos
-			allowedSortFields := map[string]bool{
-				"id": true, "analyst_id": true, "client_id": true, "service_id": true,
-				"rating": true, "time_created": true,
-			}
 			if allowedSortFields[sortBy] {
-				order := c.DefaultQuery("order", "DESC") // Default DESC for reviews (newest first)
+				order := c.DefaultQuery("order", "DESC")
 				if order == "ASC" || order == "DESC" {
-					query += fmt.Sprintf(" ORDER BY %s %s", sortBy, order)
+					query += fmt.Sprintf(" ORDER BY r.%s %s", sortBy, order)
 				}
 			}
 		} else {
-			// Default sorting by newest first
-			query += " ORDER BY time_created DESC"
+			query += " ORDER BY r.time_created DESC"
 		}
 
-		// Pagination
 		page := 1
 		if p := c.Query("page"); p != "" {
 			if pVal, err := strconv.Atoi(p); err == nil && pVal > 0 {
 				page = pVal
 			}
 		}
-
-		pageSize := 20 // Default page size for reviews
+		pageSize := 20
 		if ps := c.Query("page_size"); ps != "" {
 			if psVal, err := strconv.Atoi(ps); err == nil && psVal > 0 && psVal <= 100 {
 				pageSize = psVal
@@ -745,7 +690,6 @@ func GetAnalystReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 		query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argCounter, argCounter+1)
 		args = append(args, pageSize, offset)
 
-		// Execute query
 		rows, err := conn.Query(c.Request.Context(), query, args...)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
@@ -754,38 +698,20 @@ func GetAnalystReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 		defer rows.Close()
 
 		var reviews []pkg.Review
-
-		// Iterate through results
 		for rows.Next() {
 			var review pkg.Review
-			err := rows.Scan(
-				&review.Id,
-				&review.Analyst_id,
-				&review.Client_id,
-				&review.Service_id,
-				&review.Rating,
-				&review.Comment,
-				&review.Time_created,
-			)
-			if err != nil {
+			if err := rows.Scan(&review.Id, &review.Analyst_id, &review.Client_id, &review.Service_id,
+				&review.Rating, &review.Comment, &review.Time_created); err != nil {
 				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
 			}
 			reviews = append(reviews, review)
 		}
-
-		// Check for errors from iterating over rows
 		if err = rows.Err(); err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
-		// Return results
-		c.JSON(http.StatusOK, pkg.ReviewsResponse{
-			Reviews:   reviews,
-			Count:     len(reviews),
-			Page:      page,
-			Page_size: pageSize,
-		})
+		c.JSON(http.StatusOK, pkg.ReviewsResponse{Reviews: reviews, Count: len(reviews), Page: page, Page_size: pageSize})
 	}
 }
