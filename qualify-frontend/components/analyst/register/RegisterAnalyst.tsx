@@ -43,60 +43,58 @@ export function RegisterAnalyst({ userSession }: { userSession: User }) {
   }
 
   async function updateCertifications(): Promise<number> {
-    try {
-      for (const certification of certificationsAnalyst) {
-        // 'anda' por cada certificado em certificationAnalyst
-        const certificationOfDataBase = await certificationService.list(
-          certification.name,
-        ); // pega certificação que correspondem ao nome da certificação
-        let createdCertication: Certification | null;
-        if (certificationOfDataBase == null) {
-          // não tem certificação no banco de dados
-          createdCertication = await certificationService.create(certification); // cria certificação no banco de dados
-        } else {
-          // tem certificação no banco de dados
-          createdCertication = certificationOfDataBase[0]; // pega primeira correspondência
-        }
-        if (createdCertication != null) {
-          // verifica se criou ou pegou certification corretamente
-          await analystService.addCertification(userSession.id, {
-            certification_id: createdCertication.id,
-          }); // adiciona certificação ao analista
-        }
+    for (const certification of certificationsAnalyst) {
+      // 'anda' por cada certificado em certificationAnalyst
+      const certificationOfDataBase = await certificationService.list(
+        certification.name,
+      ); // pega certificação que correspondem ao nome da certificação
+      if (certificationOfDataBase == null) {
+        setError("Deu erro ao criar a certificação. Tente novamente.");
+        return -1; // retorna -1 para indicar falha
       }
-    } catch (err) {
-      console.error("Erro ao atualizar certificações:", err);
-      setError(
-        "Ocorreu um erro ao atualizar as certificações. Tente novamente.",
-      );
-      return -1; // retorna -1 para indicar falha
+      let createdCertication: Certification | null;
+      if (certificationOfDataBase == null) {
+        // não tem certificação no banco de dados
+        createdCertication = await certificationService.create(certification); // cria certificação no banco de dados
+      } else {
+        // tem certificação no banco de dados
+        createdCertication = certificationOfDataBase[0]; // pega primeira correspondência
+      }
+      if (createdCertication == null) {
+        // verifica se criou ou pegou certification incorretamente
+        setError("Deu erro ao criar a certificação. Tente novamente.");
+        return -1; // retorna -1 para indicar falha
+      }
+      await analystService.addCertification(userSession.id, {
+        certification_id: createdCertication.id,
+      }); // adiciona certificação ao analista
     }
     return 0;
   }
 
   async function updateSkills(): Promise<number> {
-    try {
-      for (const skill of skillsAnalyst) {
-        const skillOfDataBase = await skillService.list(skill.name); // pega skill que correspondem ao nome da skill
-        let createdSkill: Skill | null;
-        if (skillOfDataBase == null) {
-          // não tem skill no banco de dados
-          createdSkill = await skillService.create(skill); // cria skill no banco de dados
-        } else {
-          // tem skill no banco de dados
-          createdSkill = skillOfDataBase[0]; // pega primeira correspondência
-        }
-        if (createdSkill != null) {
-          // verifica se criou ou pegou skill corretamente
-          await analystService.addSkill(userSession.id, {
-            skill_id: createdSkill.id,
-          }); // adiciona skill no analista
-        }
+    for (const skill of skillsAnalyst) {
+      const skillOfDataBase = await skillService.list(skill.name); // pega skill que correspondem ao nome da skill
+      if (skillOfDataBase == null) {
+        setError("Deu erro ao criar a skill. Tente novamente.");
+        return -1; // retorna -1 para indicar falha
       }
-    } catch (err) {
-      console.error("Erro ao atualizar skills:", err);
-      setError("Ocorreu um erro ao atualizar as skills. Tente novamente.");
-      return -1;
+      let createdSkill: Skill | null;
+      if (skillOfDataBase == null) {
+        // não tem skill no banco de dados
+        createdSkill = await skillService.create(skill); // cria skill no banco de dados
+      } else {
+        // tem skill no banco de dados
+        createdSkill = skillOfDataBase[0]; // pega primeira correspondência
+      }
+      if (createdSkill == null) {
+        // verifica se criou ou pegou skill incorretamente
+        setError("Deu erro ao criar a skill. Tente novamente.");
+        return -1; // retorna -1 para indicar falha
+      }
+      await analystService.addSkill(userSession.id, {
+        skill_id: createdSkill.id,
+      }); // adiciona skill no analista
     }
     return 0;
   }

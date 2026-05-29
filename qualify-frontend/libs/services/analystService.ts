@@ -162,10 +162,13 @@ export const analystService = {
   removeCertification(
     userId: number,
     certificationId: number,
-  ): Promise<Record<string, string>> {
-    return api.delete(
-      `/users/${userId}/analyst/certifications?certification_id=${certificationId}`,
-    );
+  ): Promise<boolean> {
+    return api
+      .delete(
+        `/users/${userId}/analyst/certifications?certification_id=${certificationId}`,
+      )
+      .then(() => true)
+      .catch(() => false);
   },
 
   // Skills
@@ -198,7 +201,10 @@ export const analystService = {
       );
   },
 
-  removeSkill(userId: number): Promise<Record<string, string>> {
-    return api.delete(`/users/${userId}/analyst/skills`);
+  removeSkill(userId: number, skillId: number): Promise<boolean> {
+    return api
+      .delete(`/users/${userId}/analyst/skills?skill_id=${skillId}`)
+      .then(() => true)
+      .catch(() => false);
   },
 };
