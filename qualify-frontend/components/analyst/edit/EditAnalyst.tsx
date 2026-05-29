@@ -54,19 +54,17 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
   }, []);
 
   async function updateHourlyRate(): Promise<number> {
-    try {
-      await analystService.patch(analyst.id, {
-        hourly_rate: hourlyRateAnalyst,
-      }); // atualiza o preço por hora do analista
-
-      return 0; // retorna 0 para indicar sucesso
-    } catch (err) {
-      console.error("Erro ao atualizar preço por hora:", err);
+    const result = await analystService.patch(analyst.id, {
+      hourly_rate: hourlyRateAnalyst,
+    }); // atualiza o preço por hora do analista
+    if (!result) {
       setError(
         "Ocorreu um erro ao atualizar o preço por hora. Tente novamente.",
       );
       return -1; // retorna -1 para indicar falha
     }
+
+    return 0; // retorna 0 para indicar sucesso
   }
 
   async function updateCertifications(): Promise<number> {
