@@ -1,8 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { getSessionUser } from "@/libs/session";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Certification } from "@/types/services/certification";
 import { Skill } from "@/types/services/skill";
 import { User } from "@/types/services";
@@ -28,36 +26,24 @@ export function RegisterAnalyst({ userSession }: { userSession: User }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const router = useRouter();
-  const [user, setUser] = useState<User>(userSession);
 
-  useEffect(() => {
-    async function fetchAnalyst() {
-      const session = getSessionUser();
-
-      if (!session) {
-        router.push("/user/register");
-        return;
-      }
-      setUser(session);
-    }
-
-    fetchAnalyst();
-  }, [router]);
-
-  async function handleSubmitAll() {
-    if (!user.id) {
-      setError("Usuário não autenticado.");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    setSuccess("");
+  async function createAnalyst(): Promise<number> {
     try {
-      // 1. Promover usuário a analista
-      await analystService.create(user.id, { hourly_rate: hourlyRateAnalyst });
+      await analystService.create(userSession.id, {
+        hourly_rate: hourlyRateAnalyst,
+      });
+    } catch (err) {
+      console.error("Erro ao atualizar usuário para analista:", err);
+      setError(
+        "Ocorreu um erro ao atualizar o usuário para analista. Tente novamente.",
+      );
+      return -1; // retorna -1 para indicar falha
+    }
+    return 0;
+  }
 
-      // 2. Colocar Certificações
+  async function updateCertifications(): Promise<number> {
+    try {
       for (const certification of certificationsAnalyst) {
         // 'anda' por cada certificado em certificationAnalyst
         const certificationOfDataBase = await certificationService.list(
@@ -73,13 +59,23 @@ export function RegisterAnalyst({ userSession }: { userSession: User }) {
         }
         if (createdCertication != null) {
           // verifica se criou ou pegou certification corretamente
-          await analystService.addCertification(user.id, {
+          await analystService.addCertification(userSession.id, {
             certification_id: createdCertication.id,
           }); // adiciona certificação ao analista
         }
       }
+    } catch (err) {
+      console.error("Erro ao atualizar certificações:", err);
+      setError(
+        "Ocorreu um erro ao atualizar as certificações. Tente novamente.",
+      );
+      return -1; // retorna -1 para indicar falha
+    }
+    return 0;
+  }
 
-      // 3. Colocar Skills
+  async function updateSkills(): Promise<number> {
+    try {
       for (const skill of skillsAnalyst) {
         const skillOfDataBase = await skillService.list(skill.name); // pega skill que correspondem ao nome da skill
         let createdSkill: Skill | null;
@@ -92,36 +88,48 @@ export function RegisterAnalyst({ userSession }: { userSession: User }) {
         }
         if (createdSkill != null) {
           // verifica se criou ou pegou skill corretamente
-          await analystService.addSkill(user.id, {
+          await analystService.addSkill(userSession.id, {
             skill_id: createdSkill.id,
           }); // adiciona skill no analista
         }
       }
-
-      setSuccess("Cadastro de analista realizado com sucesso!");
     } catch (err) {
-      const apiError = err as ApiError;
-      if (apiError.status) {
-        switch (apiError.status) {
-          case 400:
-            setError(apiError.message || "Dados inválidos");
-            break;
-          case 401:
-            setError("Não autorizado");
-            break;
-          case 422:
-            setError("Dados mal formatados");
-            break;
-          default:
-            setError("Erro no servidor. Tente novamente.");
-        }
-      } else {
-        console.error(err);
-        setError("Ocorreu um erro inesperado. Verifique o console.");
-      }
-    } finally {
-      setLoading(false);
+      console.error("Erro ao atualizar skills:", err);
+      setError("Ocorreu um erro ao atualizar as skills. Tente novamente.");
+      return -1;
     }
+    return 0;
+  }
+  async function handleSubmitAll() {
+    setLoading(true);
+    setError("");
+    setSuccess("");
+    if (!userSession.id) {
+      setError("Usuário não autenticado.");
+      return -1;
+    }
+
+    // 1. Promover usuário a analista
+    const createAnalystResult = await createAnalyst();
+    if (createAnalystResult == -1) {
+      setLoading(false);
+      return; // se der erro na criação do analista, para o processo
+    }
+    // 2. Colocar Certificações
+    const certificationResult = await updateCertifications();
+    if (certificationResult == -1) {
+      setLoading(false);
+      return; // se der erro na atualização das certificações, para o processo
+    }
+
+    // 3. Colocar Skills
+    const skillsResult = await updateSkills();
+    if (skillsResult == -1) {
+      setLoading(false);
+      return; // se der erro na atualização das skills, para o processo
+    }
+
+    setSuccess("Cadastro de analista realizado com sucesso!");
   }
 
   return (
