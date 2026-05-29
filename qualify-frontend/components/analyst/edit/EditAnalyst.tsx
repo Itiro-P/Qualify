@@ -70,34 +70,29 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
   }
 
   async function updateCertifications(): Promise<number> {
-    const analystCertifications = await analystService.listCertifications(
+    const analystCertificationsDB = await analystService.listCertifications(
       analyst.id,
     ); // pega certificações do analista no banco de dados
 
-    if (analystCertifications == null) {
-      setError(
-        "Deu erro ao pegar as certificações do analista. Tente novamente.",
-      );
-      return -1; // retorna -1 para indicar falha
-    }
+    if (analystCertificationsDB != null) {
+      const removedCertificates = analystCertificationsDB.filter(
+        (dbCert) =>
+          !analystCertifications.some((userCert) => userCert.id === dbCert.id),
+      ); // pega as certificações que foram removidas
 
-    const removedCertificates = analystCertifications.filter(
-      (dbCert) =>
-        !analystCertifications.some((userCert) => userCert.id === dbCert.id),
-    ); // pega as certificações que foram removidas
-
-    for (const certification of removedCertificates) {
-      const result = await analystService.removeCertification(
-        analyst.id,
-        certification.id,
-      );
-      if (result == null) {
-        setError(
-          "Deu erro ao remover a certificação do analista. Tente novamente.",
+      for (const certification of removedCertificates) {
+        const result = await analystService.removeCertification(
+          analyst.id,
+          certification.id,
         );
-        return -1; // retorna -1 para indicar falha
-      }
-    } // remove as certificações do analista
+        if (result == null) {
+          setError(
+            "Deu erro ao remover a certificação do analista. Tente novamente.",
+          );
+          return -1; // retorna -1 para indicar falha
+        }
+      } // remove as certificações do analista
+    }
 
     for (const certification of analystCertifications) {
       // 'anda' por cada certificado em certificationAnalyst
@@ -107,29 +102,30 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
           certification.name,
         ); // pega certificação que correspondem ao nome da certificação
 
-        if (certificationOfDataBase == null) {
-          setError("Deu erro ao criar a certificação. Tente novamente.");
-          return -1; // retorna -1 para indicar falha
-        }
-
-        let createdCertication: Certification | null;
+        let createdCertification: Certification | null;
 
         if (certificationOfDataBase == null) {
           // não tem certificação no banco de dados
-          createdCertication = await certificationService.create(certification); // cria certificação no banco de dados
+          createdCertification = await certificationService.create({
+            id: -1,
+            name: certification.name,
+            description: certification.description,
+            institution: certification.institution,
+            year: Number(certification.year),
+          }); // cria certificação no banco de dados
+
+          if (createdCertification == null) {
+            setError("Deu erro ao criar a certificação. Tente novamente.");
+            return -1; // retorna -1 para indicar falha
+          }
         } else {
           // tem certificação no banco de dados
-          createdCertication = certificationOfDataBase[0]; // pega primeira correspondência
-        }
-
-        if (createdCertication == null) {
-          setError("Deu erro ao criar a certificação. Tente novamente.");
-          return -1; // retorna -1 para indicar falha
+          createdCertification = certificationOfDataBase[0]; // pega primeira correspondência
         }
 
         // verifica se criou ou pegou certification corretamente
         await analystService.addCertification(analyst.id, {
-          certification_id: createdCertication.id,
+          certification_id: createdCertification.id,
         }); // adiciona certificação ao analista
       }
     }
@@ -139,27 +135,25 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
   async function updateSkills(): Promise<number> {
     const analystSkillsIds = await analystService.listSkills(analyst.id); // pega skills do analista no banco de dados
 
-    if (analystSkillsIds == null) {
-      setError("Deu erro ao pegar as skills do analista. Tente novamente.");
-      return -1; // retorna -1 para indicar falha
-    }
-    const removedSkills = analystSkillsIds.filter(
-      (dbSkill) =>
-        !anlystSkills.some(
-          (analystSkill) => analystSkill.id === dbSkill.skill_id,
-        ),
-    ); // pega skills que foram removidas pelo analista
+    if (analystSkillsIds != null) {
+      const removedSkills = analystSkillsIds.filter(
+        (dbSkill) =>
+          !anlystSkills.some(
+            (analystSkill) => analystSkill.id === dbSkill.skill_id,
+          ),
+      ); // pega skills que foram removidas pelo analista
 
-    for (const skill of removedSkills) {
-      const result = await analystService.removeSkill(
-        analyst.id,
-        skill.skill_id,
-      ); // remove a skill do analista
-      if (!result) {
-        setError("Deu erro ao remover a skill do analista. Tente novamente.");
-        return -1; // retorna -1 para indicar falha
-      }
-    } // remove as skills do analista
+      for (const skill of removedSkills) {
+        const result = await analystService.removeSkill(
+          analyst.id,
+          skill.skill_id,
+        ); // remove a skill do analista
+        if (!result) {
+          setError("Deu erro ao remover a skill do analista. Tente novamente.");
+          return -1; // retorna -1 para indicar falha
+        }
+      } // remove as skills do analista
+    }
 
     for (const skill of anlystSkills) {
       if (skill.id != -1) {
