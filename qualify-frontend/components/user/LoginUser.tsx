@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FormInput, FormButton, FormPanel, Alert } from "@/components/ui";
 import { userService } from "@/libs/services";
-import { setSessionUser } from "@/libs/session";
-import type { ApiError } from "@/libs/api";
+import { setStoredTokens } from "@/libs/session";
 
 export function LoginUser() {
   const router = useRouter();
@@ -43,37 +42,18 @@ export function LoginUser() {
     if (!validate()) return;
 
     setLoading(true);
-    try {
-      const user = await userService.login({ email, password });
-      if (user != null) {
-        setSessionUser({
-          id: user.id!,
-          name: user.name ?? "",
-          email: user.email ?? "",
-          phone: user.phone,
-          city: user.city,
-          country_code: user.country_code,
-          country_name: user.country_name,
-          country_state: user.country_state,
-          timezone: user.timezone,
-        });
-      } else {
-        setError("E-mail ou senha incorretos.");
-      }
+    const response = await userService.login({ email, password });
 
+    if (response) {
+      setStoredTokens({
+        access_token: response.access_token,
+        refresh_token: response.refresh_token,
+      });
       router.push("/");
-    } catch (err) {
-      const apiError = err as ApiError;
-      if (apiError.status === 401) {
-        setError("E-mail ou senha incorretos.");
-      } else if (apiError.status === 400) {
-        setError(apiError.message || "Dados inválidos.");
-      } else {
-        setError("Erro ao realizar login. Tente novamente.");
-      }
-    } finally {
-      setLoading(false);
+    } else {
+      setError("E-mail ou senha incorretos.");
     }
+    setLoading(false);
   }
 
   return (

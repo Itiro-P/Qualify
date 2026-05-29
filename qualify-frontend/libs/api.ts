@@ -1,3 +1,5 @@
+import { getAccessToken } from "./session";
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 export interface ApiError {
@@ -15,6 +17,11 @@ async function request<T>(
     "Content-Type": "application/json",
     ...options.headers,
   };
+
+  const token = getAccessToken();
+  if (token) {
+    (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
+  }
 
   const response = await fetch(url, { ...options, headers });
 
