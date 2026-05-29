@@ -21,7 +21,7 @@ export default function Profile() {
 
   useEffect(() => {
     async function fetchAnalyst() {
-      const session = getSessionUser();
+      const session = await getSessionUser();
 
       if (!session) {
         router.push("/user/register");

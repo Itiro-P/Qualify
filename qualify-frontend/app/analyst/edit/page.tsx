@@ -15,7 +15,7 @@ export default function Edit() {
 
   useEffect(() => {
     async function fetchAnalyst() {
-      const session = getSessionUser();
+      const session = await getSessionUser();
 
       if (!session) {
         router.push("/user/register");
