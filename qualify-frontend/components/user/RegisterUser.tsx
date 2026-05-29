@@ -206,7 +206,7 @@ export function RegisterUser() {
 
       <p className="text-center text-sm text-neutral-slate mt-6">
         Já tem uma conta?{" "}
-        <Link href="#" className="text-accent hover:underline">
+        <Link href="/user/login" className="text-accent hover:underline">
           Entrar
         </Link>
       </p>

@@ -48,7 +48,7 @@ export function RecoverPassword() {
             </p>
           </Alert>
           <Link
-            href="/User/register"
+            href="/user/register"
             className="inline-block mt-4 text-sm text-accent hover:underline"
           >
             Voltar ao cadastro

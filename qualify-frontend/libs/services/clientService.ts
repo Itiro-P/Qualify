@@ -22,27 +22,66 @@ function buildQuery(params?: Record<string, unknown>): string {
 }
 
 export const clientService = {
-  list(params?: ListClientsParams): Promise<ClientsResponse> {
-    return api.get(`/clients${buildQuery(params as Record<string, unknown>)}`);
+  list(params?: ListClientsParams): Promise<Client[] | null> {
+    return api
+      .get<ClientsResponse>(
+        `/clients${buildQuery(params as Record<string, unknown>)}`,
+      )
+      .then(
+        (resp) => {
+          return resp.clients;
+        },
+        () => {
+          return null;
+        },
+      );
   },
 
-  getByUserId(userId: number): Promise<ClientResponse> {
-    return api.get(`/users/${userId}/client`);
+  getByUserId(userId: number): Promise<Client | null> {
+    return api.get<ClientResponse>(`/users/${userId}/client`).then(
+      (resp) => {
+        return resp.client;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
   create(
     userId: number,
     data: { proposed_budget: number },
-  ): Promise<ClientResponse> {
-    return api.post(`/users/${userId}/client`, data);
+  ): Promise<Client | null> {
+    return api.post<ClientResponse>(`/users/${userId}/client`, data).then(
+      (resp) => {
+        return resp.client;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
-  update(userId: number, data: Client): Promise<ClientResponse> {
-    return api.put(`/users/${userId}/client`, data);
+  update(userId: number, data: Client): Promise<Client | null> {
+    return api.put<ClientResponse>(`/users/${userId}/client`, data).then(
+      (resp) => {
+        return resp.client;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
-  patch(userId: number, data: ClientUpdateRequest): Promise<ClientResponse> {
-    return api.patch(`/users/${userId}/client`, data);
+  patch(userId: number, data: ClientUpdateRequest): Promise<Client | null> {
+    return api.patch<ClientResponse>(`/users/${userId}/client`, data).then(
+      (resp) => {
+        return resp.client;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
   delete(userId: number): Promise<Record<string, string>> {
@@ -50,22 +89,49 @@ export const clientService = {
   },
 
   // Profile
-  getProfile(userId: number): Promise<ClientProfileResponse> {
-    return api.get(`/users/${userId}/client/profile`);
+  getProfile(userId: number): Promise<ClientProfile | null> {
+    return api
+      .get<ClientProfileResponse>(`/users/${userId}/client/profile`)
+      .then(
+        (resp) => {
+          return resp.client_profile;
+        },
+        () => {
+          return null;
+        },
+      );
   },
 
   createProfile(
     userId: number,
     data: ClientProfile,
-  ): Promise<ClientProfileResponse> {
-    return api.post(`/users/${userId}/client/profile`, data);
+  ): Promise<ClientProfile | null> {
+    return api
+      .post<ClientProfileResponse>(`/users/${userId}/client/profile`, data)
+      .then(
+        (resp) => {
+          return resp.client_profile;
+        },
+        () => {
+          return null;
+        },
+      );
   },
 
   updateProfile(
     userId: number,
     data: ClientProfile,
-  ): Promise<ClientProfileResponse> {
-    return api.put(`/users/${userId}/client/profile`, data);
+  ): Promise<ClientProfile | null> {
+    return api
+      .put<ClientProfileResponse>(`/users/${userId}/client/profile`, data)
+      .then(
+        (resp) => {
+          return resp.client_profile;
+        },
+        () => {
+          return null;
+        },
+      );
   },
 
   deleteProfile(userId: number): Promise<Record<string, string>> {

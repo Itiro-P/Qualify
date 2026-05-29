@@ -1,7 +1,9 @@
 "use client";
+
 import { useState } from "react";
 import { Certification } from "@/types/services/certification";
 import { Skill } from "@/types/services/skill";
+import { User } from "@/types/services";
 import {
   RegisterCertifications,
   RegisterHourlyRate,
@@ -15,7 +17,7 @@ import {
 import type { ApiError } from "@/libs/api";
 import { FormButton, FormPanel, Alert } from "@/components/ui";
 
-export function RegisterAnalyst() {
+export function RegisterAnalyst({ userSession }: { userSession: User }) {
   const [certificationsAnalyst, setCertificationsAnalyst] = useState<
     Certification[]
   >([]);
@@ -25,79 +27,103 @@ export function RegisterAnalyst() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // TODO: pegar o userId da sessão/auth
-  const userId = 1;
+  async function createAnalyst(): Promise<number> {
+    const result = await analystService.create(userSession.id, {
+      hourly_rate: hourlyRateAnalyst,
+    });
+    if (!result) {
+      setError("Ocorreu um erro ao criar o analista. Tente novamente.");
+      return -1;
+    }
+    return 0;
+  }
 
+  async function updateCertifications(): Promise<number> {
+    for (const certification of certificationsAnalyst) {
+      // 'anda' por cada certificado em certificationAnalyst
+      const certificationOfDataBase = await certificationService.list(
+        certification.name,
+      ); // pega certificação que correspondem ao nome da certificação
+      if (certificationOfDataBase == null) {
+        setError("Deu erro ao criar a certificação. Tente novamente.");
+        return -1; // retorna -1 para indicar falha
+      }
+      let createdCertication: Certification | null;
+      if (certificationOfDataBase == null) {
+        // não tem certificação no banco de dados
+        createdCertication = await certificationService.create(certification); // cria certificação no banco de dados
+      } else {
+        // tem certificação no banco de dados
+        createdCertication = certificationOfDataBase[0]; // pega primeira correspondência
+      }
+      if (createdCertication == null) {
+        // verifica se criou ou pegou certification incorretamente
+        setError("Deu erro ao criar a certificação. Tente novamente.");
+        return -1; // retorna -1 para indicar falha
+      }
+      await analystService.addCertification(userSession.id, {
+        certification_id: createdCertication.id,
+      }); // adiciona certificação ao analista
+    }
+    return 0;
+  }
+
+  async function updateSkills(): Promise<number> {
+    for (const skill of skillsAnalyst) {
+      const skillOfDataBase = await skillService.list(skill.name); // pega skill que correspondem ao nome da skill
+      if (skillOfDataBase == null) {
+        setError("Deu erro ao criar a skill. Tente novamente.");
+        return -1; // retorna -1 para indicar falha
+      }
+      let createdSkill: Skill | null;
+      if (skillOfDataBase == null) {
+        // não tem skill no banco de dados
+        createdSkill = await skillService.create(skill); // cria skill no banco de dados
+      } else {
+        // tem skill no banco de dados
+        createdSkill = skillOfDataBase[0]; // pega primeira correspondência
+      }
+      if (createdSkill == null) {
+        // verifica se criou ou pegou skill incorretamente
+        setError("Deu erro ao criar a skill. Tente novamente.");
+        return -1; // retorna -1 para indicar falha
+      }
+      await analystService.addSkill(userSession.id, {
+        skill_id: createdSkill.id,
+      }); // adiciona skill no analista
+    }
+    return 0;
+  }
   async function handleSubmitAll() {
     setLoading(true);
     setError("");
     setSuccess("");
-    try {
-      // 1. Promover usuário a analista
-      await analystService.create(userId, { hourly_rate: hourlyRateAnalyst });
-
-      // 2. Colocar Certificações
-      for (const certification of certificationsAnalyst) {
-        // 'anda' por cada certificado em certificationAnalyst
-        const certificationOfDataBase = await certificationService.list(
-          certification.name,
-        ); // pega certificação que correspondem ao nome da certificação
-        let createdCertication: Certification;
-        if (certificationOfDataBase.count == 0) {
-          // não tem certificação no banco de dados
-          createdCertication = (
-            await certificationService.create(certification)
-          ).certification; // cria certificação no banco de dados
-        } else {
-          // tem certificação no banco de dados
-          createdCertication = certificationOfDataBase.certifications[0]; // pega primeira correspondência
-        }
-
-        await analystService.addCertification(userId, {
-          certification_id: createdCertication.id,
-        }); // adiciona certificação ao analista
-      }
-
-      // 3. Colocar Skills //necessario mudar depois
-      for (const skill of skillsAnalyst) {
-        const skillOfDataBase = await skillService.list(skill.name); // pega skill que correspondem ao nome da skill
-        let createdSkill: Skill;
-        if (skillOfDataBase.count == 0) {
-          // não tem skill no banco de dados
-          createdSkill = (await skillService.create(skill)).skill; // cria skill no banco de dados
-        } else {
-          // tem skill no banco de dados
-          createdSkill = skillOfDataBase.skills[0]; // pega primeira correspondência
-        }
-        await analystService.addSkill(userId, {
-          skill_id: createdSkill.id,
-        }); // adiciona
-      }
-
-      setSuccess("Cadastro de analista realizado com sucesso!");
-    } catch (err) {
-      const apiError = err as ApiError;
-      if (apiError.status) {
-        switch (apiError.status) {
-          case 400:
-            setError(apiError.message || "Dados inválidos");
-            break;
-          case 401:
-            setError("Não autorizado");
-            break;
-          case 422:
-            setError("Dados mal formatados");
-            break;
-          default:
-            setError("Erro no servidor. Tente novamente.");
-        }
-      } else {
-        console.error(err);
-        setError("Ocorreu um erro inesperado. Verifique o console.");
-      }
-    } finally {
-      setLoading(false);
+    if (!userSession.id) {
+      setError("Usuário não autenticado.");
+      return -1;
     }
+
+    // 1. Promover usuário a analista
+    const createAnalystResult = await createAnalyst();
+    if (createAnalystResult == -1) {
+      setLoading(false);
+      return; // se der erro na criação do analista, para o processo
+    }
+    // 2. Colocar Certificações
+    const certificationResult = await updateCertifications();
+    if (certificationResult == -1) {
+      setLoading(false);
+      return; // se der erro na atualização das certificações, para o processo
+    }
+
+    // 3. Colocar Skills
+    const skillsResult = await updateSkills();
+    if (skillsResult == -1) {
+      setLoading(false);
+      return; // se der erro na atualização das skills, para o processo
+    }
+
+    setSuccess("Cadastro de analista realizado com sucesso!");
   }
 
   return (
@@ -109,12 +135,12 @@ export function RegisterAnalyst() {
       {error && <Alert variant="error">{error}</Alert>}
       {success && <Alert variant="success">{success}</Alert>}
       <RegisterCertifications
-        certificationsAnalyst={certificationsAnalyst}
-        setCertificationsAnalyst={setCertificationsAnalyst}
+        analystCertifications={certificationsAnalyst}
+        setAnalystCertifications={setCertificationsAnalyst}
       />
       <RegisterSkills
-        skillsAnalyst={skillsAnalyst}
-        setSkillsAnalyst={setSkillsAnalyst}
+        analystSkills={skillsAnalyst}
+        setAnalystSkills={setSkillsAnalyst}
       />
       <RegisterHourlyRate
         hourlyRateAnalyst={hourlyRateAnalyst}

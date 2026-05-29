@@ -83,10 +83,10 @@ function handleSubmit(
   setErrorsCertification: React.Dispatch<
     React.SetStateAction<Partial<CertificationError>>
   >,
-  setCertificationsAnalyst: React.Dispatch<
+  setAnalystCertifications: React.Dispatch<
     React.SetStateAction<Certification[]>
   >,
-  certificationsAnalyst: Certification[],
+  analystCertifications: Certification[],
   setCertification: React.Dispatch<React.SetStateAction<Certification>>,
   certification: Certification,
 ) {
@@ -97,12 +97,12 @@ function handleSubmit(
 
   if (Object.keys(validationErrors).length === 0) {
     const error: string = validateCertification(
-      certificationsAnalyst,
+      analystCertifications,
       certification,
     );
     setError(error);
     if (!error) {
-      setCertificationsAnalyst((prev) => [...prev, certification]);
+      setAnalystCertifications((prev) => [...prev, certification]);
       setCertification({
         id: 0,
         name: "",
@@ -116,22 +116,22 @@ function handleSubmit(
 }
 
 function removeCertification(
-  setCertificationsAnalyst: React.Dispatch<
+  setAnalystCertifications: React.Dispatch<
     React.SetStateAction<Certification[]>
   >,
   certification: Certification,
 ) {
-  setCertificationsAnalyst((prev) => [
+  setAnalystCertifications((prev) => [
     ...prev.filter((item) => !isEqualCertification(item, certification)),
   ]);
 }
 
 function CertificationSaves({
   certification,
-  setCertificationsAnalyst,
+  setAnalystCertifications,
 }: {
   certification: Certification;
-  setCertificationsAnalyst: React.Dispatch<
+  setAnalystCertifications: React.Dispatch<
     React.SetStateAction<Certification[]>
   >;
 }) {
@@ -140,7 +140,7 @@ function CertificationSaves({
       variant="outline"
       fullWidth={false}
       onClick={() =>
-        removeCertification(setCertificationsAnalyst, certification)
+        removeCertification(setAnalystCertifications, certification)
       }
       className="m-1 py-2! px-4! text-sm"
       type="button"
@@ -151,16 +151,16 @@ function CertificationSaves({
 }
 
 export function RegisterCertifications({
-  certificationsAnalyst,
-  setCertificationsAnalyst,
+  analystCertifications,
+  setAnalystCertifications,
 }: {
-  certificationsAnalyst: Certification[];
-  setCertificationsAnalyst: React.Dispatch<
+  analystCertifications: Certification[];
+  setAnalystCertifications: React.Dispatch<
     React.SetStateAction<Certification[]>
   >;
 }) {
   const [certification, setCertification] = useState<Certification>({
-    id: 0,
+    id: -1,
     name: "",
     description: "",
     institution: "",
@@ -182,8 +182,8 @@ export function RegisterCertifications({
             e,
             setError,
             setErrorsCertification,
-            setCertificationsAnalyst,
-            certificationsAnalyst,
+            setAnalystCertifications,
+            analystCertifications,
             setCertification,
             certification,
           )
@@ -228,16 +228,16 @@ export function RegisterCertifications({
         <FormButton type="submit" fullWidth={false} className="mt-4 px-6">
           Adicionar
         </FormButton>
-        {certificationsAnalyst.length > 0 && (
+        {analystCertifications.length > 0 && (
           <p className="m-2 text-sm text-neutral-slate">
             Certificações salvas:
           </p>
         )}
         <div className="flex flex-row justify-start flex-wrap">
-          {certificationsAnalyst.map((certification) => (
+          {analystCertifications.map((certification) => (
             <CertificationSaves
               key={certification.description}
-              {...{ setCertificationsAnalyst, certification }}
+              {...{ setAnalystCertifications, certification }}
             />
           ))}
         </div>
