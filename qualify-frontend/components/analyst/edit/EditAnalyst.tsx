@@ -54,88 +54,105 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
     }
   }
 
-  async function updateCertifications() {
-    const analystCertifications = (
-      await analystService.listCertifications(analyst.id)
-    ).certifications; // pega certificações do analista no banco de dados
+  async function updateCertifications(): Promise<number> {
+    try {
+      const analystCertifications = (
+        await analystService.listCertifications(analyst.id)
+      ).certifications; // pega certificações do analista no banco de dados
 
-    const removedCertificates = analystCertifications.filter(
-      (dbCert) =>
-        !analystCertifications.some((userCert) => userCert.id === dbCert.id),
-    ); // pega as certificações que foram removidas
+      const removedCertificates = analystCertifications.filter(
+        (dbCert) =>
+          !analystCertifications.some((userCert) => userCert.id === dbCert.id),
+      ); // pega as certificações que foram removidas
 
-    for (const certification of removedCertificates) {
-      analystService.removeCertification(analyst.id, certification.id);
-    } // remove as certificações do analista
+      for (const certification of removedCertificates) {
+        analystService.removeCertification(analyst.id, certification.id);
+      } // remove as certificações do analista
 
-    for (const certification of analystCertifications) {
-      // 'anda' por cada certificado em certificationAnalyst
-      if (certification.id == -1) {
-        // verifica se o id é igual a -1, ou seja é novo
-        const certificationOfDataBase = await certificationService.list(
-          certification.name,
-        ); // pega certificação que correspondem ao nome da certificação
+      for (const certification of analystCertifications) {
+        // 'anda' por cada certificado em certificationAnalyst
+        if (certification.id == -1) {
+          // verifica se o id é igual a -1, ou seja é novo
+          const certificationOfDataBase = await certificationService.list(
+            certification.name,
+          ); // pega certificação que correspondem ao nome da certificação
 
-        let createdCertication: Certification | null;
+          let createdCertication: Certification | null;
 
-        if (certificationOfDataBase == null) {
-          // não tem certificação no banco de dados
-          createdCertication = await certificationService.create(certification); // cria certificação no banco de dados
-        } else {
-          // tem certificação no banco de dados
-          createdCertication = certificationOfDataBase[0]; // pega primeira correspondência
-        }
+          if (certificationOfDataBase == null) {
+            // não tem certificação no banco de dados
+            createdCertication =
+              await certificationService.create(certification); // cria certificação no banco de dados
+          } else {
+            // tem certificação no banco de dados
+            createdCertication = certificationOfDataBase[0]; // pega primeira correspondência
+          }
 
-        if (createdCertication != null) {
-          // verifica se criou ou pegou certification corretamente
-          await analystService.addCertification(analyst.id, {
-            certification_id: createdCertication.id,
-          }); // adiciona certificação ao analista
+          if (createdCertication != null) {
+            // verifica se criou ou pegou certification corretamente
+            await analystService.addCertification(analyst.id, {
+              certification_id: createdCertication.id,
+            }); // adiciona certificação ao analista
+          }
         }
       }
+      return 0; // retorna 0 para indicar sucesso
+    } catch (err) {
+      console.error("Erro ao atualizar certificações:", err);
+      setError(
+        "Ocorreu um erro ao atualizar as certificações. Tente novamente.",
+      );
+      return -1; // retorna -1 para indicar falha
     }
   }
 
-  async function updateSkills() {
-    const analystSkillsIds = await analystService.listSkills(analyst.id); // pega skills do analista no banco de dados
+  async function updateSkills(): Promise<number> {
+    try {
+      const analystSkillsIds = await analystService.listSkills(analyst.id); // pega skills do analista no banco de dados
 
-    if (analystSkillsIds != null) {
-      const removedSkills = analystSkillsIds.filter(
-        (dbSkill) =>
-          !anlystSkills.some(
-            (analystSkill) => analystSkill.id === dbSkill.skill_id,
-          ),
-      ); // pega skills que foram removidas pelo analista
+      if (analystSkillsIds != null) {
+        const removedSkills = analystSkillsIds.filter(
+          (dbSkill) =>
+            !anlystSkills.some(
+              (analystSkill) => analystSkill.id === dbSkill.skill_id,
+            ),
+        ); // pega skills que foram removidas pelo analista
 
-      for (const skill of removedSkills) {
-        //analystService.removeSkill(analyst.id, skill.skill_id); // tem que corrigir a interface do remover skill do analista, pois não esta pegando o id da skill
-      } // remove as skills do analista
-    }
-
-    for (const skill of anlystSkills) {
-      if (skill.id != -1) {
-        // se o id for igual a -1 significa que foi criado, se for diferente de -1 já foi criado
-        continue;
+        for (const skill of removedSkills) {
+          //analystService.removeSkill(analyst.id, skill.skill_id); // tem que corrigir a interface do remover skill do analista, pois não esta pegando o id da skill
+        } // remove as skills do analista
       }
 
-      const skillsOfDataBase = await skillService.list(skill.name); // pega skill que correspondem ao nome da skill
+      for (const skill of anlystSkills) {
+        if (skill.id != -1) {
+          // se o id for igual a -1 significa que foi criado, se for diferente de -1 já foi criado
+          continue;
+        }
 
-      let dataBaseSkill: Skill | null;
+        const skillsOfDataBase = await skillService.list(skill.name); // pega skill que correspondem ao nome da skill
 
-      if (skillsOfDataBase == null) {
-        // não tem skill no banco de dados
-        dataBaseSkill = await skillService.create(skill); // cria skill no banco de dados
-      } else {
-        // tem skill no banco de dados
-        dataBaseSkill = skillsOfDataBase[0]; // pega primeira correspondência
+        let dataBaseSkill: Skill | null;
+
+        if (skillsOfDataBase == null) {
+          // não tem skill no banco de dados
+          dataBaseSkill = await skillService.create(skill); // cria skill no banco de dados
+        } else {
+          // tem skill no banco de dados
+          dataBaseSkill = skillsOfDataBase[0]; // pega primeira correspondência
+        }
+
+        if (dataBaseSkill != null) {
+          // verifica se criou ou pegou skill corretamente
+          await analystService.addSkill(analyst.id, {
+            skill_id: dataBaseSkill.id,
+          }); // adiciona ao analista
+        }
       }
-
-      if (dataBaseSkill != null) {
-        // verifica se criou ou pegou skill corretamente
-        await analystService.addSkill(analyst.id, {
-          skill_id: dataBaseSkill.id,
-        }); // adiciona ao analista
-      }
+      return 0; // retorna 0 para indicar sucesso
+    } catch (err) {
+      console.error("Erro ao atualizar skills:", err);
+      setError("Ocorreu um erro ao atualizar as skills. Tente novamente.");
+      return -1; // retorna -1 para indicar falha
     }
   }
 
@@ -148,12 +165,13 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
       analystService.patch(analyst.id, { hourly_rate: hourlyRateAnalyst });
 
       // 2. atualiza certificações
-      await updateCertifications();
+      const certificationResult = await updateCertifications();
 
       // 3. atualiza skills
-      await updateSkills();
-
-      setSuccess("Cadastro de analista realizado com sucesso!");
+      const skillsResult = await updateSkills();
+      if (certificationResult != -1 && skillsResult != -1) {
+        setSuccess("Cadastro de analista realizado com sucesso!");
+      }
     } catch (err) {
       const apiError = err as ApiError;
 
