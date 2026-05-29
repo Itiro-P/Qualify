@@ -63,8 +63,14 @@ func SetupRoutes(router *gin.Engine, conn *pgxpool.Pool) {
 		usersPublic.GET("/:id/analyst", handlers.GetAnalyst(conn))
 		usersPublic.GET("/:id/analyst/skills", handlers.GetAnalystSkills(conn))
 		usersPublic.GET("/:id/analyst/certifications", handlers.GetAnalystCertifications(conn))
+		usersPublic.GET("/:id/analyst/proposals", handlers.GetAnalystProposalLetters(conn))
+		usersPublic.GET("/:id/analyst/reviews", handlers.GetAnalystReviews(conn))
+		usersPublic.GET("/:id/analyst/services", handlers.GetAnalystServices(conn))
 		usersPublic.GET("/:id/analyst/profile", handlers.GetAnalystProfile(conn))
 		usersPublic.GET("/:id/client", handlers.GetClient(conn))
+		usersPublic.GET("/:id/client/proposals", handlers.GetClientProposalLetters(conn))
+		usersPublic.GET("/:id/client/reviews", handlers.GetClientReviews(conn))
+		usersPublic.GET("/:id/client/services", handlers.GetClientServices(conn))
 		usersPublic.GET("/:id/client/profile", handlers.GetClientProfile(conn))
 	}
 
@@ -79,7 +85,7 @@ func SetupRoutes(router *gin.Engine, conn *pgxpool.Pool) {
 	router.GET("/certifications", handlers.GetCertifications(conn))
 	router.GET("/certifications/:id", handlers.GetCertification(conn))
 
-	// --- ROTAS AUTENTICADAS (Escrita e Sensíveis) ---
+	// ROTAS AUTENTICADAS (Escrita e Sensíveis)
 	authenticated := router.Group("")
 	authenticated.Use(middleware.AuthMiddleware())
 	{
