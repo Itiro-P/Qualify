@@ -80,7 +80,7 @@ func TestProfile(t *testing.T) {
 		req = authRequest(http.MethodDelete, fmt.Sprintf("/users/%d/analyst/profile", analystUserID), nil, analystToken)
 		w = httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, http.StatusNoContent, w.Code)
 	})
 
 	t.Run("Fluxo de Perfil do Cliente", func(t *testing.T) {
@@ -119,7 +119,7 @@ func TestProfile(t *testing.T) {
 		req = authRequest(http.MethodDelete, fmt.Sprintf("/users/%d/client/profile", clientUserID), nil, clientToken)
 		w = httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, http.StatusNoContent, w.Code)
 	})
 
 	t.Run("Cleanup de usuários", func(t *testing.T) {

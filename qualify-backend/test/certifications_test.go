@@ -205,7 +205,7 @@ func TestCertifications(t *testing.T) {
 			router.ServeHTTP(w, req)
 
 			// Verificamos se a certificação foi removida com sucesso
-			assert.Equal(t, http.StatusOK, w.Code)
+			assert.Equal(t, http.StatusNoContent, w.Code)
 		})
 	}
 }

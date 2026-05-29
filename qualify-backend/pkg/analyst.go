@@ -12,13 +12,13 @@ type AnalystProfile struct {
 }
 
 type AnalystSkill struct {
-	Analyst_id int `json:"analyst_id"`
+	Analyst_id int `json:"analyst_id,omitempty"`
 	Skill_id   int `json:"skill_id"`
 }
 
 type AnalystCertification struct {
+	Analyst_id       int `json:"analyst_id,omitempty"`
 	Certification_id int `json:"certification_id"`
-	Analyst_id       int `json:"analyst_id"`
 }
 
 type AnalystsResponse struct {

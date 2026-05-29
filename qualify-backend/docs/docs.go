@@ -3712,7 +3712,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AnalystSkillsResponse"
+                            "$ref": "#/definitions/pkg.SkillsResponse"
                         }
                     },
                     "400": {
@@ -4744,20 +4744,6 @@ const docTemplate = `{
             "properties": {
                 "analyst_skill": {
                     "$ref": "#/definitions/pkg.AnalystSkill"
-                }
-            }
-        },
-        "pkg.AnalystSkillsResponse": {
-            "type": "object",
-            "properties": {
-                "analyst_skills": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/pkg.AnalystSkill"
-                    }
-                },
-                "count": {
-                    "type": "integer"
                 }
             }
         },

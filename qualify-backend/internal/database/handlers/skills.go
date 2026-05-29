@@ -239,7 +239,7 @@ func DeleteSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do analista"
-// @Success 200 {object} pkg.AnalystSkillsResponse
+// @Success 200 {object} pkg.SkillsResponse
 // @Failure 400 {object} pkg.ErrorResponse
 // @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse

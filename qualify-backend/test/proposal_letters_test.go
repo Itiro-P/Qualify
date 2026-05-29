@@ -126,7 +126,7 @@ func TestProposalLetter(t *testing.T) {
 		req := authRequest(http.MethodDelete, fmt.Sprintf("/proposals/%d", proposalID), nil, clientToken)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, http.StatusNoContent, w.Code)
 
 		// 2. Cleanup Analista (Token do Rafael)
 		req = authRequest(http.MethodDelete, fmt.Sprintf("/users/%d/analyst", analystUserID), nil, analystToken)

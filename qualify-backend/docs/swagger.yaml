@@ -71,15 +71,6 @@ definitions:
       analyst_skill:
         $ref: '#/definitions/pkg.AnalystSkill'
     type: object
-  pkg.AnalystSkillsResponse:
-    properties:
-      analyst_skills:
-        items:
-          $ref: '#/definitions/pkg.AnalystSkill'
-        type: array
-      count:
-        type: integer
-    type: object
   pkg.AnalystUpdateRequest:
     properties:
       city:
@@ -3002,7 +2993,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.AnalystSkillsResponse'
+            $ref: '#/definitions/pkg.SkillsResponse'
         "400":
           description: Bad Request
           schema:
