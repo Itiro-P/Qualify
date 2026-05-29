@@ -82,6 +82,7 @@ export function EditUser() {
     try {
       const fullName = `${form.name.trim()} ${form.surname.trim()}`;
       const response = await userService.update(user.id, {
+        id: user.id,
         name: fullName,
         email: form.email.trim(),
         phone: form.phone.trim(),
