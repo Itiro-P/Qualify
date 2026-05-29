@@ -9,8 +9,6 @@ import type {
 } from "@/types/user/userRegisterForm";
 import { validateRegisterForm } from "@/libs/validation";
 import { userService } from "@/libs/services";
-import { setSessionUser } from "@/libs/session";
-import type { ApiError } from "@/libs/api";
 import { FormInput, FormButton, FormPanel, Alert } from "@/components/ui";
 
 const initialForm: IUserRegisterForm = {
@@ -50,40 +48,25 @@ export function RegisterUser() {
     if (Object.keys(validationErrors).length > 0) return;
 
     setLoading(true);
-    try {
-      const fullName = `${form.name.trim()} ${form.surname.trim()}`;
-      const response = await userService.register({
-        name: fullName,
-        email: form.email.trim(),
-        password: form.password,
-        phone: form.phone.trim(),
-        city: form.city.trim(),
-        country_code: form.country_code.trim(),
-        country_name: form.country_name.trim(),
-        country_state: form.country_state.trim(),
-        timezone: form.timezone.trim(),
-      });
-      if (response != null) {
-        setSessionUser({
-          id: response.id!,
-          name: response.name!,
-          email: response.email!,
-          phone: response.phone,
-          city: response.city,
-          country_code: response.country_code,
-          country_name: response.country_name,
-          country_state: response.country_state,
-          timezone: response.timezone,
-        });
-      }
+    const fullName = `${form.name.trim()} ${form.surname.trim()}`;
+    const created = await userService.register({
+      name: fullName,
+      email: form.email.trim(),
+      password: form.password,
+      phone: form.phone.trim(),
+      city: form.city.trim(),
+      country_code: form.country_code.trim(),
+      country_name: form.country_name.trim(),
+      country_state: form.country_state.trim(),
+      timezone: form.timezone.trim(),
+    });
 
-      router.push("/");
-    } catch (err) {
-      const apiErr = err as ApiError;
-      setSubmitError(apiErr.message || "Erro ao cadastrar. Tente novamente.");
-    } finally {
-      setLoading(false);
+    if (created) {
+      router.push("/user/login");
+    } else {
+      setSubmitError("Erro ao cadastrar. Tente novamente.");
     }
+    setLoading(false);
   }
 
   return (
