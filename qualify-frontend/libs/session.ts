@@ -35,8 +35,6 @@ export async function getSessionUser(): Promise<User | null> {
   const tokens = getStoredTokens();
   if (!tokens) return null;
 
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-
   try {
     const user = await userService.me();
     if (!user) {
