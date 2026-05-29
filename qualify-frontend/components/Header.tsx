@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { getSessionUser, clearSession } from "@/libs/session";
-import type { User as SessionUser} from "@/types/services/user";
+import type { User as SessionUser } from "@/types/services/user";
 
 export function Header() {
   const [user, setUser] = useState<SessionUser | null>(null);
@@ -127,6 +127,14 @@ export function Header() {
                   >
                     <ChevronsUp className="w-4 h-4" />
                     Cadastrar como analista
+                  </Link>
+                  <Link
+                    href="/analyst/edit"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/80 hover:bg-white/5 hover:text-accent transition-colors"
+                  >
+                    <Settings className="w-4 h-4" />
+                    Editar analista
                   </Link>
                   <button
                     onClick={handleLogout}

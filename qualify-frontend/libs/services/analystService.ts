@@ -142,6 +142,10 @@ export const analystService = {
       }>(`/users/${userId}/analyst/certifications`)
       .then(
         (resp) => {
+          if (resp.count === 0) {
+            return [];
+          }
+
           return resp.certifications;
         },
         () => {

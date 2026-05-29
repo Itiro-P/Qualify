@@ -34,7 +34,9 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
         analyst.id,
       ); // pega as certificações e quantas tem com o id do analista
 
-      setAnalystCertifications(analystCertifications.certifications); // pega apenas as certificações e coloca elas na variavel
+      if (analystCertifications != null) {
+        setAnalystCertifications(analystCertifications); // pega apenas as certificações e coloca elas na variavel
+      }
 
       const analysytSkills = await analystService.listSkills(analyst.id); // pega os ids das skills do analist
       if (analysytSkills != null) {
@@ -57,7 +59,7 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
     const result = await analystService.patch(analyst.id, {
       hourly_rate: hourlyRateAnalyst,
     }); // atualiza o preço por hora do analista
-    if (!result) {
+    if (result == null) {
       setError(
         "Ocorreu um erro ao atualizar o preço por hora. Tente novamente.",
       );
@@ -68,9 +70,9 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
   }
 
   async function updateCertifications(): Promise<number> {
-    const analystCertifications = (
-      await analystService.listCertifications(analyst.id)
-    ).certifications; // pega certificações do analista no banco de dados
+    const analystCertifications = await analystService.listCertifications(
+      analyst.id,
+    ); // pega certificações do analista no banco de dados
 
     if (analystCertifications == null) {
       setError(
@@ -89,7 +91,7 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
         analyst.id,
         certification.id,
       );
-      if (!result) {
+      if (result == null) {
         setError(
           "Deu erro ao remover a certificação do analista. Tente novamente.",
         );
@@ -219,7 +221,7 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
     <Loading />
   ) : (
     <FormPanel
-      title="Cadastro de Analista"
+      title="Editar Analista"
       description="Preencha suas certificações, tecnologias e valor por hora."
       maxWidth="max-w-2xl"
     >
