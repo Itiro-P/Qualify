@@ -28,16 +28,12 @@ export function RegisterAnalyst({ userSession }: { userSession: User }) {
   const [success, setSuccess] = useState("");
 
   async function createAnalyst(): Promise<number> {
-    try {
-      await analystService.create(userSession.id, {
-        hourly_rate: hourlyRateAnalyst,
-      });
-    } catch (err) {
-      console.error("Erro ao atualizar usuário para analista:", err);
-      setError(
-        "Ocorreu um erro ao atualizar o usuário para analista. Tente novamente.",
-      );
-      return -1; // retorna -1 para indicar falha
+    const result = await analystService.create(userSession.id, {
+      hourly_rate: hourlyRateAnalyst,
+    });
+    if (!result) {
+      setError("Ocorreu um erro ao criar o analista. Tente novamente.");
+      return -1;
     }
     return 0;
   }
