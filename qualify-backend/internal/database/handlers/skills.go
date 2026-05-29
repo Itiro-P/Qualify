@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"main/pkg"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -111,6 +113,7 @@ func GetSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param skill body pkg.Skill true "Objeto habilidade"
 // @Success 201 {object} pkg.SkillResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /skills [post]
@@ -123,6 +126,25 @@ func CreateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		err := conn.QueryRow(c.Request.Context(),
+			`INSERT INTO skill (name)
+			 VALUES ($1)
+			 RETURNING id`,
+			skill.Name).
+			Scan(&skill.Id)
+		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) {
+				switch pgErr.Code {
+				case "23505": // unique_violation
+					c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Skill already exists"))
+					return
+				}
+			}
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			return
+		}
+
+		err = conn.QueryRow(c.Request.Context(),
 			`INSERT INTO skill (name)
 			 VALUES ($1)
 			 RETURNING id`,

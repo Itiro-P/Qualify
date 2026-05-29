@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"main/pkg"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -171,6 +173,7 @@ func GetProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param proposal body pkg.ProposalLetter true "Objeto proposta"
 // @Success 201 {object} pkg.ProposalLetterResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /proposals [post]
@@ -183,6 +186,28 @@ func CreateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		err := conn.QueryRow(c.Request.Context(),
+			`INSERT INTO proposal_letter (title, content, client_id, analyst_id, proposed_hourly_rate)
+			VALUES ($1, $2, $3, $4, $5)
+			RETURNING id, time_created`,
+			proposal.Title, proposal.Content, proposal.Client_id, proposal.Analyst_id, proposal.Proposed_hourly_rate).
+			Scan(&proposal.Id, &proposal.Time_created)
+		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) {
+				switch pgErr.Code {
+				case "23505": // unique_violation
+					c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Proposal letter already exists"))
+					return
+				case "23503": // foreign_key_violation (client_id ou analyst_id não existe)
+					c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Client or analyst not found"))
+					return
+				}
+			}
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			return
+		}
+
+		err = conn.QueryRow(c.Request.Context(),
 			`INSERT INTO proposal_letter (title, content, client_id, analyst_id, proposed_hourly_rate)
 			 VALUES ($1, $2, $3, $4, $5)
 			 RETURNING id, time_created`,

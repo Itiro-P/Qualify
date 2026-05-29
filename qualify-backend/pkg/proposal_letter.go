@@ -3,7 +3,7 @@ package pkg
 import "time"
 
 type ProposalLetter struct {
-	Id                   int       `json:"id"`
+	Id                   int       `json:"id,omitempty"`
 	Title                string    `json:"title"`
 	Content              string    `json:"content"`
 	Client_id            int       `json:"client_id"`

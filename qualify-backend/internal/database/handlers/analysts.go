@@ -423,6 +423,7 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param analyst body pkg.Analyst true "Objeto analista (envie apenas `hourly_rate`)"
 // @Success 201 {object} pkg.AnalystResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/analyst [post]
@@ -432,6 +433,17 @@ func CreateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 		userID, err := strconv.Atoi(userIDParam)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+			return
+		}
+
+		// Checando se o analista já existe
+		var analystExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, userID,
+		).Scan(&analystExists)
+
+		if analystExists {
+			c.JSON(http.StatusConflict, pkg.Internal(c.FullPath(), "Analyst already exists"))
 			return
 		}
 

@@ -1112,6 +1112,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -1564,6 +1568,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -1824,6 +1832,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -2052,6 +2064,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -2254,6 +2270,10 @@ paths:
             $ref: '#/definitions/pkg.SkillResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":
@@ -2647,6 +2667,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -2888,6 +2912,10 @@ paths:
             $ref: '#/definitions/pkg.AnalystProfileResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":
@@ -3181,6 +3209,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -3320,6 +3352,10 @@ paths:
             $ref: '#/definitions/pkg.ClientProfileResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":
@@ -3465,6 +3501,10 @@ paths:
             $ref: '#/definitions/pkg.UserProfileResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":

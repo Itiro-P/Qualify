@@ -223,6 +223,7 @@ func GetClient(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param proposed_budget body object true "{\"proposed_budget\": number}"
 // @Success 201 {object} pkg.ClientResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/client [post]
@@ -232,6 +233,17 @@ func CreateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 		userID, err := strconv.Atoi(userIDParam)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+			return
+		}
+
+		// Checando se o cliente já existe
+		var clientExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM client WHERE id = $1)`, userID,
+		).Scan(&clientExists)
+
+		if clientExists {
+			c.JSON(http.StatusConflict, pkg.Internal(c.FullPath(), "Client already exists"))
 			return
 		}
 

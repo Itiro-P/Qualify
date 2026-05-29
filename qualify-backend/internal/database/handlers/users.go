@@ -126,7 +126,6 @@ func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		// 2. Mapear do registro para a struct de banco de dados
 		user := pkg.User{
 			Name:          reg.Name,
 			Email:         reg.Email,
@@ -141,7 +140,7 @@ func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 		err = services.CreateUser(c.Request.Context(), conn, &user)
 		if err != nil {
 			if strings.Contains(err.Error(), "unique constraint") {
-				c.JSON(http.StatusConflict, gin.H{"error": "Este e-mail já está cadastrado"})
+				c.JSON(http.StatusConflict, gin.H{"error": "E-mail already registered"})
 				return
 			}
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))

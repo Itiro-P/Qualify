@@ -162,6 +162,7 @@ func GetCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param certification body pkg.Certification true "Objeto certificação"
 // @Success 201 {object} pkg.CertificationResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /certifications [post]
@@ -194,7 +195,21 @@ func CreateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
+		var exists bool
 		err := conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM certification WHERE name = $1 AND institution = $2)`,
+			cert.Name, cert.Institution,
+		).Scan(&exists)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			return
+		}
+		if exists {
+			c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Certification already exists"))
+			return
+		}
+
+		err = conn.QueryRow(c.Request.Context(),
 			`INSERT INTO certification (name, year, description, institution) VALUES ($1, $2, $3, $4) RETURNING id`,
 			cert.Name, cert.Year, cert.Description, cert.Institution,
 		).Scan(&cert.Id)

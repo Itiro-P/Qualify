@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"main/pkg"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -165,6 +167,7 @@ func GetService(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param service body pkg.Service true "Objeto serviço"
 // @Success 201 {object} pkg.ServiceResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /services [post]
@@ -177,6 +180,25 @@ func CreateService(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		err := conn.QueryRow(c.Request.Context(),
+			`INSERT INTO service (proposal_letter_id, title, content, hourly_rate, status)
+			 VALUES ($1, $2, $3, $4, $5)
+			 RETURNING id, time_created`,
+			service.Proposal_letter_id, service.Title, service.Content, service.Hourly_rate, service.Status).
+			Scan(&service.Id, &service.Time_created)
+		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) {
+				switch pgErr.Code {
+				case "23505": // unique_violation
+					c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Service already exists"))
+					return
+				}
+			}
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			return
+		}
+
+		err = conn.QueryRow(c.Request.Context(),
 			`INSERT INTO service (proposal_letter_id, title, content, hourly_rate, status)
 			 VALUES ($1, $2, $3, $4, $5)
 			 RETURNING id, time_created`,

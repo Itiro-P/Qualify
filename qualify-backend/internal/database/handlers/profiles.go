@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"main/pkg"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -63,6 +65,7 @@ func GetUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param profile body pkg.UserProfile true "Objeto perfil"
 // @Success 201 {object} pkg.UserProfileResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/profile [post]
@@ -77,7 +80,22 @@ func CreateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
+		// Verificando se o perfil existe
+		var exists bool
 		err := conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM user_profile WHERE id = $1)`,
+			id,
+		).Scan(&exists)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			return
+		}
+		if exists {
+			c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Profile already exists"))
+			return
+		}
+
+		err = conn.QueryRow(c.Request.Context(),
 			`INSERT INTO user_profile (user_id, biography) VALUES ($1, $2)
              RETURNING user_id, biography, COALESCE(picture, 'default_picture.png')`,
 			userID, profile.Biography).
@@ -111,7 +129,7 @@ func UploadProfilePicture(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		file, err := c.FormFile("picture")
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Arquivo não enviado"))
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "File not sent"))
 			return
 		}
 
@@ -124,7 +142,7 @@ func UploadProfilePicture(conn *pgxpool.Pool) gin.HandlerFunc {
 		dbPath := "/uploads/" + newFileName
 
 		if err := c.SaveUploadedFile(file, savePath); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Falha ao salvar arquivo físico"))
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Fail when saving image file"))
 			return
 		}
 
@@ -288,6 +306,7 @@ func GetAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param profile body pkg.AnalystProfile true "Objeto perfil"
 // @Success 201 {object} pkg.AnalystProfileResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/analyst/profile [post]
@@ -295,29 +314,46 @@ func CreateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, _ := strconv.Atoi(id)
+
 		var profile pkg.AnalystProfile
 		_ = c.BindJSON(&profile)
 
 		tx, err := conn.Begin(c.Request.Context())
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Erro de transação"))
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Transaction error"))
 			return
 		}
 		defer tx.Rollback(c.Request.Context())
 
 		err = tx.QueryRow(c.Request.Context(),
 			`INSERT INTO user_profile (user_id, biography) VALUES ($1, $2)
-			RETURNING user_id, biography, picture`,
+            RETURNING user_id, biography, picture`,
 			userID, profile.Biography).Scan(&profile.User_id, &profile.Biography, &profile.Picture)
-
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Erro ao criar profile base"))
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) {
+				switch pgErr.Code {
+				case "23505": // unique_violation
+					c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Profile already exists for this user"))
+					return
+				case "23503": // foreign_key_violation (user_id não existe)
+					c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "User not found"))
+					return
+				}
+			}
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Error when creating base profile"))
 			return
 		}
 
-		_, err = tx.Exec(c.Request.Context(), `INSERT INTO analyst_profile (analyst_id) VALUES ($1)`, userID)
+		_, err = tx.Exec(c.Request.Context(),
+			`INSERT INTO analyst_profile (analyst_id) VALUES ($1)`, userID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Erro ao criar profile analista"))
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+				c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Analyst profile already exists for this user"))
+				return
+			}
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Error when creating analyst profile"))
 			return
 		}
 
@@ -476,6 +512,7 @@ func GetClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param profile body pkg.ClientProfile true "Objeto perfil"
 // @Success 201 {object} pkg.ClientProfileResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/client/profile [post]
@@ -483,32 +520,51 @@ func CreateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		userID, _ := strconv.Atoi(id)
-		var profile pkg.ClientProfile
+
+		var profile pkg.AnalystProfile
 		_ = c.BindJSON(&profile)
 
 		tx, err := conn.Begin(c.Request.Context())
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Erro de transação"))
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Transaction error"))
 			return
 		}
 		defer tx.Rollback(c.Request.Context())
 
 		err = tx.QueryRow(c.Request.Context(),
 			`INSERT INTO user_profile (user_id, biography) VALUES ($1, $2)
-             RETURNING user_id, biography, COALESCE(picture, 'default_picture.png')`,
+            RETURNING user_id, biography, picture`,
 			userID, profile.Biography).Scan(&profile.User_id, &profile.Biography, &profile.Picture)
-
-		if err == nil {
-			_, err = tx.Exec(c.Request.Context(), `INSERT INTO client_profile (client_id) VALUES ($1)`, userID)
+		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) {
+				switch pgErr.Code {
+				case "23505": // unique_violation
+					c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Profile already exists for this user"))
+					return
+				case "23503": // foreign_key_violation (user_id não existe)
+					c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "User not found"))
+					return
+				}
+			}
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Error when creating base profile"))
+			return
 		}
 
+		_, err = tx.Exec(c.Request.Context(),
+			`INSERT INTO client_profile (client_id) VALUES ($1)`, userID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+				c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Client profile already exists for this user"))
+				return
+			}
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Error when creating analyst profile"))
 			return
 		}
 
 		tx.Commit(c.Request.Context())
-		c.JSON(http.StatusCreated, pkg.ClientProfileResponse{Client_profile: profile})
+		c.JSON(http.StatusCreated, pkg.AnalystProfileResponse{Analyst_profile: profile})
 	}
 }
 
