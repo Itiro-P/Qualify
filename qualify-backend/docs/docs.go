@@ -124,6 +124,252 @@ const docTemplate = `{
                 }
             }
         },
+        "/analysts/{id}/proposals": {
+            "get": {
+                "description": "Retorna lista de cartas de proposta (proposals) relacionadas a um analista específico",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Propostas"
+                ],
+                "summary": "Listar propostas de analista",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do analista",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID do cliente",
+                        "name": "client_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Título parcial",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Conteúdo parcial",
+                        "name": "content",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor mínimo por hora proposto",
+                        "name": "min_proposed_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor máximo por hora proposto",
+                        "name": "max_proposed_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Campo para ordenar: title,proposed_hourly_rate,time_created",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Direção: ASC ou DESC",
+                        "name": "order",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ProposalLettersResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/analysts/{id}/reviews": {
+            "get": {
+                "description": "Retorna avaliações relacionadas a um analista com filtros e paginação",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Avaliações"
+                ],
+                "summary": "Listar avaliações de um analista",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do analista",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID do cliente",
+                        "name": "client_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID do serviço",
+                        "name": "service_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Avaliação exata",
+                        "name": "rating",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Avaliação mínima",
+                        "name": "min_rating",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Avaliação máxima",
+                        "name": "max_rating",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ReviewsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/analysts/{id}/services": {
+            "get": {
+                "description": "Retorna lista de serviços relacionados a um analista com filtros",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Serviços"
+                ],
+                "summary": "Listar serviços de um analista",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do analista",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Status do serviço",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID da proposta",
+                        "name": "proposal_letter_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Título parcial",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Conteúdo parcial",
+                        "name": "content",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor mínimo por hora",
+                        "name": "min_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor máximo por hora",
+                        "name": "max_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Campo para ordenar: title,hourly_rate,status,time_created",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Direção: ASC ou DESC",
+                        "name": "order",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ServicesResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/change-password": {
             "post": {
                 "security": [
@@ -943,6 +1189,252 @@ const docTemplate = `{
                         "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/clients/{id}/proposals": {
+            "get": {
+                "description": "Retorna lista de cartas de proposta (proposals) relacionadas a um cliente específico",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Propostas"
+                ],
+                "summary": "Listar propostas de cliente",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do cliente",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID do analista",
+                        "name": "analyst_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Título parcial",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Conteúdo parcial",
+                        "name": "content",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor mínimo por hora proposto",
+                        "name": "min_proposed_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor máximo por hora proposto",
+                        "name": "max_proposed_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Campo para ordenar: title,proposed_hourly_rate,time_created",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Direção: ASC ou DESC",
+                        "name": "order",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ProposalLettersResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/clients/{id}/reviews": {
+            "get": {
+                "description": "Retorna avaliações relacionadas a um cliente com filtros e paginação",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Avaliações"
+                ],
+                "summary": "Listar avaliações de um cliente",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do cliente",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID do analista",
+                        "name": "analyst_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID do serviço",
+                        "name": "service_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Avaliação exata",
+                        "name": "rating",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Avaliação mínima",
+                        "name": "min_rating",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Avaliação máxima",
+                        "name": "max_rating",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ReviewsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/clients/{id}/services": {
+            "get": {
+                "description": "Retorna lista de serviços relacionados a um cliente com filtros",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Serviços"
+                ],
+                "summary": "Listar serviços",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do cliente",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Status do serviço",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID da proposta",
+                        "name": "proposal_letter_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Título parcial",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Conteúdo parcial",
+                        "name": "content",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor mínimo por hora",
+                        "name": "min_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor máximo por hora",
+                        "name": "max_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Campo para ordenar: title,hourly_rate,status,time_created",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Direção: ASC ou DESC",
+                        "name": "order",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ServicesResponse"
                         }
                     },
                     "500": {
@@ -3279,8 +3771,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/pkg.AnalystSkillResponse"
                         }

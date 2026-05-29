@@ -374,3 +374,223 @@ func DeleteService(conn *pgxpool.Pool) gin.HandlerFunc {
 		c.Status(http.StatusNoContent)
 	}
 }
+
+// GetClientServices de um cliente godoc
+// @Summary Listar serviços
+// @Description Retorna lista de serviços relacionados a um cliente com filtros
+// @Tags Serviços
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do cliente"
+// @Param status query string false "Status do serviço"
+// @Param proposal_letter_id query int false "ID da proposta"
+// @Param title query string false "Título parcial"
+// @Param content query string false "Conteúdo parcial"
+// @Param min_hourly_rate query number false "Valor mínimo por hora"
+// @Param max_hourly_rate query number false "Valor máximo por hora"
+// @Param sort_by query string false "Campo para ordenar: title,hourly_rate,status,time_created"
+// @Param order query string false "Direção: ASC ou DESC"
+// @Success 200 {object} pkg.ServicesResponse
+// @Failure 500 {object} pkg.ErrorResponse
+// @Router /clients/{id}/services [get]
+func GetClientServices(conn *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		clientID, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+			return
+		}
+
+		query := `SELECT s.id, s.title, s.content, s.proposal_letter_id, s.hourly_rate, s.status, s.time_created
+          FROM service s
+          JOIN proposal_letter p ON s.proposal_letter_id = p.id
+          JOIN client c ON p.client_id = c.id
+          WHERE c.user_id = $1`
+		args := []interface{}{clientID}
+		argCounter := 2
+
+		if status := c.Query("status"); status != "" {
+			query += fmt.Sprintf(" AND s.status = $%d", argCounter)
+			args = append(args, status)
+			argCounter++
+		}
+		if proposalID := c.Query("proposal_letter_id"); proposalID != "" {
+			if proposalIDVal, err := strconv.Atoi(proposalID); err == nil {
+				query += fmt.Sprintf(" AND s.proposal_letter_id = $%d", argCounter)
+				args = append(args, proposalIDVal)
+				argCounter++
+			}
+		}
+		if title := c.Query("title"); title != "" {
+			query += fmt.Sprintf(" AND s.title ILIKE $%d", argCounter)
+			args = append(args, "%"+title+"%")
+			argCounter++
+		}
+		if content := c.Query("content"); content != "" {
+			query += fmt.Sprintf(" AND s.content ILIKE $%d", argCounter)
+			args = append(args, "%"+content+"%")
+			argCounter++
+		}
+		if minRate := c.Query("min_hourly_rate"); minRate != "" {
+			if minRateVal, err := strconv.ParseFloat(minRate, 64); err == nil {
+				query += fmt.Sprintf(" AND s.hourly_rate >= $%d", argCounter)
+				args = append(args, minRateVal)
+				argCounter++
+			}
+		}
+		if maxRate := c.Query("max_hourly_rate"); maxRate != "" {
+			if maxRateVal, err := strconv.ParseFloat(maxRate, 64); err == nil {
+				query += fmt.Sprintf(" AND s.hourly_rate <= $%d", argCounter)
+				args = append(args, maxRateVal)
+				argCounter++
+			}
+		}
+
+		allowedSortFields := map[string]bool{
+			"title": true, "hourly_rate": true, "status": true, "time_created": true,
+		}
+		if sortBy := c.Query("sort_by"); sortBy != "" {
+			if allowedSortFields[sortBy] {
+				order := c.DefaultQuery("order", "ASC")
+				if order == "ASC" || order == "DESC" {
+					query += fmt.Sprintf(" ORDER BY s.%s %s", sortBy, order)
+				}
+			}
+		} else {
+			query += " ORDER BY s.time_created DESC"
+		}
+
+		rows, err := conn.Query(c.Request.Context(), query, args...)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			return
+		}
+		defer rows.Close()
+
+		var services []pkg.Service
+		for rows.Next() {
+			var s pkg.Service
+			if err := rows.Scan(&s.Id, &s.Title, &s.Content, &s.Proposal_letter_id,
+				&s.Hourly_rate, &s.Status, &s.Time_created); err != nil {
+				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+				return
+			}
+			services = append(services, s)
+		}
+		if err = rows.Err(); err != nil {
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			return
+		}
+		c.JSON(http.StatusOK, pkg.ServicesResponse{Services: services, Count: len(services)})
+	}
+}
+
+// GetAnalystServices godoc
+// @Summary Listar serviços de um analista
+// @Description Retorna lista de serviços relacionados a um analista com filtros
+// @Tags Serviços
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do analista"
+// @Param status query string false "Status do serviço"
+// @Param proposal_letter_id query int false "ID da proposta"
+// @Param title query string false "Título parcial"
+// @Param content query string false "Conteúdo parcial"
+// @Param min_hourly_rate query number false "Valor mínimo por hora"
+// @Param max_hourly_rate query number false "Valor máximo por hora"
+// @Param sort_by query string false "Campo para ordenar: title,hourly_rate,status,time_created"
+// @Param order query string false "Direção: ASC ou DESC"
+// @Success 200 {object} pkg.ServicesResponse
+// @Failure 500 {object} pkg.ErrorResponse
+// @Router /analysts/{id}/services [get]
+func GetAnalystServices(conn *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		analystID, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+			return
+		}
+
+		query := `SELECT s.id, s.title, s.content, s.proposal_letter_id, s.hourly_rate, s.status, s.time_created
+          FROM service s
+          JOIN proposal_letter p ON s.proposal_letter_id = p.id
+          JOIN analyst a ON p.analyst_id = a.id
+          WHERE a.user_id = $1`
+		args := []interface{}{analystID}
+		argCounter := 2
+
+		if status := c.Query("status"); status != "" {
+			query += fmt.Sprintf(" AND s.status = $%d", argCounter)
+			args = append(args, status)
+			argCounter++
+		}
+		if proposalID := c.Query("proposal_letter_id"); proposalID != "" {
+			if proposalIDVal, err := strconv.Atoi(proposalID); err == nil {
+				query += fmt.Sprintf(" AND s.proposal_letter_id = $%d", argCounter)
+				args = append(args, proposalIDVal)
+				argCounter++
+			}
+		}
+		if title := c.Query("title"); title != "" {
+			query += fmt.Sprintf(" AND s.title ILIKE $%d", argCounter)
+			args = append(args, "%"+title+"%")
+			argCounter++
+		}
+		if content := c.Query("content"); content != "" {
+			query += fmt.Sprintf(" AND s.content ILIKE $%d", argCounter)
+			args = append(args, "%"+content+"%")
+			argCounter++
+		}
+		if minRate := c.Query("min_hourly_rate"); minRate != "" {
+			if minRateVal, err := strconv.ParseFloat(minRate, 64); err == nil {
+				query += fmt.Sprintf(" AND s.hourly_rate >= $%d", argCounter)
+				args = append(args, minRateVal)
+				argCounter++
+			}
+		}
+		if maxRate := c.Query("max_hourly_rate"); maxRate != "" {
+			if maxRateVal, err := strconv.ParseFloat(maxRate, 64); err == nil {
+				query += fmt.Sprintf(" AND s.hourly_rate <= $%d", argCounter)
+				args = append(args, maxRateVal)
+				argCounter++
+			}
+		}
+
+		allowedSortFields := map[string]bool{
+			"title": true, "hourly_rate": true, "status": true, "time_created": true,
+		}
+		if sortBy := c.Query("sort_by"); sortBy != "" {
+			if allowedSortFields[sortBy] {
+				order := c.DefaultQuery("order", "ASC")
+				if order == "ASC" || order == "DESC" {
+					query += fmt.Sprintf(" ORDER BY s.%s %s", sortBy, order)
+				}
+			}
+		} else {
+			query += " ORDER BY s.time_created DESC"
+		}
+
+		rows, err := conn.Query(c.Request.Context(), query, args...)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			return
+		}
+		defer rows.Close()
+
+		var services []pkg.Service
+		for rows.Next() {
+			var s pkg.Service
+			if err := rows.Scan(&s.Id, &s.Title, &s.Content, &s.Proposal_letter_id,
+				&s.Hourly_rate, &s.Status, &s.Time_created); err != nil {
+				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+				return
+			}
+			services = append(services, s)
+		}
+		if err = rows.Err(); err != nil {
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			return
+		}
+		c.JSON(http.StatusOK, pkg.ServicesResponse{Services: services, Count: len(services)})
+	}
+}

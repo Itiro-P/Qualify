@@ -374,3 +374,225 @@ func DeleteProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 		c.Status(http.StatusNoContent)
 	}
 }
+
+// GetClientProposalLetters godoc
+// @Summary Listar propostas de cliente
+// @Description Retorna lista de cartas de proposta (proposals) relacionadas a um cliente específico
+// @Tags Propostas
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do cliente"
+// @Param analyst_id query int false "ID do analista"
+// @Param title query string false "Título parcial"
+// @Param content query string false "Conteúdo parcial"
+// @Param min_proposed_hourly_rate query number false "Valor mínimo por hora proposto"
+// @Param max_proposed_hourly_rate query number false "Valor máximo por hora proposto"
+// @Param sort_by query string false "Campo para ordenar: title,proposed_hourly_rate,time_created"
+// @Param order query string false "Direção: ASC ou DESC"
+// @Success 200 {object} pkg.ProposalLettersResponse
+// @Failure 500 {object} pkg.ErrorResponse
+// @Router /clients/{id}/proposals [get]
+func GetClientProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		clientID := c.Param("id")
+		_, err := strconv.Atoi(clientID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+			return
+		}
+
+		query := `SELECT p.id, p.client_id, p.analyst_id, p.proposed_hourly_rate,
+          p.title, p.content, p.time_created
+          FROM proposal_letter p
+          JOIN client c ON p.client_id = c.id
+          WHERE c.user_id = $1`
+		args := []interface{}{clientID}
+		argCounter := 2
+
+		if analystID := c.Query("analyst_id"); analystID != "" {
+			if analystIDVal, err := strconv.Atoi(analystID); err == nil {
+				query += fmt.Sprintf(" AND analyst_id = $%d", argCounter)
+				args = append(args, analystIDVal)
+				argCounter++
+			}
+		}
+
+		if title := c.Query("title"); title != "" {
+			query += fmt.Sprintf(" AND title ILIKE $%d", argCounter)
+			args = append(args, "%"+title+"%")
+			argCounter++
+		}
+
+		if content := c.Query("content"); content != "" {
+			query += fmt.Sprintf(" AND content ILIKE $%d", argCounter)
+			args = append(args, "%"+content+"%")
+			argCounter++
+		}
+
+		if minRate := c.Query("min_proposed_hourly_rate"); minRate != "" {
+			if minRateVal, err := strconv.ParseFloat(minRate, 64); err == nil {
+				query += fmt.Sprintf(" AND proposed_hourly_rate >= $%d", argCounter)
+				args = append(args, minRateVal)
+				argCounter++
+			}
+		}
+
+		if maxRate := c.Query("max_proposed_hourly_rate"); maxRate != "" {
+			if maxRateVal, err := strconv.ParseFloat(maxRate, 64); err == nil {
+				query += fmt.Sprintf(" AND proposed_hourly_rate <= $%d", argCounter)
+				args = append(args, maxRateVal)
+				argCounter++
+			}
+		}
+
+		allowedSortFields := map[string]bool{
+			"title": true, "proposed_hourly_rate": true, "time_created": true,
+		}
+		if sortBy := c.Query("sort_by"); sortBy != "" {
+			if allowedSortFields[sortBy] {
+				order := c.DefaultQuery("order", "ASC")
+				if order == "ASC" || order == "DESC" {
+					query += fmt.Sprintf(" ORDER BY %s %s", sortBy, order)
+				}
+			}
+		} else {
+			query += " ORDER BY time_created DESC"
+		}
+
+		rows, err := conn.Query(c.Request.Context(), query, args...)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			return
+		}
+		defer rows.Close()
+
+		var proposals []pkg.ProposalLetter
+		for rows.Next() {
+			var p pkg.ProposalLetter
+			if err := rows.Scan(&p.Id, &p.Client_id, &p.Analyst_id, &p.Proposed_hourly_rate,
+				&p.Title, &p.Content, &p.Time_created); err != nil {
+				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+				return
+			}
+			proposals = append(proposals, p)
+		}
+
+		if err = rows.Err(); err != nil {
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			return
+		}
+
+		c.JSON(http.StatusOK, pkg.ProposalLettersResponse{Proposal_letters: proposals, Count: len(proposals)})
+	}
+}
+
+// GetAnalystProposalLetters godoc
+// @Summary Listar propostas de analista
+// @Description Retorna lista de cartas de proposta (proposals) relacionadas a um analista específico
+// @Tags Propostas
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do analista"
+// @Param client_id query int false "ID do cliente"
+// @Param title query string false "Título parcial"
+// @Param content query string false "Conteúdo parcial"
+// @Param min_proposed_hourly_rate query number false "Valor mínimo por hora proposto"
+// @Param max_proposed_hourly_rate query number false "Valor máximo por hora proposto"
+// @Param sort_by query string false "Campo para ordenar: title,proposed_hourly_rate,time_created"
+// @Param order query string false "Direção: ASC ou DESC"
+// @Success 200 {object} pkg.ProposalLettersResponse
+// @Failure 500 {object} pkg.ErrorResponse
+// @Router /analysts/{id}/proposals [get]
+func GetAnalystProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		analystID := c.Param("id")
+		_, err := strconv.Atoi(analystID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+			return
+		}
+
+		query := `SELECT p.id, p.client_id, p.analyst_id, p.proposed_hourly_rate,
+          p.title, p.content, p.time_created
+          FROM proposal_letter p
+          JOIN analyst a ON p.analyst_id = a.id
+          WHERE a.user_id = $1`
+		args := []interface{}{analystID}
+		argCounter := 2
+
+		if clientID := c.Query("client_id"); clientID != "" {
+			if clientIDVal, err := strconv.Atoi(clientID); err == nil {
+				query += fmt.Sprintf(" AND client_id = $%d", argCounter)
+				args = append(args, clientIDVal)
+				argCounter++
+			}
+		}
+
+		if title := c.Query("title"); title != "" {
+			query += fmt.Sprintf(" AND title ILIKE $%d", argCounter)
+			args = append(args, "%"+title+"%")
+			argCounter++
+		}
+
+		if content := c.Query("content"); content != "" {
+			query += fmt.Sprintf(" AND content ILIKE $%d", argCounter)
+			args = append(args, "%"+content+"%")
+			argCounter++
+		}
+
+		if minRate := c.Query("min_proposed_hourly_rate"); minRate != "" {
+			if minRateVal, err := strconv.ParseFloat(minRate, 64); err == nil {
+				query += fmt.Sprintf(" AND proposed_hourly_rate >= $%d", argCounter)
+				args = append(args, minRateVal)
+				argCounter++
+			}
+		}
+
+		if maxRate := c.Query("max_proposed_hourly_rate"); maxRate != "" {
+			if maxRateVal, err := strconv.ParseFloat(maxRate, 64); err == nil {
+				query += fmt.Sprintf(" AND proposed_hourly_rate <= $%d", argCounter)
+				args = append(args, maxRateVal)
+				argCounter++
+			}
+		}
+
+		allowedSortFields := map[string]bool{
+			"title": true, "proposed_hourly_rate": true, "time_created": true,
+		}
+		if sortBy := c.Query("sort_by"); sortBy != "" {
+			if allowedSortFields[sortBy] {
+				order := c.DefaultQuery("order", "ASC")
+				if order == "ASC" || order == "DESC" {
+					query += fmt.Sprintf(" ORDER BY %s %s", sortBy, order)
+				}
+			}
+		} else {
+			query += " ORDER BY time_created DESC"
+		}
+
+		rows, err := conn.Query(c.Request.Context(), query, args...)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			return
+		}
+		defer rows.Close()
+
+		var proposals []pkg.ProposalLetter
+		for rows.Next() {
+			var p pkg.ProposalLetter
+			if err := rows.Scan(&p.Id, &p.Client_id, &p.Analyst_id, &p.Proposed_hourly_rate,
+				&p.Title, &p.Content, &p.Time_created); err != nil {
+				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+				return
+			}
+			proposals = append(proposals, p)
+		}
+
+		if err = rows.Err(); err != nil {
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			return
+		}
+
+		c.JSON(http.StatusOK, pkg.ProposalLettersResponse{Proposal_letters: proposals, Count: len(proposals)})
+	}
+}
