@@ -47,7 +47,7 @@ export interface AnalystProfileResponse {
 }
 
 export interface AnalystCertification {
-  analyst_id?: number;
+  analyst_id: number;
   certification_id: number;
 }
 
@@ -56,7 +56,7 @@ export interface AnalystCertificationResponse {
 }
 
 export interface AnalystSkill {
-  analyst_id?: number;
+  analyst_id: number;
   skill_id: number;
 }
 

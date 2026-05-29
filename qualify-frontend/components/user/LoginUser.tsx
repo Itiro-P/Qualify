@@ -44,20 +44,22 @@ export function LoginUser() {
 
     setLoading(true);
     try {
-      const response = await userService.login({ email, password });
-      const user = response.user;
-
-      setSessionUser({
-        id: user.id!,
-        name: user.name ?? "",
-        email: user.email ?? "",
-        phone: user.phone,
-        city: user.city,
-        country_code: user.country_code,
-        country_name: user.country_name,
-        country_state: user.country_state,
-        timezone: user.timezone,
-      });
+      const user = await userService.login({ email, password });
+      if (user != null) {
+        setSessionUser({
+          id: user.id!,
+          name: user.name ?? "",
+          email: user.email ?? "",
+          phone: user.phone,
+          city: user.city,
+          country_code: user.country_code,
+          country_name: user.country_name,
+          country_state: user.country_state,
+          timezone: user.timezone,
+        });
+      } else {
+        setError("E-mail ou senha incorretos.");
+      }
 
       router.push("/");
     } catch (err) {

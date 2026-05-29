@@ -7,31 +7,66 @@ import type {
 } from "@/types/services/certification";
 
 export const certificationService = {
-  list(name?: string): Promise<CertificationsResponse> {
+  list(name?: string): Promise<Certification[] | null> {
     const query = name ? `?name=${encodeURIComponent(name)}` : "";
-    return api.get(`/certifications${query}`);
+    return api.get<CertificationsResponse>(`/certifications${query}`).then(
+      (resp) => {
+        return resp.certifications;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
-  getById(id: number): Promise<CertificationResponse> {
-    return api.get(`/certifications/${id}`);
+  getById(id: number): Promise<Certification | null> {
+    return api.get<CertificationResponse>(`/certifications/${id}`).then(
+      (resp) => {
+        return resp.certification;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
-  create(data: Omit<Certification, "id">): Promise<CertificationResponse> {
-    return api.post("/certifications", data);
+  create(data: Omit<Certification, "id">): Promise<Certification | null> {
+    return api.post<CertificationResponse>("/certifications", data).then(
+      (resp) => {
+        return resp.certification;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
   update(
     id: number,
     data: Omit<Certification, "id">,
-  ): Promise<CertificationResponse> {
-    return api.put(`/certifications/${id}`, data);
+  ): Promise<Certification | null> {
+    return api.put<CertificationResponse>(`/certifications/${id}`, data).then(
+      (resp) => {
+        return resp.certification;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
   patch(
     id: number,
     data: CertificationUpdateRequest,
-  ): Promise<CertificationResponse> {
-    return api.patch(`/certifications/${id}`, data);
+  ): Promise<Certification | null> {
+    return api.patch<CertificationResponse>(`/certifications/${id}`, data).then(
+      (resp) => {
+        return resp.certification;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
   delete(id: number): Promise<Record<string, string>> {

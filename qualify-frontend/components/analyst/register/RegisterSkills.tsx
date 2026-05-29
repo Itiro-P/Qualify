@@ -10,7 +10,7 @@ function handleChange(
 ) {
   const { value } = e.target;
 
-  setForm({ id: 0, name: value });
+  setForm({ id: -1, name: value });
 }
 
 function validateSkill(skills: Skill[], skill: string): string {
@@ -26,47 +26,47 @@ function validateSkill(skills: Skill[], skill: string): string {
 function handleSubmit(
   e: React.FormEvent<HTMLFormElement>,
   setErrors: React.Dispatch<React.SetStateAction<string>>,
-  setSkillsAnalyst: React.Dispatch<React.SetStateAction<Skill[]>>,
-  skillsAnalyst: Skill[],
+  setAnalystSkills: React.Dispatch<React.SetStateAction<Skill[]>>,
+  analystSkills: Skill[],
   skill: Skill,
   setskill: React.Dispatch<React.SetStateAction<Skill>>,
 ) {
   e.preventDefault();
 
-  const validationErrors = validateSkill(skillsAnalyst, skill.name);
+  const validationErrors = validateSkill(analystSkills, skill.name);
 
   setErrors(validationErrors);
 
   if (!validationErrors) {
     console.log("Dados salvados:", skill.name);
 
-    setSkillsAnalyst((prev) => [...prev, { id: 0, name: skill.name }]);
+    setAnalystSkills((prev) => [...prev, { id: -1, name: skill.name }]);
 
-    setskill({ id: 0, name: "" });
+    setskill({ id: -1, name: "" });
   }
 }
 
 function removeskill(
-  setSkillsAnalyst: React.Dispatch<React.SetStateAction<Skill[]>>,
+  setAnalystSkills: React.Dispatch<React.SetStateAction<Skill[]>>,
   skill: Skill,
 ) {
-  setSkillsAnalyst((prev) => [
+  setAnalystSkills((prev) => [
     ...prev.filter((item) => item.name !== skill.name),
   ]);
 }
 
 function SkillSaves({
   skill,
-  setSkillsAnalyst,
+  setAnalystSkills,
 }: {
   skill: Skill;
-  setSkillsAnalyst: React.Dispatch<React.SetStateAction<Skill[]>>;
+  setAnalystSkills: React.Dispatch<React.SetStateAction<Skill[]>>;
 }) {
   return (
     <FormButton
       variant="outline"
       fullWidth={false}
-      onClick={() => removeskill(setSkillsAnalyst, skill)}
+      onClick={() => removeskill(setAnalystSkills, skill)}
       className="m-1 py-2! px-4! text-sm"
       type="button"
     >
@@ -76,15 +76,15 @@ function SkillSaves({
 }
 
 export function RegisterSkills({
-  skillsAnalyst,
-  setSkillsAnalyst,
+  analystSkills,
+  setAnalystSkills,
 }: {
-  skillsAnalyst: Skill[];
-  setSkillsAnalyst: React.Dispatch<React.SetStateAction<Skill[]>>;
+  analystSkills: Skill[];
+  setAnalystSkills: React.Dispatch<React.SetStateAction<Skill[]>>;
 }) {
   const [errors, setErrors] = useState<string>("");
   const [skill, setskill] = useState<Skill>({
-    id: 0,
+    id: -1,
     name: "",
   });
 
@@ -94,8 +94,8 @@ export function RegisterSkills({
         handleSubmit(
           e,
           setErrors,
-          setSkillsAnalyst,
-          skillsAnalyst,
+          setAnalystSkills,
+          analystSkills,
           skill,
           setskill,
         )
@@ -115,12 +115,12 @@ export function RegisterSkills({
       <FormButton type="submit" fullWidth={false} className="mt-4 px-6">
         Adicionar
       </FormButton>
-      {skillsAnalyst.length > 0 && (
+      {analystSkills.length > 0 && (
         <p className="m-2 text-sm text-neutral-slate">Tecnologias salvas:</p>
       )}
       <div className="flex flex-row justify-start flex-wrap">
-        {skillsAnalyst.map((skill) => (
-          <SkillSaves key={skill.name} {...{ setSkillsAnalyst, skill }} />
+        {analystSkills.map((skill) => (
+          <SkillSaves key={skill.name} {...{ setAnalystSkills, skill }} />
         ))}
       </div>
     </form>
