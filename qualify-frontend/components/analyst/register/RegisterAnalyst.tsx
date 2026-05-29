@@ -45,7 +45,9 @@ export function RegisterAnalyst({ userSession }: { userSession: User }) {
         certification.name,
       ); // pega certificação que correspondem ao nome da certificação
       if (certificationOfDataBase == null) {
-        setError("Deu erro ao criar a certificação. Tente novamente.");
+        setError(
+          "Deu erro ao pegar a certificação no banco de dados. Tente novamente.",
+        );
         return -1; // retorna -1 para indicar falha
       }
       let createdCertication: Certification | null;

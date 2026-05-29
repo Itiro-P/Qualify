@@ -20,8 +20,19 @@ function buildQuery(params?: Record<string, unknown>): string {
 }
 
 export const reviewService = {
-  list(params?: ListReviewsParams): Promise<ReviewsResponse> {
-    return api.get(`/reviews${buildQuery(params as Record<string, unknown>)}`);
+  list(params?: ListReviewsParams): Promise<ReviewsResponse | null> {
+    return api
+      .get<ReviewsResponse>(
+        `/reviews${buildQuery(params as Record<string, unknown>)}`,
+      )
+      .then(
+        (resp) => {
+          return resp;
+        },
+        () => {
+          return null;
+        },
+      );
   },
 
   getById(id: number): Promise<Review | null> {

@@ -134,10 +134,20 @@ export const analystService = {
   },
 
   // Certifications
-  listCertifications(
-    userId: number,
-  ): Promise<{ certifications: Certification[]; count: number }> {
-    return api.get(`/users/${userId}/analyst/certifications`);
+  listCertifications(userId: number): Promise<Certification[] | null> {
+    return api
+      .get<{
+        certifications: Certification[];
+        count: number;
+      }>(`/users/${userId}/analyst/certifications`)
+      .then(
+        (resp) => {
+          return resp.certifications;
+        },
+        () => {
+          return null;
+        },
+      );
   },
 
   addCertification(

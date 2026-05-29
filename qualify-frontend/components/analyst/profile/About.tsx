@@ -40,8 +40,9 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
       const reviewsResp = await reviewService.list({
         analyst_id: analyst.id,
       });
-
-      setReviewCardsVector(reviewsResp.reviews);
+      if (reviewsResp?.reviews != null) {
+        setReviewCardsVector(reviewsResp.reviews);
+      }
 
       // Skills
       const anlystSkillIds = await analystService.listSkills(analyst.id);
@@ -59,8 +60,9 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
 
       // Certifications
       const certResp = await analystService.listCertifications(analyst.id);
-
-      setCertificationsCardsVector(certResp.certifications);
+      if (certResp != null) {
+        setCertificationsCardsVector(certResp);
+      }
     }
     loadData();
   }, [analyst.id]);
