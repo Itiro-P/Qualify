@@ -1,32 +1,55 @@
-export interface SessionUser {
-  id: number;
-  name: string;
-  email: string;
-  phone?: string;
-  city?: string;
-  country_code?: string;
-  country_name?: string;
-  country_state?: string;
-  timezone?: string;
+import type { User, HTTPUserResponse } from "@/types/services/user";
+import { userService } from "@/libs/services";
+
+export type { User };
+
+interface StoredTokens {
+  access_token: string;
+  refresh_token: string;
 }
 
-const SESSION_KEY = "qualify_user";
+const TOKEN_KEY = "qualify_tokens";
 
-export function getSessionUser(): SessionUser | null {
+export function getStoredTokens(): StoredTokens | null {
   if (typeof window === "undefined") return null;
-  const raw = localStorage.getItem(SESSION_KEY);
+  const raw = localStorage.getItem(TOKEN_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as SessionUser;
+    return JSON.parse(raw) as StoredTokens;
   } catch {
     return null;
   }
 }
 
-export function setSessionUser(user: SessionUser): void {
-  localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+export function setStoredTokens(tokens: StoredTokens): void {
+  localStorage.setItem(TOKEN_KEY, JSON.stringify(tokens));
+}
+
+export function getAccessToken(): string | null {
+  const tokens = getStoredTokens();
+  return tokens?.access_token ?? null;
+}
+
+export async function getSessionUser(): Promise<User | null> {
+  if (typeof window === "undefined") return null;
+  const tokens = getStoredTokens();
+  if (!tokens) return null;
+
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+
+  try {
+    const user = await userService.me();
+    if (!user) {
+      clearSession();
+      return null;
+    }
+
+    return user;
+  } catch {
+    return null;
+  }
 }
 
 export function clearSession(): void {
-  localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(TOKEN_KEY);
 }

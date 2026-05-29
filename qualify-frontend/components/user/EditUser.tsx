@@ -10,15 +10,13 @@ import { validateEditForm } from "@/libs/validation";
 import { userService } from "@/libs/services";
 import {
   getSessionUser,
-  setSessionUser,
-  type SessionUser,
 } from "@/libs/session";
-import type { ApiError } from "@/libs/api";
 import { FormInput, FormButton, FormPanel, Alert } from "@/components/ui";
+import type { User } from "@/types/services/user";
 
 export function EditUser() {
   const router = useRouter();
-  const [user, setUser] = useState<SessionUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [form, setForm] = useState<IUserEditForm>({
     name: "",
     surname: "",
@@ -36,28 +34,31 @@ export function EditUser() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const session = getSessionUser();
-    if (!session) {
-      router.push("/User/register");
-      return;
+    async function loadUser() {
+      const session = await getSessionUser();
+      if (!session) {
+        router.push("/user/register");
+        return;
+      }
+      setUser(session);
+
+      const nameParts = (session.name || "").split(" ");
+      const firstName = nameParts[0] || "";
+      const surname = nameParts.slice(1).join(" ") || "";
+
+      setForm({
+        name: firstName,
+        surname,
+        email: session.email || "",
+        phone: session.phone || "",
+        timezone: session.timezone || "",
+        country_name: session.country_name || "",
+        country_code: session.country_code || "",
+        country_state: session.country_state || "",
+        city: session.city || "",
+      });
     }
-    setUser(session);
-
-    const nameParts = (session.name || "").split(" ");
-    const firstName = nameParts[0] || "";
-    const surname = nameParts.slice(1).join(" ") || "";
-
-    setForm({
-      name: firstName,
-      surname,
-      email: session.email || "",
-      phone: session.phone || "",
-      timezone: session.timezone || "",
-      country_name: session.country_name || "",
-      country_code: session.country_code || "",
-      country_state: session.country_state || "",
-      city: session.city || "",
-    });
+    loadUser();
   }, [router]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -79,38 +80,24 @@ export function EditUser() {
     if (!user) return;
 
     setLoading(true);
-    try {
-      const fullName = `${form.name.trim()} ${form.surname.trim()}`;
-      const response = await userService.update(user.id, {
-        name: fullName,
-        email: form.email.trim(),
-        phone: form.phone.trim(),
-        city: form.city.trim(),
-        country_code: form.country_code.trim(),
-        country_name: form.country_name.trim(),
-        country_state: form.country_state.trim(),
-        timezone: form.timezone.trim(),
-      });
+    const fullName = `${form.name.trim()} ${form.surname.trim()}`;
+    const updated = await userService.update(user.id, {
+      name: fullName,
+      email: form.email.trim(),
+      phone: form.phone.trim(),
+      city: form.city.trim(),
+      country_code: form.country_code.trim(),
+      country_name: form.country_name.trim(),
+      country_state: form.country_state.trim(),
+      timezone: form.timezone.trim(),
+    });
 
-      setSessionUser({
-        id: response.user.id!,
-        name: response.user.name!,
-        email: response.user.email!,
-        phone: response.user.phone,
-        city: response.user.city,
-        country_code: response.user.country_code,
-        country_name: response.user.country_name,
-        country_state: response.user.country_state,
-        timezone: response.user.timezone,
-      });
-
+    if (updated) {
       setSuccess("Dados atualizados com sucesso!");
-    } catch (err) {
-      const apiErr = err as ApiError;
-      setSubmitError(apiErr.message || "Erro ao atualizar. Tente novamente.");
-    } finally {
-      setLoading(false);
+    } else {
+      setSubmitError("Erro ao atualizar. Tente novamente.");
     }
+    setLoading(false);
   }
 
   if (!user) return null;

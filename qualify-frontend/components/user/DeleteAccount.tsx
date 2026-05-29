@@ -3,24 +3,27 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { userService } from "@/libs/services";
-import { getSessionUser, clearSession, type SessionUser } from "@/libs/session";
-import type { ApiError } from "@/libs/api";
+import { getSessionUser, clearSession } from "@/libs/session";
 import { FormInput, FormButton, FormPanel, Alert } from "@/components/ui";
+import type { User } from "@/types/services/user";
 
 export function DeleteAccount() {
   const router = useRouter();
-  const [user, setUser] = useState<SessionUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [confirmation, setConfirmation] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const session = getSessionUser();
-    if (!session) {
-      router.push("/User/register");
-      return;
+    async function loadUser() {
+      const session = await getSessionUser();
+      if (!session) {
+        router.push("/user/register");
+        return;
+      }
+      setUser(session);
     }
-    setUser(session);
+    loadUser();
   }, [router]);
 
   async function handleDelete(e: React.FormEvent) {
@@ -35,16 +38,14 @@ export function DeleteAccount() {
     if (!user) return;
 
     setLoading(true);
-    try {
-      await userService.delete(user.id);
+    const success = await userService.delete(user.id);
+    if (success) {
       clearSession();
       router.push("/");
-    } catch (err) {
-      const apiErr = err as ApiError;
-      setError(apiErr.message || "Erro ao excluir conta. Tente novamente.");
-    } finally {
-      setLoading(false);
+    } else {
+      setError("Erro ao excluir conta. Tente novamente.");
     }
+    setLoading(false);
   }
 
   if (!user) return null;

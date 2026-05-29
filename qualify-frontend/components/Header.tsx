@@ -12,12 +12,16 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { getSessionUser, clearSession } from "@/libs/session";
-import type { SessionUser } from "@/libs/session";
+import type { User as SessionUser} from "@/types/services/user";
 
 export function Header() {
-  const [user, setUser] = useState<SessionUser | null>(()=>getSessionUser());
+  const [user, setUser] = useState<SessionUser | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    getSessionUser().then(setUser);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
