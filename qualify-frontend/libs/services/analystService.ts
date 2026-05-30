@@ -15,6 +15,7 @@ import type {
   AnalystSkill,
 } from "@/types/services/analyst";
 import { Service } from "@/types/services/service";
+import { Review } from "@/types/services/review";
 
 function buildQuery(params?: Record<string, unknown>): string {
   if (!params) return "";
@@ -233,6 +234,25 @@ export const analystService = {
       .then(
         (resp) => {
           return resp.services;
+        },
+        () => {
+          return null;
+        },
+      );
+  },
+
+  //Reviews
+  listReviews(userId: number): Promise<Review[] | null> {
+    return api
+      .get<{
+        reviews: Review[];
+        page?: number;
+        page_size?: number;
+        count: number;
+      }>(`/analyst/${userId}/reviews`)
+      .then(
+        (resp) => {
+          return resp.reviews;
         },
         () => {
           return null;
