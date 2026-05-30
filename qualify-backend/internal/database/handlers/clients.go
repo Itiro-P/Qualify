@@ -35,12 +35,12 @@ import (
 func GetClients(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		query := `
-			SELECT u.id, u.name, u.email, u.phone, u.time_created,
-			       u.country_code, u.country_name, u.country_state, u.city, u.timezone,
-			       c.proposed_budget
-			FROM "user" u
-			JOIN client c ON c.id = u.id
-			WHERE 1=1`
+            SELECT u.id, u.name, u.email, u.phone, u.time_created,
+                   u.country_code, u.country_name, u.country_state, u.city, u.timezone,
+                   c.proposed_budget
+            FROM "user" u
+            JOIN client c ON c.id = u.id
+            WHERE 1=1`
 
 		args := []interface{}{}
 		argCounter := 1
@@ -127,20 +127,7 @@ func GetClients(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		var clients []pkg.Client
 		for rows.Next() {
-			var client pkg.Client
-			err := rows.Scan(
-				&client.Id,
-				&client.Name,
-				&client.Email,
-				&client.Phone,
-				&client.Time_created,
-				&client.Country_code,
-				&client.Country_name,
-				&client.Country_state,
-				&client.City,
-				&client.Timezone,
-				&client.Proposed_budget,
-			)
+			client, err := pkg.ScanClient(rows)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
@@ -174,32 +161,20 @@ func GetClients(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/client [get]
 func GetClient(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		clientID, err := strconv.Atoi(id)
+		clientID, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
-		var client pkg.Client
-		err = conn.QueryRow(c.Request.Context(), `
-			SELECT u.id, u.name, u.email, u.phone, u.time_created, 
-			       u.country_code, u.country_name, u.country_state, u.city, u.timezone,
-			       c.proposed_budget
-			FROM "user" u
-			JOIN client c ON c.id = u.id
-			WHERE u.id = $1`, clientID).Scan(
-			&client.Id,
-			&client.Name,
-			&client.Email,
-			&client.Phone,
-			&client.Time_created,
-			&client.Country_code,
-			&client.Country_name,
-			&client.Country_state,
-			&client.City,
-			&client.Timezone,
-			&client.Proposed_budget,
-		)
+
+		row := conn.QueryRow(c.Request.Context(), `
+            SELECT u.id, u.name, u.email, u.phone, u.time_created, 
+                   u.country_code, u.country_name, u.country_state, u.city, u.timezone,
+                   c.proposed_budget
+            FROM "user" u
+            JOIN client c ON c.id = u.id
+            WHERE u.id = $1`, clientID)
+
+		client, err := pkg.ScanClient(row)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -229,10 +204,8 @@ func GetClient(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/client [post]
 func CreateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userIDParam := c.Param("id")
-		userID, err := strconv.Atoi(userIDParam)
+		userID, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -285,10 +258,8 @@ func CreateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/client [put]
 func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		clientID, err := strconv.Atoi(id)
+		clientID, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		var client pkg.Client
@@ -327,8 +298,8 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		_, err = tx.Exec(c.Request.Context(),
 			`UPDATE "user" SET name = $1, email = $2, phone = $3, country_code = $4, 
-			 country_name = $5, country_state = $6, city = $7, timezone = $8
-			 WHERE id = $9`,
+             country_name = $5, country_state = $6, city = $7, timezone = $8
+             WHERE id = $9`,
 			client.Name, client.Email, client.Phone, client.Country_code, client.Country_name, client.Country_state,
 			client.City, client.Timezone, clientID)
 		if err != nil {
@@ -338,7 +309,7 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		_, err = tx.Exec(c.Request.Context(),
 			`UPDATE client SET proposed_budget = $1
-			 WHERE id = $2`,
+             WHERE id = $2`,
 			client.Proposed_budget, clientID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
@@ -346,25 +317,15 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		// Fetch the updated client within transaction
-		err = tx.QueryRow(c.Request.Context(), `
-			SELECT u.id, u.name, u.email, u.phone, u.time_created, 
-				   u.country_code, u.country_name, u.country_state, u.city, u.timezone,
-				   c.proposed_budget
-			FROM "user" u
-			JOIN client c ON c.id = u.id
-			WHERE u.id = $1`, clientID).Scan(
-			&client.Id,
-			&client.Name,
-			&client.Email,
-			&client.Phone,
-			&client.Time_created,
-			&client.Country_code,
-			&client.Country_name,
-			&client.Country_state,
-			&client.City,
-			&client.Timezone,
-			&client.Proposed_budget,
-		)
+		row := tx.QueryRow(c.Request.Context(), `
+            SELECT u.id, u.name, u.email, u.phone, u.time_created, 
+                   u.country_code, u.country_name, u.country_state, u.city, u.timezone,
+                   c.proposed_budget
+            FROM "user" u
+            JOIN client c ON c.id = u.id
+            WHERE u.id = $1`, clientID)
+
+		client, err = pkg.ScanClient(row)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -399,10 +360,8 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/client [delete]
 func DeleteClient(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		clientID, err := strconv.Atoi(id)
+		clientID, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -437,10 +396,8 @@ func DeleteClient(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/client [patch]
 func UpdateClientPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		clientID, err := strconv.Atoi(id)
+		clientID, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -539,26 +496,15 @@ func UpdateClientPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			}
 		}
 
-		var client pkg.Client
-		err = tx.QueryRow(c.Request.Context(), `
-			SELECT u.id, u.name, u.email, u.phone, u.time_created, 
-				   u.country_code, u.country_name, u.country_state, u.city, u.timezone,
-				   c.proposed_budget
-			FROM "user" u
-			JOIN client c ON c.id = u.id
-			WHERE u.id = $1`, clientID).Scan(
-			&client.Id,
-			&client.Name,
-			&client.Email,
-			&client.Phone,
-			&client.Time_created,
-			&client.Country_code,
-			&client.Country_name,
-			&client.Country_state,
-			&client.City,
-			&client.Timezone,
-			&client.Proposed_budget,
-		)
+		row := tx.QueryRow(c.Request.Context(), `
+            SELECT u.id, u.name, u.email, u.phone, u.time_created, 
+                   u.country_code, u.country_name, u.country_state, u.city, u.timezone,
+                   c.proposed_budget
+            FROM "user" u
+            JOIN client c ON c.id = u.id
+            WHERE u.id = $1`, clientID)
+
+		client, err := pkg.ScanClient(row)
 		if err != nil {
 			_ = tx.Rollback(c.Request.Context())
 			if err == pgx.ErrNoRows {

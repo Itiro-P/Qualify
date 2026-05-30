@@ -49,8 +49,8 @@ func GetSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		var skills []pkg.Skill
 		for rows.Next() {
-			var skill pkg.Skill
-			if err := rows.Scan(&skill.Id, &skill.Name); err != nil {
+			skill, err := pkg.ScanSkill(rows)
+			if err != nil {
 				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
 			}
@@ -80,17 +80,15 @@ func GetSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /skills/{id} [get]
 func GetSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		skillID, err := strconv.Atoi(id)
+		skillID, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
-		var skill pkg.Skill
-		err = conn.QueryRow(c.Request.Context(),
-			`SELECT id, name FROM skill WHERE id = $1`, skillID).
-			Scan(&skill.Id, &skill.Name)
 
+		row := conn.QueryRow(c.Request.Context(),
+			`SELECT id, name FROM skill WHERE id = $1`, skillID)
+
+		skill, err := pkg.ScanSkill(row)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -126,16 +124,14 @@ func CreateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		err := conn.QueryRow(c.Request.Context(),
-			`INSERT INTO skill (name)
-			 VALUES ($1)
-			 RETURNING id`,
+			`INSERT INTO skill (name) VALUES ($1) RETURNING id, name`,
 			skill.Name).
-			Scan(&skill.Id)
+			Scan(&skill.Id, &skill.Name)
 		if err != nil {
 			var pgErr *pgconn.PgError
 			if errors.As(err, &pgErr) {
 				switch pgErr.Code {
-				case "23505": // unique_violation
+				case "23505":
 					c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Skill already exists"))
 					return
 				}
@@ -144,13 +140,11 @@ func CreateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		err = conn.QueryRow(c.Request.Context(),
-			`INSERT INTO skill (name)
-			 VALUES ($1)
-			 RETURNING id`,
-			skill.Name).
-			Scan(&skill.Id)
+		row := conn.QueryRow(c.Request.Context(),
+			`INSERT INTO skill (name) VALUES ($1) RETURNING id, name`,
+			skill.Name)
 
+		skill, err = pkg.ScanSkill(row)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
@@ -176,31 +170,27 @@ func CreateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /skills/{id} [put]
 func UpdateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		skillID, err := strconv.Atoi(id)
+		skillID, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
+
 		var skill pkg.Skill
 		if err := c.BindJSON(&skill); err != nil {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		// Validando parâmetros obrigatórios
 		if skill.Name == "" {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty name"))
 			return
 		}
 
-		err = conn.QueryRow(c.Request.Context(),
-			`UPDATE skill SET name = $1
-			 WHERE id = $2
-			 RETURNING id, name`,
-			skill.Name, skillID).
-			Scan(&skill.Id, &skill.Name)
+		row := conn.QueryRow(c.Request.Context(),
+			`UPDATE skill SET name = $1 WHERE id = $2 RETURNING id, name`,
+			skill.Name, skillID)
 
+		skill, err = pkg.ScanSkill(row)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -229,10 +219,8 @@ func UpdateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /skills/{id} [delete]
 func DeleteSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		skillID, err := strconv.Atoi(id)
+		skillID, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -268,20 +256,17 @@ func DeleteSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/analyst/skills [get]
 func GetAnalystSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		analystID := c.Param("id")
-		analystIDVal, err := strconv.Atoi(analystID)
-
+		analystIDVal, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		rows, err := conn.Query(c.Request.Context(),
 			`SELECT s.id, s.name
-			 FROM skill s
-			 JOIN analyst_skill ac ON s.id = ac.skill_id
-			 WHERE ac.analyst_id = $1
-			 ORDER BY s.name`,
+             FROM skill s
+             JOIN analyst_skill ac ON s.id = ac.skill_id
+             WHERE ac.analyst_id = $1
+             ORDER BY s.name`,
 			analystIDVal,
 		)
 		if err != nil {
@@ -289,10 +274,11 @@ func GetAnalystSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 		defer rows.Close()
+
 		var skills []pkg.Skill
 		for rows.Next() {
-			var skill pkg.Skill
-			if err := rows.Scan(&skill.Id, &skill.Name); err != nil {
+			skill, err := pkg.ScanSkill(rows)
+			if err != nil {
 				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
 			}
@@ -324,10 +310,8 @@ func GetAnalystSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/analyst/skills [post]
 func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		analystID, err := strconv.Atoi(id)
+		analystID, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -338,7 +322,6 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 		as.Analyst_id = analystID
 
-		// Validando parâmetros obrigatórios
 		var analystExists bool
 		err = conn.QueryRow(c.Request.Context(),
 			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, as.Analyst_id,
@@ -393,10 +376,8 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/analyst/skills [delete]
 func DeleteAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID := c.Param("id")
-		userIDVal, err := strconv.Atoi(userID)
+		userIDVal, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 

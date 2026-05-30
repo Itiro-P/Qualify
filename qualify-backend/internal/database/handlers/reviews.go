@@ -33,14 +33,12 @@ import (
 // @Router /reviews [get]
 func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Build query with filters
 		query := `SELECT id, analyst_id, client_id, service_id, rating, comment, time_created 
                   FROM review WHERE 1=1`
 
 		args := []interface{}{}
 		argCounter := 1
 
-		// Filter by analyst_id
 		if analystID := c.Query("analyst_id"); analystID != "" {
 			if analystIDVal, err := strconv.Atoi(analystID); err == nil {
 				query += fmt.Sprintf(" AND analyst_id = $%d", argCounter)
@@ -49,7 +47,6 @@ func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 			}
 		}
 
-		// Filter by client_id
 		if clientID := c.Query("client_id"); clientID != "" {
 			if clientIDVal, err := strconv.Atoi(clientID); err == nil {
 				query += fmt.Sprintf(" AND client_id = $%d", argCounter)
@@ -58,7 +55,6 @@ func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 			}
 		}
 
-		// Filter by service_id
 		if serviceID := c.Query("service_id"); serviceID != "" {
 			if serviceIDVal, err := strconv.Atoi(serviceID); err == nil {
 				query += fmt.Sprintf(" AND service_id = $%d", argCounter)
@@ -67,7 +63,6 @@ func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 			}
 		}
 
-		// Rating filter (exact match)
 		if rating := c.Query("rating"); rating != "" {
 			if ratingVal, err := strconv.Atoi(rating); err == nil && ratingVal >= 1 && ratingVal <= 5 {
 				query += fmt.Sprintf(" AND rating = $%d", argCounter)
@@ -76,7 +71,6 @@ func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 			}
 		}
 
-		// Rating range filter
 		if minRating := c.Query("min_rating"); minRating != "" {
 			if minRatingVal, err := strconv.Atoi(minRating); err == nil {
 				query += fmt.Sprintf(" AND rating >= $%d", argCounter)
@@ -93,14 +87,12 @@ func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 			}
 		}
 
-		// Comment filter (partial match)
 		if comment := c.Query("comment"); comment != "" {
 			query += fmt.Sprintf(" AND comment ILIKE $%d", argCounter)
 			args = append(args, "%"+comment+"%")
 			argCounter++
 		}
 
-		// Date range filters
 		if fromDate := c.Query("from_date"); fromDate != "" {
 			query += fmt.Sprintf(" AND time_created >= $%d", argCounter)
 			args = append(args, fromDate)
@@ -113,25 +105,21 @@ func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 			argCounter++
 		}
 
-		// Optional: Add sorting
 		if sortBy := c.Query("sort_by"); sortBy != "" {
-			// Validando sortBy para evitar SQL injection - apenas campos permitidos
 			allowedSortFields := map[string]bool{
 				"id": true, "analyst_id": true, "client_id": true, "service_id": true,
 				"rating": true, "time_created": true,
 			}
 			if allowedSortFields[sortBy] {
-				order := c.DefaultQuery("order", "DESC") // Default DESC for reviews (newest first)
+				order := c.DefaultQuery("order", "DESC")
 				if order == "ASC" || order == "DESC" {
 					query += fmt.Sprintf(" ORDER BY %s %s", sortBy, order)
 				}
 			}
 		} else {
-			// Default sorting by newest first
 			query += " ORDER BY time_created DESC"
 		}
 
-		// Pagination
 		page := 1
 		if p := c.Query("page"); p != "" {
 			if pVal, err := strconv.Atoi(p); err == nil && pVal > 0 {
@@ -139,7 +127,7 @@ func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 			}
 		}
 
-		pageSize := 20 // Default page size for reviews
+		pageSize := 20
 		if ps := c.Query("page_size"); ps != "" {
 			if psVal, err := strconv.Atoi(ps); err == nil && psVal > 0 && psVal <= 100 {
 				pageSize = psVal
@@ -150,7 +138,6 @@ func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 		query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argCounter, argCounter+1)
 		args = append(args, pageSize, offset)
 
-		// Execute query
 		rows, err := conn.Query(c.Request.Context(), query, args...)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
@@ -160,18 +147,8 @@ func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		var reviews []pkg.Review
 
-		// Iterate through results
 		for rows.Next() {
-			var review pkg.Review
-			err := rows.Scan(
-				&review.Id,
-				&review.Analyst_id,
-				&review.Client_id,
-				&review.Service_id,
-				&review.Rating,
-				&review.Comment,
-				&review.Time_created,
-			)
+			review, err := pkg.ScanReview(rows)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
@@ -179,13 +156,11 @@ func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 			reviews = append(reviews, review)
 		}
 
-		// Check for errors from iterating over rows
 		if err = rows.Err(); err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
-		// Return results
 		c.JSON(http.StatusOK, pkg.ReviewsResponse{
 			Reviews:   reviews,
 			Count:     len(reviews),
@@ -209,14 +184,13 @@ func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /reviews/{id} [get]
 func GetReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		reviewID, err := strconv.Atoi(id)
+		reviewID, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
-		var review pkg.Review
-		err = conn.QueryRow(c.Request.Context(), "SELECT id, analyst_id, client_id, service_id, rating, comment, time_created FROM review WHERE id = $1", reviewID).Scan(&review.Id, &review.Analyst_id, &review.Client_id, &review.Service_id, &review.Rating, &review.Comment, &review.Time_created)
+
+		row := conn.QueryRow(c.Request.Context(), "SELECT id, analyst_id, client_id, service_id, rating, comment, time_created FROM review WHERE id = $1", reviewID)
+		review, err := pkg.ScanReview(row)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -251,7 +225,6 @@ func CreateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		// Validando que a avaliação esteja entre 1-5
 		if review.Rating < 1 || review.Rating > 5 {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Rating should be between 1 and 5"))
 			return
@@ -259,15 +232,15 @@ func CreateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		err := conn.QueryRow(c.Request.Context(),
 			`INSERT INTO review (analyst_id, client_id, service_id, rating, comment)
-			 VALUES ($1, $2, $3, $4, $5)
-			 RETURNING id, time_created`,
+             VALUES ($1, $2, $3, $4, $5)
+             RETURNING id, analyst_id, client_id, service_id, rating, comment, time_created`,
 			review.Analyst_id, review.Client_id, review.Service_id, review.Rating, review.Comment).
-			Scan(&review.Id, &review.Time_created)
+			Scan(&review.Id, &review.Analyst_id, &review.Client_id, &review.Service_id, &review.Rating, &review.Comment, &review.Time_created)
 		if err != nil {
 			var pgErr *pgconn.PgError
 			if errors.As(err, &pgErr) {
 				switch pgErr.Code {
-				case "23505": // unique_violation
+				case "23505":
 					c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Review already exists"))
 					return
 				}
@@ -276,13 +249,13 @@ func CreateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		err = conn.QueryRow(c.Request.Context(),
+		row := conn.QueryRow(c.Request.Context(),
 			`INSERT INTO review (analyst_id, client_id, service_id, rating, comment)
-			 VALUES ($1, $2, $3, $4, $5)
-			 RETURNING id, time_created`,
-			review.Analyst_id, review.Client_id, review.Service_id, review.Rating, review.Comment).
-			Scan(&review.Id, &review.Time_created)
+             VALUES ($1, $2, $3, $4, $5)
+             RETURNING id, analyst_id, client_id, service_id, rating, comment, time_created`,
+			review.Analyst_id, review.Client_id, review.Service_id, review.Rating, review.Comment)
 
+		review, err = pkg.ScanReview(row)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
@@ -308,10 +281,8 @@ func CreateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /reviews/{id} [put]
 func UpdateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		reviewID, err := strconv.Atoi(id)
+		reviewID, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		var review pkg.Review
@@ -320,19 +291,18 @@ func UpdateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		// Validando que a avaliação esteja entre 1-5
 		if review.Rating < 1 || review.Rating > 5 {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Rating should be between 1 and 5"))
 			return
 		}
 
-		err = conn.QueryRow(c.Request.Context(),
+		row := conn.QueryRow(c.Request.Context(),
 			`UPDATE review SET analyst_id = $1, client_id = $2, service_id = $3, rating = $4, comment = $5
-			 WHERE id = $6
-			 RETURNING id, analyst_id, client_id, service_id, rating, comment, time_created`,
-			review.Analyst_id, review.Client_id, review.Service_id, review.Rating, review.Comment, reviewID).
-			Scan(&review.Id, &review.Analyst_id, &review.Client_id, &review.Service_id, &review.Rating, &review.Comment, &review.Time_created)
+             WHERE id = $6
+             RETURNING id, analyst_id, client_id, service_id, rating, comment, time_created`,
+			review.Analyst_id, review.Client_id, review.Service_id, review.Rating, review.Comment, reviewID)
 
+		review, err = pkg.ScanReview(row)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -362,10 +332,8 @@ func UpdateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /reviews/{id} [patch]
 func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		reviewID, err := strconv.Atoi(id)
+		reviewID, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		var review pkg.ReviewUpdateRequest
@@ -403,9 +371,8 @@ func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		query := fmt.Sprintf("UPDATE review SET %s WHERE id = $%d RETURNING id, analyst_id, client_id, service_id, rating, comment, time_created",
 			strings.Join(set, ", "), i)
 
-		var updatedReview pkg.Review
-		err = conn.QueryRow(c.Request.Context(), query, args...).Scan(&updatedReview.Id, &updatedReview.Analyst_id, &updatedReview.Client_id, &updatedReview.Service_id, &updatedReview.Rating, &updatedReview.Comment, &updatedReview.Time_created)
-
+		row := conn.QueryRow(c.Request.Context(), query, args...)
+		updatedReview, err := pkg.ScanReview(row)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -434,10 +401,8 @@ func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /reviews/{id} [delete]
 func DeleteReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		reviewID, err := strconv.Atoi(id)
+		reviewID, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -475,16 +440,15 @@ func DeleteReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /clients/{id}/reviews [get]
 func GetClientReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		clientID, err := strconv.Atoi(c.Param("id"))
+		clientID, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		query := `SELECT r.id, r.analyst_id, r.client_id, r.service_id, r.rating, r.comment, r.time_created
-		          FROM review r
-		          JOIN client c ON r.client_id = c.id
-		          WHERE c.user_id = $1`
+                  FROM review r
+                  JOIN client c ON r.client_id = c.id
+                  WHERE c.user_id = $1`
 		args := []interface{}{clientID}
 		argCounter := 2
 
@@ -580,9 +544,8 @@ func GetClientReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		var reviews []pkg.Review
 		for rows.Next() {
-			var review pkg.Review
-			if err := rows.Scan(&review.Id, &review.Analyst_id, &review.Client_id, &review.Service_id,
-				&review.Rating, &review.Comment, &review.Time_created); err != nil {
+			review, err := pkg.ScanReview(rows)
+			if err != nil {
 				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
 			}
@@ -616,16 +579,15 @@ func GetClientReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /analysts/{id}/reviews [get]
 func GetAnalystReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		analystID, err := strconv.Atoi(c.Param("id"))
+		analystID, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		query := `SELECT r.id, r.analyst_id, r.client_id, r.service_id, r.rating, r.comment, r.time_created
-		          FROM review r
-		          JOIN analyst a ON r.analyst_id = a.id
-		          WHERE a.user_id = $1`
+                  FROM review r
+                  JOIN analyst a ON r.analyst_id = a.id
+                  WHERE a.user_id = $1`
 		args := []interface{}{analystID}
 		argCounter := 2
 
@@ -721,9 +683,8 @@ func GetAnalystReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		var reviews []pkg.Review
 		for rows.Next() {
-			var review pkg.Review
-			if err := rows.Scan(&review.Id, &review.Analyst_id, &review.Client_id, &review.Service_id,
-				&review.Rating, &review.Comment, &review.Time_created); err != nil {
+			review, err := pkg.ScanReview(rows)
+			if err != nil {
 				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
 			}

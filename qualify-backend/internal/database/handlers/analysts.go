@@ -146,24 +146,8 @@ func GetAnalysts(conn *pgxpool.Pool) gin.HandlerFunc {
 		defer rows.Close()
 
 		var analysts []pkg.Analyst
-
 		for rows.Next() {
-			var analyst pkg.Analyst
-			err := rows.Scan(
-				&analyst.Id,
-				&analyst.Name,
-				&analyst.Email,
-				&analyst.Phone,
-				&analyst.Time_created,
-				&analyst.Country_code,
-				&analyst.Country_name,
-				&analyst.Country_state,
-				&analyst.City,
-				&analyst.Timezone,
-				&analyst.Hourly_rate,
-				&analyst.Total_reviews,
-				&analyst.Mean_rating,
-			)
+			analyst, err := pkg.ScanAnalyst(rows)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
@@ -176,10 +160,7 @@ func GetAnalysts(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, pkg.AnalystsResponse{
-			Analysts: analysts,
-			Count:    len(analysts),
-		})
+		c.JSON(http.StatusOK, pkg.AnalystsResponse{Analysts: analysts, Count: len(analysts)})
 	}
 }
 
@@ -197,35 +178,21 @@ func GetAnalysts(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/analyst [get]
 func GetAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		analystID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+			c.JSON(http.StatusBadRequest, err.Error())
 			return
 		}
 
-		var analyst pkg.Analyst
-		err = conn.QueryRow(c.Request.Context(), `
-			SELECT u.id, u.name, u.email, u.phone, u.time_created, 
+		analyst, err := pkg.ScanAnalyst(
+			conn.QueryRow(c.Request.Context(),
+				`SELECT u.id, u.name, u.email, u.phone, u.time_created,
 			       u.country_code, u.country_name, u.country_state, u.city, u.timezone,
 			       a.hourly_rate, a.total_reviews, a.mean_rating
-			FROM "user" u
-			JOIN analyst a ON a.id = u.id
-			WHERE u.id = $1`, analystID).Scan(
-			&analyst.Id,
-			&analyst.Name,
-			&analyst.Email,
-			&analyst.Phone,
-			&analyst.Time_created,
-			&analyst.Country_code,
-			&analyst.Country_name,
-			&analyst.Country_state,
-			&analyst.City,
-			&analyst.Timezone,
-			&analyst.Hourly_rate,
-			&analyst.Total_reviews,
-			&analyst.Mean_rating,
-		)
+				FROM "user" u
+				JOIN analyst a ON a.id = u.id
+				WHERE u.id = $1`, id))
+
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -235,9 +202,7 @@ func GetAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, pkg.AnalystResponse{
-			Analyst: analyst,
-		})
+		c.JSON(http.StatusOK, pkg.AnalystResponse{Analyst: analyst})
 	}
 }
 
@@ -257,8 +222,7 @@ func GetAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/analyst [patch]
 func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		analystID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
@@ -333,7 +297,7 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		if len(userSet) == 0 && len(analystSet) == 0 {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "No valid fields were given"))
 			return
 		}
 
@@ -350,7 +314,7 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		// Update user if needed
 		if len(userSet) > 0 {
-			userArgs = append(userArgs, analystID)
+			userArgs = append(userArgs, id)
 			userQuery := fmt.Sprintf(`UPDATE "user" SET %s WHERE id = $%d`, strings.Join(userSet, ", "), len(userArgs))
 			if _, err := tx.Exec(c.Request.Context(), userQuery, userArgs...); err != nil {
 				_ = tx.Rollback(c.Request.Context())
@@ -363,7 +327,7 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		if len(analystSet) > 0 {
 			analystArgs = append(userArgs, analystArgs...)
 			// analystArgs currently has userArgs followed by analystArgs; ensure id param at end
-			analystArgs = append(analystArgs, analystID)
+			analystArgs = append(analystArgs, id)
 			analystQuery := fmt.Sprintf(`UPDATE analyst SET %s WHERE id = $%d`, strings.Join(analystSet, ", "), len(analystArgs))
 			if _, err := tx.Exec(c.Request.Context(), analystQuery, analystArgs...); err != nil {
 				_ = tx.Rollback(c.Request.Context())
@@ -372,29 +336,15 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			}
 		}
 
-		var analyst pkg.Analyst
-		err = tx.QueryRow(c.Request.Context(), `
+		analyst, errScan := pkg.ScanAnalyst(tx.QueryRow(c.Request.Context(), `
 			SELECT u.id, u.name, u.email, u.phone, u.time_created, 
 				   u.country_code, u.country_name, u.country_state, u.city, u.timezone,
 				   a.hourly_rate, a.total_reviews, a.mean_rating
 			FROM "user" u
 			JOIN analyst a ON a.id = u.id
-			WHERE u.id = $1`, analystID).Scan(
-			&analyst.Id,
-			&analyst.Name,
-			&analyst.Email,
-			&analyst.Phone,
-			&analyst.Time_created,
-			&analyst.Country_code,
-			&analyst.Country_name,
-			&analyst.Country_state,
-			&analyst.City,
-			&analyst.Timezone,
-			&analyst.Hourly_rate,
-			&analyst.Total_reviews,
-			&analyst.Mean_rating,
-		)
-		if err != nil {
+			WHERE u.id = $1`, id))
+
+		if errScan != nil {
 			_ = tx.Rollback(c.Request.Context())
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -429,17 +379,16 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/analyst [post]
 func CreateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userIDParam := c.Param("id")
-		userID, err := strconv.Atoi(userIDParam)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		id, err := pkg.ParseIdParam(c)
+
+		if id == -1 {
 			return
 		}
 
 		// Checando se o analista já existe
 		var analystExists bool
 		err = conn.QueryRow(c.Request.Context(),
-			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, userID,
+			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, id,
 		).Scan(&analystExists)
 
 		if analystExists {
@@ -455,7 +404,7 @@ func CreateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		analyst, err := services.AssignAnalystRole(c.Request.Context(), conn, userID, request.Hourly_rate)
+		analyst, err := services.AssignAnalystRole(c.Request.Context(), conn, id, request.Hourly_rate)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -465,9 +414,7 @@ func CreateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, pkg.AnalystResponse{
-			Analyst: *analyst,
-		})
+		c.JSON(http.StatusCreated, pkg.AnalystResponse{Analyst: *analyst})
 	}
 }
 
@@ -547,27 +494,14 @@ func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		err = tx.QueryRow(c.Request.Context(), `
-			SELECT u.id, u.name, u.email, u.phone, u.time_created, 
+		analyst, err = pkg.ScanAnalyst(tx.QueryRow(c.Request.Context(),
+			`SELECT u.id, u.name, u.email, u.phone, u.time_created, 
 				   u.country_code, u.country_name, u.country_state, u.city, u.timezone,
 				   a.hourly_rate, a.total_reviews, a.mean_rating
 			FROM "user" u
 			JOIN analyst a ON a.id = u.id
-			WHERE u.id = $1`, analystID).Scan(
-			&analyst.Id,
-			&analyst.Name,
-			&analyst.Email,
-			&analyst.Phone,
-			&analyst.Time_created,
-			&analyst.Country_code,
-			&analyst.Country_name,
-			&analyst.Country_state,
-			&analyst.City,
-			&analyst.Timezone,
-			&analyst.Hourly_rate,
-			&analyst.Total_reviews,
-			&analyst.Mean_rating,
-		)
+			WHERE u.id = $1`, analystID))
+
 		if err != nil {
 			_ = tx.Rollback(c.Request.Context())
 			if err == pgx.ErrNoRows {

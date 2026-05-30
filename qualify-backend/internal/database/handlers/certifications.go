@@ -93,8 +93,8 @@ func GetCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		var certs []pkg.Certification
 		for rows.Next() {
-			var cert pkg.Certification
-			if err := rows.Scan(&cert.Id, &cert.Name, &cert.Year, &cert.Description, &cert.Institution); err != nil {
+			cert, err := pkg.ScanCertification(rows)
+			if err != nil {
 				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
 			}
@@ -106,10 +106,7 @@ func GetCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, pkg.CertificationsResponse{
-			Certifications: certs,
-			Count:          len(certs),
-		})
+		c.JSON(http.StatusOK, pkg.CertificationsResponse{Certifications: certs, Count: len(certs)})
 	}
 }
 
@@ -127,19 +124,16 @@ func GetCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /certifications/{id} [get]
 func GetCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		certificationID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
+
 		if err != nil {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		var certification pkg.Certification
-		err = conn.QueryRow(c.Request.Context(),
+		certification, err := pkg.ScanCertification(conn.QueryRow(c.Request.Context(),
 			`SELECT id, name, year, description, institution
-			 FROM certification WHERE id = $1`, certificationID,
-		).Scan(&certification.Id, &certification.Name, &certification.Year,
-			&certification.Description, &certification.Institution)
+			FROM certification WHERE id = $1`, id))
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -217,9 +211,7 @@ func CreateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
-		c.JSON(http.StatusCreated, pkg.CertificationResponse{
-			Certification: cert,
-		})
+		c.JSON(http.StatusCreated, pkg.CertificationResponse{Certification: cert})
 	}
 }
 
@@ -239,8 +231,7 @@ func CreateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /certifications/{id} [put]
 func UpdateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		certID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
@@ -273,10 +264,10 @@ func UpdateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		err = conn.QueryRow(c.Request.Context(),
+		cert, err = pkg.ScanCertification(conn.QueryRow(c.Request.Context(),
 			`UPDATE certification SET name = $1, year = $2, description = $3, institution = $4 WHERE id = $5 RETURNING id, name, year, description, institution`,
-			cert.Name, cert.Year, cert.Description, cert.Institution, certID,
-		).Scan(&cert.Id, &cert.Name, &cert.Year, &cert.Description, &cert.Institution)
+			cert.Name, cert.Year, cert.Description, cert.Institution, id))
+
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -285,9 +276,7 @@ func UpdateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
-		c.JSON(http.StatusOK, pkg.CertificationResponse{
-			Certification: cert,
-		})
+		c.JSON(http.StatusOK, pkg.CertificationResponse{Certification: cert})
 	}
 }
 
@@ -307,8 +296,7 @@ func UpdateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /certifications/{id} [patch]
 func UpdateCertificationPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		certID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
@@ -354,13 +342,12 @@ func UpdateCertificationPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		args = append(args, certID)
+		args = append(args, id)
 
 		query := fmt.Sprintf("UPDATE certification SET %s WHERE id = $%d RETURNING id, name, year, description, institution",
 			strings.Join(set, ", "), i)
 
-		var updatedCert pkg.Certification
-		err = conn.QueryRow(c.Request.Context(), query, args...).Scan(&updatedCert.Id, &updatedCert.Name, &updatedCert.Year, &updatedCert.Description, &updatedCert.Institution)
+		updatedCert, err := pkg.ScanCertification(conn.QueryRow(c.Request.Context(), query, args...))
 
 		if err != nil {
 			if err == pgx.ErrNoRows {
@@ -390,15 +377,14 @@ func UpdateCertificationPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /certifications/{id} [delete]
 func DeleteCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		certID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		result, err := conn.Exec(c.Request.Context(),
-			`DELETE FROM certification WHERE id = $1`, certID,
+			`DELETE FROM certification WHERE id = $1`, id,
 		)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
@@ -427,8 +413,7 @@ func DeleteCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/analyst/certifications [get]
 func GetAnalystCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
@@ -440,7 +425,7 @@ func GetAnalystCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 			 JOIN analyst_certification ac ON c.id = ac.certification_id 
 			 WHERE ac.analyst_id = $1 
 			 ORDER BY c.year DESC`,
-			userID,
+			id,
 		)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
@@ -450,8 +435,8 @@ func GetAnalystCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		var certs []pkg.Certification
 		for rows.Next() {
-			var cert pkg.Certification
-			if err := rows.Scan(&cert.Id, &cert.Name, &cert.Year, &cert.Description, &cert.Institution); err != nil {
+			cert, err := pkg.ScanCertification(rows)
+			if err != nil {
 				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
 			}
@@ -461,10 +446,7 @@ func GetAnalystCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
-		c.JSON(http.StatusOK, pkg.CertificationsResponse{
-			Certifications: certs,
-			Count:          len(certs),
-		})
+		c.JSON(http.StatusOK, pkg.CertificationsResponse{Certifications: certs, Count: len(certs)})
 	}
 }
 
@@ -483,8 +465,7 @@ func GetAnalystCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/analyst/certifications [post]
 func CreateAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		analystID, err := strconv.Atoi(id)
+		analystID, err := pkg.ParseIdParam(c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
@@ -497,7 +478,6 @@ func CreateAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 		ac.Analyst_id = analystID
 
-		// Validando parâmetros obrigatórios
 		var analystExists bool
 		err = conn.QueryRow(c.Request.Context(),
 			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, ac.Analyst_id,
@@ -507,11 +487,10 @@ func CreateAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 		if !analystExists {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Analyst does not exists"))
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Analyst does not exist"))
 			return
 		}
 
-		// Validando parâmetros obrigatórios
 		var certExists bool
 		err = conn.QueryRow(c.Request.Context(),
 			`SELECT EXISTS(SELECT 1 FROM certification WHERE id = $1)`, ac.Certification_id,
@@ -521,7 +500,7 @@ func CreateAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 		if !certExists {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Certification does not exists"))
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Certification does not exist"))
 			return
 		}
 
@@ -533,9 +512,7 @@ func CreateAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
-		c.JSON(http.StatusCreated, pkg.AnalystCertificationResponse{
-			Analyst_certification: ac,
-		})
+		c.JSON(http.StatusCreated, pkg.AnalystCertificationResponse{Analyst_certification: ac})
 	}
 }
 
@@ -555,19 +532,13 @@ func CreateAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/analyst/certifications [delete]
 func DeleteAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID := c.Param("id")
-		userIDVal, err := strconv.Atoi(userID)
+		userID, err := pkg.ParseIdParam(c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		certID := c.Query("certification_id")
-		if certID == "" {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Invalid certification ID"))
-			return
-		}
-		certIDVal, err := strconv.Atoi(certID)
+		certID, err := pkg.ParseIdQuery(c, "certification_id")
 		if err != nil {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
@@ -575,7 +546,7 @@ func DeleteAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		result, err := conn.Exec(c.Request.Context(),
 			`DELETE FROM analyst_certification WHERE analyst_id = $1 AND certification_id = $2`,
-			userIDVal, certIDVal,
+			userID, certID,
 		)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))

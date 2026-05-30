@@ -81,28 +81,13 @@ func AssignAnalystRole(ctx context.Context, conn *pgxpool.Pool, userID int, hour
 		return nil, err
 	}
 
-	if err := tx.QueryRow(ctx,
+	analyst, err = pkg.ScanAnalyst(tx.QueryRow(ctx,
 		`SELECT u.id, u.name, u.email, u.phone, u.time_created,
 		       u.country_code, u.country_name, u.country_state, u.city, u.timezone,
 		       a.hourly_rate, a.total_reviews, a.mean_rating
-		FROM "user" u
-		JOIN analyst a ON a.id = u.id
-		WHERE u.id = $1`,
-		userID).Scan(
-		&analyst.Id,
-		&analyst.Name,
-		&analyst.Email,
-		&analyst.Phone,
-		&analyst.Time_created,
-		&analyst.Country_code,
-		&analyst.Country_name,
-		&analyst.Country_state,
-		&analyst.City,
-		&analyst.Timezone,
-		&analyst.Hourly_rate,
-		&analyst.Total_reviews,
-		&analyst.Mean_rating,
-	); err != nil {
+		FROM "user" u JOIN analyst a ON a.id = u.id WHERE u.id = $1`, userID))
+
+	if err != nil {
 		return nil, err
 	}
 
@@ -141,26 +126,13 @@ func AssignClientRole(ctx context.Context, conn *pgxpool.Pool, userID int, propo
 		return nil, err
 	}
 
-	if err := tx.QueryRow(ctx,
+	client, err = pkg.ScanClient(tx.QueryRow(ctx,
 		`SELECT u.id, u.name, u.email, u.phone, u.time_created,
-		       u.country_code, u.country_name, u.country_state, u.city, u.timezone,
-		       c.proposed_budget
-		FROM "user" u
-		JOIN client c ON c.id = u.id
-		WHERE u.id = $1`,
-		userID).Scan(
-		&client.Id,
-		&client.Name,
-		&client.Email,
-		&client.Phone,
-		&client.Time_created,
-		&client.Country_code,
-		&client.Country_name,
-		&client.Country_state,
-		&client.City,
-		&client.Timezone,
-		&client.Proposed_budget,
-	); err != nil {
+		    u.country_code, u.country_name, u.country_state, u.city, u.timezone,
+		    c.proposed_budget
+		FROM "user" u JOIN client c ON c.id = u.id WHERE u.id = $1`, userID))
+
+	if err != nil {
 		return nil, err
 	}
 

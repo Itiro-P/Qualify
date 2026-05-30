@@ -5,7 +5,6 @@ import (
 	"main/internal/database/services"
 	"main/pkg"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -28,19 +27,16 @@ import (
 // @Router /users/{id} [get]
 func GetUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, err := strconv.Atoi(id)
+		userID, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
-		var user pkg.User
-		err = conn.QueryRow(c.Request.Context(),
+
+		row := conn.QueryRow(c.Request.Context(),
 			`SELECT id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone 
-             FROM "user" WHERE id = $1`, userID).Scan(
-			&user.Id, &user.Name, &user.Email, &user.Phone, &user.Time_created,
-			&user.Country_code, &user.Country_name, &user.Country_state, &user.City, &user.Timezone,
-		)
+             FROM "user" WHERE id = $1`, userID)
+
+		user, err := pkg.ScanUser(row)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -80,13 +76,11 @@ func GetCurrentUser(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		var user pkg.User
-		err := conn.QueryRow(c.Request.Context(),
+		row := conn.QueryRow(c.Request.Context(),
 			`SELECT id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone 
-             FROM "user" WHERE id = $1`, userID).Scan(
-			&user.Id, &user.Name, &user.Email, &user.Phone, &user.Time_created,
-			&user.Country_code, &user.Country_name, &user.Country_state, &user.City, &user.Timezone,
-		)
+             FROM "user" WHERE id = $1`, userID)
+
+		user, err := pkg.ScanUser(row)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -147,7 +141,6 @@ func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		// Retorna o usuário criado (sem o hash da senha graças ao tag `json:"-"`)
 		c.JSON(http.StatusCreated, pkg.UserResponse{User: user})
 	}
 }
@@ -168,28 +161,26 @@ func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id} [put]
 func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, err := strconv.Atoi(id)
+		userID, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
+
 		var user pkg.User
 		if err := c.BindJSON(&user); err != nil {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		err = conn.QueryRow(c.Request.Context(),
+		row := conn.QueryRow(c.Request.Context(),
 			`UPDATE "user" SET name = $1, email = $2, phone = $3, country_code = $4, 
              country_name = $5, country_state = $6, city = $7, timezone = $8
              WHERE id = $9
              RETURNING id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone`,
 			user.Name, user.Email, user.Phone, user.Country_code, user.Country_name,
-			user.Country_state, user.City, user.Timezone, userID).
-			Scan(&user.Id, &user.Name, &user.Email, &user.Phone, &user.Time_created,
-				&user.Country_code, &user.Country_name, &user.Country_state, &user.City, &user.Timezone)
+			user.Country_state, user.City, user.Timezone, userID)
 
+		user, err = pkg.ScanUser(row)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -219,10 +210,8 @@ func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id} [patch]
 func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, err := strconv.Atoi(id)
+		userID, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -236,7 +225,6 @@ func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		args := []interface{}{}
 		i := 1
 
-		// Helper para montar a query dinâmica
 		addToSet := func(field string, val interface{}) {
 			if val != nil {
 				set = append(set, fmt.Sprintf("%s = $%d", field, i))
@@ -266,12 +254,8 @@ func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			strings.Join(set, ", "), i,
 		)
 
-		var user pkg.User
-		err = conn.QueryRow(c.Request.Context(), query, args...).Scan(
-			&user.Id, &user.Name, &user.Email, &user.Phone, &user.Time_created,
-			&user.Country_code, &user.Country_name, &user.Country_state, &user.City, &user.Timezone,
-		)
-
+		row := conn.QueryRow(c.Request.Context(), query, args...)
+		user, err := pkg.ScanUser(row)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -300,10 +284,8 @@ func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id} [delete]
 func DeleteUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, err := strconv.Atoi(id)
+		userID, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
