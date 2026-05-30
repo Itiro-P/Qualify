@@ -33,26 +33,28 @@ export function ListServices({ analyst }: { analyst: Analyst }) {
 
   useEffect(() => {
     async function getInfo() {
-      // implementar forma de pegar os serviços do analista logado
-      analystService.listServices(analyst.id).then((services) => {
-        if (services) {
-          setServicesCompleteds(
-            services.filter((service) => service.status === "completed"),
-          );
-          setServicesProposal(
-            services.filter((service) => service.status === "proposal"),
-          );
-          setServicesNegotiation(
-            services.filter((service) => service.status === "negotiation"),
-          );
-          setServicesBlocked(
-            services.filter((service) => service.status === "blocked"),
-          );
-          setServicesInProgress(
-            services.filter((service) => service.status === "in_progress"),
-          );
-        }
-      });
+      setLoading(true);
+      const analystServices = await analystService.listServices(analyst.id);
+      if (analystServices) {
+        setServicesCompleteds(
+          analystServices.filter((s) => s.status === "COMPLETED"),
+        );
+        setServicesProposal(
+          analystServices.filter((s) => s.status === "PROPOSAL"),
+        );
+        setServicesNegotiation(
+          analystServices.filter((s) => s.status === "NEGOTIATION"),
+        );
+        setServicesBlocked(
+          analystServices.filter((s) => s.status === "BLOCKED"),
+        );
+        setServicesInProgress(
+          analystServices.filter((s) => s.status === "IN_PROGRESS"),
+        );
+      } else {
+        setError("Erro ao carregar os serviços do analista.");
+      }
+      setLoading(false);
     }
     getInfo();
   }, [analyst.id]);
