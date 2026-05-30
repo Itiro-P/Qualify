@@ -1,5 +1,7 @@
 "use client";
 
+import { Alert } from "@/components/ui/Alert";
+import { Loading } from "@/components/ui/Loading";
 import { analystService } from "@/libs/services/analystService";
 import { Analyst } from "@/types/services/analyst";
 import { Service } from "@/types/services/service";
@@ -26,7 +28,6 @@ export function ListServices({ analyst }: { analyst: Analyst }) {
   const [servicesInProgress, setServicesInProgress] = useState<Service[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [abaAtiva, setAbaAtiva] = useState<
     "propostas" | "negociacao" | "em andamento" | "bloqueados" | "concluidos"
   >("concluidos");
@@ -59,9 +60,12 @@ export function ListServices({ analyst }: { analyst: Analyst }) {
     getInfo();
   }, [analyst.id]);
 
-  return (
+  return loading ? (
+    <Loading />
+  ) : (
     <div>
       <div className="flex">
+        {error && <Alert variant="error">{error}</Alert>}
         <button
           className="p-2 m-2 bg-blue-950"
           onClick={() => setAbaAtiva("propostas")}
