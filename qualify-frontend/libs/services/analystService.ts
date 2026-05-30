@@ -14,6 +14,7 @@ import type {
   AnalystCertification,
   AnalystSkill,
 } from "@/types/services/analyst";
+import { Service } from "@/types/services/service";
 
 function buildQuery(params?: Record<string, unknown>): string {
   if (!params) return "";
@@ -220,5 +221,22 @@ export const analystService = {
       .delete(`/users/${userId}/analyst/skills?skill_id=${skillId}`)
       .then(() => true)
       .catch(() => false);
+  },
+
+  //Services
+  listServices(userId: number): Promise<Service[] | null> {
+    return api
+      .get<{
+        services: Service[];
+        count: number;
+      }>(`/analyst/${userId}/services`)
+      .then(
+        (resp) => {
+          return resp.services;
+        },
+        () => {
+          return null;
+        },
+      );
   },
 };
