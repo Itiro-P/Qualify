@@ -312,52 +312,67 @@ func GetAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/analyst/profile [post]
 func CreateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, _ := strconv.Atoi(id)
+		userID, err := pkg.ParseIdParam(c)
+		if err != nil {
+			return
+		}
 
 		var profile pkg.AnalystProfile
-		_ = c.BindJSON(&profile)
+		if err := c.BindJSON(&profile); err != nil {
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+			return
+		}
+
+		var exists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM analyst_profile WHERE analyst_id = $1)`, userID,
+		).Scan(&exists)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			return
+		}
+		if exists {
+			c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Analyst profile already exists for this user"))
+			return
+		}
 
 		tx, err := conn.Begin(c.Request.Context())
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Transaction error"))
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
-		defer tx.Rollback(c.Request.Context())
+		defer func() {
+			if err != nil {
+				_ = tx.Rollback(c.Request.Context())
+			}
+		}()
 
-		err = tx.QueryRow(c.Request.Context(),
+		profile, err = pkg.ScanAnalystProfile(tx.QueryRow(c.Request.Context(),
 			`INSERT INTO user_profile (user_id, biography) VALUES ($1, $2)
-            RETURNING user_id, biography, picture`,
-			userID, profile.Biography).Scan(&profile.User_id, &profile.Biography, &profile.Picture)
+             RETURNING user_id, biography, picture`,
+			userID, profile.Biography))
 		if err != nil {
 			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) {
-				switch pgErr.Code {
-				case "23505": // unique_violation
-					c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Profile already exists for this user"))
-					return
-				case "23503": // foreign_key_violation (user_id não existe)
-					c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "User not found"))
-					return
-				}
+			if errors.As(err, &pgErr) && pgErr.Code == "23503" {
+				c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "User not found"))
+				return
 			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Error when creating base profile"))
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
 		_, err = tx.Exec(c.Request.Context(),
 			`INSERT INTO analyst_profile (analyst_id) VALUES ($1)`, userID)
 		if err != nil {
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-				c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Analyst profile already exists for this user"))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Error when creating analyst profile"))
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
-		tx.Commit(c.Request.Context())
+		if err = tx.Commit(c.Request.Context()); err != nil {
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			return
+		}
+
 		c.JSON(http.StatusCreated, pkg.AnalystProfileResponse{Analyst_profile: profile})
 	}
 }
@@ -518,53 +533,68 @@ func GetClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/client/profile [post]
 func CreateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, _ := strconv.Atoi(id)
+		userID, err := pkg.ParseIdParam(c)
+		if err != nil {
+			return
+		}
 
-		var profile pkg.AnalystProfile
-		_ = c.BindJSON(&profile)
+		var profile pkg.ClientProfile
+		if err := c.BindJSON(&profile); err != nil {
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+			return
+		}
+
+		var exists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM client_profile WHERE client_id = $1)`, userID,
+		).Scan(&exists)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			return
+		}
+		if exists {
+			c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Client profile already exists for this user"))
+			return
+		}
 
 		tx, err := conn.Begin(c.Request.Context())
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Transaction error"))
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
-		defer tx.Rollback(c.Request.Context())
+		defer func() {
+			if err != nil {
+				_ = tx.Rollback(c.Request.Context())
+			}
+		}()
 
-		err = tx.QueryRow(c.Request.Context(),
+		profile, err = pkg.ScanClientProfile(tx.QueryRow(c.Request.Context(),
 			`INSERT INTO user_profile (user_id, biography) VALUES ($1, $2)
-            RETURNING user_id, biography, picture`,
-			userID, profile.Biography).Scan(&profile.User_id, &profile.Biography, &profile.Picture)
+             RETURNING user_id, biography, picture`,
+			userID, profile.Biography))
 		if err != nil {
 			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) {
-				switch pgErr.Code {
-				case "23505": // unique_violation
-					c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Profile already exists for this user"))
-					return
-				case "23503": // foreign_key_violation (user_id não existe)
-					c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "User not found"))
-					return
-				}
+			if errors.As(err, &pgErr) && pgErr.Code == "23503" {
+				c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "User not found"))
+				return
 			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Error when creating base profile"))
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
 		_, err = tx.Exec(c.Request.Context(),
 			`INSERT INTO client_profile (client_id) VALUES ($1)`, userID)
 		if err != nil {
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-				c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Client profile already exists for this user"))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Error when creating analyst profile"))
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
-		tx.Commit(c.Request.Context())
-		c.JSON(http.StatusCreated, pkg.AnalystProfileResponse{Analyst_profile: profile})
+		if err = tx.Commit(c.Request.Context()); err != nil {
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			return
+		}
+
+		c.JSON(http.StatusCreated, pkg.ClientProfileResponse{Client_profile: profile})
 	}
 }
 

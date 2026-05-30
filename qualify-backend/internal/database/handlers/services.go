@@ -175,33 +175,17 @@ func CreateService(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		err := conn.QueryRow(c.Request.Context(),
+		service, err := pkg.ScanService(conn.QueryRow(c.Request.Context(),
 			`INSERT INTO service (proposal_letter_id, title, content, hourly_rate, status)
              VALUES ($1, $2, $3, $4, $5)
              RETURNING id, title, content, proposal_letter_id, hourly_rate, status, time_created`,
-			service.Proposal_letter_id, service.Title, service.Content, service.Hourly_rate, service.Status).
-			Scan(&service.Id, &service.Title, &service.Content, &service.Proposal_letter_id, &service.Hourly_rate, &service.Status, &service.Time_created)
+			service.Proposal_letter_id, service.Title, service.Content, service.Hourly_rate, service.Status))
 		if err != nil {
 			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) {
-				switch pgErr.Code {
-				case "23505":
-					c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Service already exists"))
-					return
-				}
+			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+				c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Service already exists"))
+				return
 			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
-			return
-		}
-
-		row := conn.QueryRow(c.Request.Context(),
-			`INSERT INTO service (proposal_letter_id, title, content, hourly_rate, status)
-             VALUES ($1, $2, $3, $4, $5)
-             RETURNING id, title, content, proposal_letter_id, hourly_rate, status, time_created`,
-			service.Proposal_letter_id, service.Title, service.Content, service.Hourly_rate, service.Status)
-
-		service, err = pkg.ScanService(row)
-		if err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}

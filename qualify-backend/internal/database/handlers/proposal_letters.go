@@ -182,36 +182,23 @@ func CreateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		err := conn.QueryRow(c.Request.Context(),
+		proposal, err := pkg.ScanProposalLetter(conn.QueryRow(c.Request.Context(),
 			`INSERT INTO proposal_letter (title, content, client_id, analyst_id, proposed_hourly_rate)
-            VALUES ($1, $2, $3, $4, $5)
-            RETURNING id, client_id, analyst_id, proposed_hourly_rate, title, content, time_created`,
-			proposal.Title, proposal.Content, proposal.Client_id, proposal.Analyst_id, proposal.Proposed_hourly_rate).
-			Scan(&proposal.Id, &proposal.Client_id, &proposal.Analyst_id, &proposal.Proposed_hourly_rate, &proposal.Title, &proposal.Content, &proposal.Time_created)
+             VALUES ($1, $2, $3, $4, $5)
+             RETURNING id, client_id, analyst_id, proposed_hourly_rate, title, content, time_created`,
+			proposal.Title, proposal.Content, proposal.Client_id, proposal.Analyst_id, proposal.Proposed_hourly_rate))
 		if err != nil {
 			var pgErr *pgconn.PgError
 			if errors.As(err, &pgErr) {
 				switch pgErr.Code {
-				case "23505": // unique_violation
+				case "23505":
 					c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Proposal letter already exists"))
 					return
-				case "23503": // foreign_key_violation (client_id ou analyst_id não existe)
+				case "23503":
 					c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Client or analyst not found"))
 					return
 				}
 			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
-			return
-		}
-
-		row := conn.QueryRow(c.Request.Context(),
-			`INSERT INTO proposal_letter (title, content, client_id, analyst_id, proposed_hourly_rate)
-             VALUES ($1, $2, $3, $4, $5)
-             RETURNING id, client_id, analyst_id, proposed_hourly_rate, title, content, time_created`,
-			proposal.Title, proposal.Content, proposal.Client_id, proposal.Analyst_id, proposal.Proposed_hourly_rate)
-
-		proposal, err = pkg.ScanProposalLetter(row)
-		if err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
