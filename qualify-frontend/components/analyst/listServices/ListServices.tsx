@@ -1,5 +1,6 @@
 "use client";
 
+import { analystService } from "@/libs/services/analystService";
 import { Analyst } from "@/types/services/analyst";
 import { Service } from "@/types/services/service";
 import { useEffect, useState } from "react";
@@ -33,6 +34,25 @@ export function ListServices({ analyst }: { analyst: Analyst }) {
   useEffect(() => {
     async function getInfo() {
       // implementar forma de pegar os serviços do analista logado
+      analystService.listServices(analyst.id).then((services) => {
+        if (services) {
+          setServicesCompleteds(
+            services.filter((service) => service.status === "completed"),
+          );
+          setServicesProposal(
+            services.filter((service) => service.status === "proposal"),
+          );
+          setServicesNegotiation(
+            services.filter((service) => service.status === "negotiation"),
+          );
+          setServicesBlocked(
+            services.filter((service) => service.status === "blocked"),
+          );
+          setServicesInProgress(
+            services.filter((service) => service.status === "in_progress"),
+          );
+        }
+      });
     }
     getInfo();
   }, [analyst.id]);
