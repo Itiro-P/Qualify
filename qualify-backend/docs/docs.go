@@ -3396,7 +3396,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Associa uma certificação a um analista",
+                "description": "Cria uma certificação (se não existir) e a associa a um analista",
                 "consumes": [
                     "application/json"
                 ],
@@ -3406,22 +3406,22 @@ const docTemplate = `{
                 "tags": [
                     "Certificações"
                 ],
-                "summary": "Associar certificação ao analista",
+                "summary": "Criar certificação e associar ao analista",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID do usuário (analista)",
+                        "description": "ID do analista",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Objeto associação",
+                        "description": "Objeto certificação",
                         "name": "certification",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/pkg.AnalystCertification"
+                            "$ref": "#/definitions/pkg.Certification"
                         }
                     }
                 ],
@@ -3429,11 +3429,23 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AnalystCertificationResponse"
+                            "$ref": "#/definitions/pkg.CertificationResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -3491,6 +3503,74 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}/analyst/certifications/{cert_id}": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Associa uma certificação já existente a um analista pelo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Certificações"
+                ],
+                "summary": "Associar certificação existente ao analista",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do analista",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID da certificação",
+                        "name": "cert_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.CertificationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -3783,7 +3863,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Cria uma nova habilidade para um analista pelo ID e ID da habilidade",
+                "description": "Cria uma skill (se não existir) e a associa a um analista",
                 "consumes": [
                     "application/json"
                 ],
@@ -3793,7 +3873,7 @@ const docTemplate = `{
                 "tags": [
                     "Habilidades"
                 ],
-                "summary": "Criar habilidade para o analista",
+                "summary": "Adicionar skill ao analista",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3803,12 +3883,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Objeto associação",
-                        "name": "certification",
+                        "description": "Objeto skill (envie apenas ` + "`" + `name` + "`" + `)",
+                        "name": "skill",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/pkg.AnalystSkill"
+                            "$ref": "#/definitions/pkg.Skill"
                         }
                     }
                 ],
@@ -3816,7 +3896,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AnalystSkillResponse"
+                            "$ref": "#/definitions/pkg.SkillResponse"
                         }
                     },
                     "400": {
@@ -3827,6 +3907,12 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -3884,6 +3970,74 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}/analyst/skills/{skill_id}": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Associa uma skill já existente a um analista pelo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Habilidades"
+                ],
+                "summary": "Associar skill existente ao analista",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do analista",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID da skill",
+                        "name": "skill_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.SkillResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -4739,25 +4893,6 @@ const docTemplate = `{
                 }
             }
         },
-        "pkg.AnalystCertification": {
-            "type": "object",
-            "properties": {
-                "analyst_id": {
-                    "type": "integer"
-                },
-                "certification_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "pkg.AnalystCertificationResponse": {
-            "type": "object",
-            "properties": {
-                "analyst_certification": {
-                    "$ref": "#/definitions/pkg.AnalystCertification"
-                }
-            }
-        },
         "pkg.AnalystProfile": {
             "type": "object",
             "properties": {
@@ -4785,25 +4920,6 @@ const docTemplate = `{
             "properties": {
                 "analyst": {
                     "$ref": "#/definitions/pkg.Analyst"
-                }
-            }
-        },
-        "pkg.AnalystSkill": {
-            "type": "object",
-            "properties": {
-                "analyst_id": {
-                    "type": "integer"
-                },
-                "skill_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "pkg.AnalystSkillResponse": {
-            "type": "object",
-            "properties": {
-                "analyst_skill": {
-                    "$ref": "#/definitions/pkg.AnalystSkill"
                 }
             }
         },

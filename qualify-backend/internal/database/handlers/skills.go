@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"main/pkg"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -286,19 +288,75 @@ func GetAnalystSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 	}
 }
 
-// CreateAnalystSkill godoc
-// @Summary Criar habilidade para o analista
-// @Description Cria uma nova habilidade para um analista pelo ID e ID da habilidade
+// AssociateAnalystSkill godoc
+// @Summary Associar skill existente ao analista
+// @Description Associa uma skill já existente a um analista pelo ID
 // @Tags Habilidades
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do analista"
-// @Param certification body pkg.AnalystSkill true "Objeto associação"
-// @Success 201 {object} pkg.AnalystSkillResponse
+// @Param skill_id path int true "ID da skill"
+// @Success 201 {object} pkg.SkillResponse
 // @Failure 400 {object} pkg.ErrorResponse
 // @Failure 404 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
-// @Security     BearerAuth
+// @Security BearerAuth
+// @Router /users/{id}/analyst/skills/{skill_id} [post]
+func AssociateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		analystID, err := pkg.ParseIdParam(c)
+		if err != nil {
+			return
+		}
+
+		skillID, err := pkg.ParsePathParam(c, "skill_id")
+		if err != nil {
+			return
+		}
+
+		skill, err := pkg.ScanSkill(conn.QueryRow(c.Request.Context(),
+			`SELECT id, name FROM skill WHERE id = $1`, skillID))
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Skill not found"))
+				return
+			}
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			return
+		}
+
+		_, err = conn.Exec(c.Request.Context(),
+			`INSERT INTO analyst_skill (analyst_id, skill_id) VALUES ($1, $2)`,
+			analystID, skillID)
+		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+				c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Analyst already has this skill"))
+				return
+			}
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			return
+		}
+
+		c.JSON(http.StatusCreated, pkg.SkillResponse{Skill: skill})
+	}
+}
+
+// CreateAnalystSkill godoc
+// @Summary Adicionar skill ao analista
+// @Description Cria uma skill (se não existir) e a associa a um analista
+// @Tags Habilidades
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do analista"
+// @Param skill body pkg.Skill true "Objeto skill (envie apenas `name`)"
+// @Success 201 {object} pkg.SkillResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
+// @Security BearerAuth
 // @Router /users/{id}/analyst/skills [post]
 func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -307,48 +365,56 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		var as pkg.AnalystSkill
-		if err := c.BindJSON(&as); err != nil {
+		var skill pkg.Skill
+		if err := c.BindJSON(&skill); err != nil {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
-		as.Analyst_id = analystID
 
 		var analystExists bool
 		err = conn.QueryRow(c.Request.Context(),
-			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, as.Analyst_id,
+			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, analystID,
 		).Scan(&analystExists)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 		if !analystExists {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Analyst does not exist"))
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst not found"))
 			return
 		}
 
-		var skillExists bool
+		// Busca ou cria a skill
 		err = conn.QueryRow(c.Request.Context(),
-			`SELECT EXISTS(SELECT 1 FROM skill WHERE id = $1)`, as.Skill_id,
-		).Scan(&skillExists)
-		if err != nil {
+			`SELECT id FROM skill WHERE name = $1`, skill.Name,
+		).Scan(&skill.Id)
+		if err == pgx.ErrNoRows {
+			skill, err = pkg.ScanSkill(conn.QueryRow(c.Request.Context(),
+				`INSERT INTO skill (name) VALUES ($1) RETURNING id, name`, skill.Name))
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+				return
+			}
+		} else if err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
-		if !skillExists {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Skill does not exist"))
-			return
-		}
 
+		// Associa a skill ao analyst
 		_, err = conn.Exec(c.Request.Context(),
 			`INSERT INTO analyst_skill (analyst_id, skill_id) VALUES ($1, $2)`,
-			as.Analyst_id, as.Skill_id,
-		)
+			analystID, skill.Id)
 		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+				c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Analyst already has this skill"))
+				return
+			}
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
-		c.JSON(http.StatusCreated, pkg.AnalystSkillResponse{Analyst_skill: as})
+
+		c.JSON(http.StatusCreated, pkg.SkillResponse{Skill: skill})
 	}
 }
 

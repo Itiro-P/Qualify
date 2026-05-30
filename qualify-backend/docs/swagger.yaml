@@ -28,18 +28,6 @@ definitions:
       total_reviews:
         type: integer
     type: object
-  pkg.AnalystCertification:
-    properties:
-      analyst_id:
-        type: integer
-      certification_id:
-        type: integer
-    type: object
-  pkg.AnalystCertificationResponse:
-    properties:
-      analyst_certification:
-        $ref: '#/definitions/pkg.AnalystCertification'
-    type: object
   pkg.AnalystProfile:
     properties:
       biography:
@@ -58,18 +46,6 @@ definitions:
     properties:
       analyst:
         $ref: '#/definitions/pkg.Analyst'
-    type: object
-  pkg.AnalystSkill:
-    properties:
-      analyst_id:
-        type: integer
-      skill_id:
-        type: integer
-    type: object
-  pkg.AnalystSkillResponse:
-    properties:
-      analyst_skill:
-        $ref: '#/definitions/pkg.AnalystSkill'
     type: object
   pkg.AnalystUpdateRequest:
     properties:
@@ -2789,28 +2765,36 @@ paths:
     post:
       consumes:
       - application/json
-      description: Associa uma certificação a um analista
+      description: Cria uma certificação (se não existir) e a associa a um analista
       parameters:
-      - description: ID do usuário (analista)
+      - description: ID do analista
         in: path
         name: id
         required: true
         type: integer
-      - description: Objeto associação
+      - description: Objeto certificação
         in: body
         name: certification
         required: true
         schema:
-          $ref: '#/definitions/pkg.AnalystCertification'
+          $ref: '#/definitions/pkg.Certification'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/pkg.AnalystCertificationResponse'
+            $ref: '#/definitions/pkg.CertificationResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":
@@ -2819,7 +2803,51 @@ paths:
             $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Associar certificação ao analista
+      summary: Criar certificação e associar ao analista
+      tags:
+      - Certificações
+  /users/{id}/analyst/certifications/{cert_id}:
+    post:
+      consumes:
+      - application/json
+      description: Associa uma certificação já existente a um analista pelo ID
+      parameters:
+      - description: ID do analista
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID da certificação
+        in: path
+        name: cert_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/pkg.CertificationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Associar certificação existente ao analista
       tags:
       - Certificações
   /users/{id}/analyst/profile:
@@ -3040,26 +3068,26 @@ paths:
     post:
       consumes:
       - application/json
-      description: Cria uma nova habilidade para um analista pelo ID e ID da habilidade
+      description: Cria uma skill (se não existir) e a associa a um analista
       parameters:
       - description: ID do analista
         in: path
         name: id
         required: true
         type: integer
-      - description: Objeto associação
+      - description: Objeto skill (envie apenas `name`)
         in: body
-        name: certification
+        name: skill
         required: true
         schema:
-          $ref: '#/definitions/pkg.AnalystSkill'
+          $ref: '#/definitions/pkg.Skill'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/pkg.AnalystSkillResponse'
+            $ref: '#/definitions/pkg.SkillResponse'
         "400":
           description: Bad Request
           schema:
@@ -3068,13 +3096,61 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Criar habilidade para o analista
+      summary: Adicionar skill ao analista
+      tags:
+      - Habilidades
+  /users/{id}/analyst/skills/{skill_id}:
+    post:
+      consumes:
+      - application/json
+      description: Associa uma skill já existente a um analista pelo ID
+      parameters:
+      - description: ID do analista
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID da skill
+        in: path
+        name: skill_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/pkg.SkillResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Associar skill existente ao analista
       tags:
       - Habilidades
   /users/{id}/client:
