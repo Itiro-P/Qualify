@@ -34,10 +34,8 @@ func GetUser(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		query, args, err := squirrel.Select(userSelect).
-			From(userFrom).
-			Where(squirrel.Eq{"id": id}).
-			PlaceholderFormat(squirrel.Dollar).
-			ToSql()
+			From(userFrom).Where(squirrel.Eq{"id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -164,14 +162,16 @@ func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		query, args, err := squirrel.Update(userFrom).
-			Set("name", user.Name).
-			Set("email", user.Email).
-			Set("phone", user.Phone).
-			Set("country_code", user.Country_code).
-			Set("country_name", user.Country_name).
-			Set("country_state", user.Country_state).
-			Set("city", user.City).
-			Set("timezone", user.Timezone).
+			SetMap(map[string]any{
+				"name":          user.Name,
+				"email":         user.Email,
+				"phone":         user.Phone,
+				"country_code":  user.Country_code,
+				"country_name":  user.Country_name,
+				"country_state": user.Country_state,
+				"city":          user.City,
+				"timezone":      user.Timezone,
+			}).
 			Where(squirrel.Eq{"id": id}).
 			Suffix("RETURNING " + userSelect).
 			PlaceholderFormat(squirrel.Dollar).ToSql()
@@ -255,10 +255,8 @@ func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		query, args, err := builder.
-			Where(squirrel.Eq{"id": id}).
-			Suffix("RETURNING " + userSelect).
-			ToSql()
+		query, args, err := builder.Where(squirrel.Eq{"id": id}).
+			Suffix("RETURNING " + userSelect).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -302,8 +300,7 @@ func DeleteUser(conn *pgxpool.Pool) gin.HandlerFunc {
 		result, err := conn.Exec(c.Request.Context(), query, args...)
 		if pkg.HandleErr(c, err) {
 			return
-		}
-		if result.RowsAffected() == 0 {
+		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "User not found"))
 			return
 		}

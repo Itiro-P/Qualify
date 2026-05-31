@@ -116,29 +116,25 @@ func TestAnalyst(t *testing.T) {
 
 	// Primeiros testes para criação de analistas, que dependem da criação prévia de usuários
 	for i := range analysts {
-		t.Run("Criar Analista para "+userRegisters[i].Name, func(t *testing.T) {
-			// Agora pegamos o token e o ID de uma vez
-			token, userID := registerAndLogin(t, router, userRegisters[i])
+		token, userID := registerAndLogin(t, router, userRegisters[i])
+		analysts[i].User.Id = userID
 
-			// Atribui o ID ao analista antes de enviar o POST
-			analysts[i].User.Id = userID
+		body, _ := json.Marshal(analysts[i])
+		targetURL := fmt.Sprintf("/users/%d/analyst", userID)
+		req := authRequest(http.MethodPost, targetURL, body, token)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
 
-			body, _ := json.Marshal(analysts[i])
-			targetURL := fmt.Sprintf("/users/%d/analyst", userID)
+		if !assert.Equal(t, http.StatusCreated, w.Code, "Criar analista para "+userRegisters[i].Name) {
+			t.FailNow()
+		}
 
-			req := authRequest(http.MethodPost, targetURL, body, token)
-			w := httptest.NewRecorder()
-			router.ServeHTTP(w, req)
+		var analystResponse pkg.AnalystResponse
+		json.Unmarshal(w.Body.Bytes(), &analystResponse)
+		assert.NotZero(t, analystResponse.Analyst.Id)
 
-			assert.Equal(t, http.StatusCreated, w.Code)
-
-			var analystResponse pkg.AnalystResponse
-			json.Unmarshal(w.Body.Bytes(), &analystResponse)
-			assert.NotZero(t, analystResponse.Analyst.Id)
-
-			analysts[i] = analystResponse.Analyst
-			tokens = append(tokens, token)
-		})
+		analysts[i] = analystResponse.Analyst
+		tokens = append(tokens, token)
 	}
 
 	// Agora vemos se todos os analistas foram criados corretamente

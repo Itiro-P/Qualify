@@ -57,15 +57,8 @@ func scanProposals(c *gin.Context, conn *pgxpool.Pool, builder squirrel.SelectBu
 	}
 	defer rows.Close()
 
-	var proposals []pkg.ProposalLetter
-	for rows.Next() {
-		p, err := pkg.ScanProposalLetter(rows)
-		if pkg.HandleErr(c, err) {
-			return
-		}
-		proposals = append(proposals, p)
-	}
-	if err = rows.Err(); pkg.HandleErr(c, err) {
+	proposals, err := pkg.ScanRows(c, rows, pkg.ScanProposalLetter)
+	if pkg.HandleErr(c, err) {
 		return
 	}
 
@@ -199,19 +192,18 @@ func UpdateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 		var proposal pkg.ProposalLetter
 		if err := c.BindJSON(&proposal); pkg.HandleErr(c, err) {
 			return
-		}
-
-		if proposal.Title == "" {
+		} else if proposal.Title == "" {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty title"))
 			return
 		}
 
 		query, args, err := squirrel.Update("proposal_letter").
-			Set("title", proposal.Title).
-			Set("content", proposal.Content).
-			Set("client_id", proposal.Client_id).
-			Set("analyst_id", proposal.Analyst_id).
-			Set("proposed_hourly_rate", proposal.Proposed_hourly_rate).
+			SetMap(map[string]any{
+				"title":                proposal.Title,
+				"content":              proposal.Content,
+				"client_id":            proposal.Client_id,
+				"analyst_id":           proposal.Analyst_id,
+				"proposed_hourly_rate": proposal.Proposed_hourly_rate}).
 			Where(squirrel.Eq{"id": id}).
 			Suffix("RETURNING " + proposalSelect).
 			PlaceholderFormat(squirrel.Dollar).
@@ -322,9 +314,7 @@ func DeleteProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 		result, err := conn.Exec(c.Request.Context(), query, args...)
 		if pkg.HandleErr(c, err) {
 			return
-		}
-
-		if result.RowsAffected() == 0 {
+		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Proposal letter not found"))
 			return
 		}

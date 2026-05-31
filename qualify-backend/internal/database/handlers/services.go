@@ -13,8 +13,7 @@ const serviceSelect = "id, title, content, proposal_letter_id, hourly_rate, stat
 
 func serviceBuilder(filters pkg.ServiceFilter) squirrel.SelectBuilder {
 	builder := squirrel.Select(serviceSelect).
-		From("service").
-		PlaceholderFormat(squirrel.Dollar)
+		From("service").PlaceholderFormat(squirrel.Dollar)
 
 	if filters.Status != "" {
 		builder = builder.Where(squirrel.Eq{"status": filters.Status})
@@ -57,15 +56,8 @@ func scanServices(c *gin.Context, conn *pgxpool.Pool, builder squirrel.SelectBui
 	}
 	defer rows.Close()
 
-	var services []pkg.Service
-	for rows.Next() {
-		s, err := pkg.ScanService(rows)
-		if pkg.HandleErr(c, err) {
-			return
-		}
-		services = append(services, s)
-	}
-	if err = rows.Err(); pkg.HandleErr(c, err) {
+	services, err := pkg.ScanRows(c, rows, pkg.ScanService)
+	if pkg.HandleErr(c, err) {
 		return
 	}
 
@@ -161,8 +153,7 @@ func CreateService(conn *pgxpool.Pool) gin.HandlerFunc {
 		query, args, err := squirrel.Insert("service").
 			Columns("proposal_letter_id", "title", "content", "hourly_rate", "status").
 			Values(service.Proposal_letter_id, service.Title, service.Content, service.Hourly_rate, service.Status).
-			Suffix("RETURNING " + serviceSelect).
-			PlaceholderFormat(squirrel.Dollar).ToSql()
+			Suffix("RETURNING " + serviceSelect).PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -212,11 +203,12 @@ func UpdateService(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		query, args, err := squirrel.Update("service").
-			Set("proposal_letter_id", service.Proposal_letter_id).
-			Set("title", service.Title).
-			Set("content", service.Content).
-			Set("hourly_rate", service.Hourly_rate).
-			Set("status", service.Status).
+			SetMap(map[string]any{
+				"proposal_letter_id": service.Proposal_letter_id,
+				"title":              service.Title,
+				"content":            service.Content,
+				"hourly_rate":        service.Hourly_rate,
+				"status":             service.Status}).
 			Where(squirrel.Eq{"id": id}).
 			Suffix("RETURNING " + serviceSelect).
 			PlaceholderFormat(squirrel.Dollar).ToSql()
@@ -334,8 +326,7 @@ func DeleteService(conn *pgxpool.Pool) gin.HandlerFunc {
 		result, err := conn.Exec(c.Request.Context(), query, args...)
 		if pkg.HandleErr(c, err) {
 			return
-		}
-		if result.RowsAffected() == 0 {
+		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Service not found"))
 			return
 		}
@@ -377,10 +368,8 @@ func GetClientServices(conn *pgxpool.Pool) gin.HandlerFunc {
 		filters.Normalize()
 
 		builder := serviceBuilder(filters).
-			From("service s").
-			Join("proposal_letter p ON s.proposal_letter_id = p.id").
-			Join("client cl ON p.client_id = cl.id").
-			Where(squirrel.Eq{"cl.id": id})
+			From("service s").Join("proposal_letter p ON s.proposal_letter_id = p.id").
+			Join("client cl ON p.client_id = cl.id").Where(squirrel.Eq{"cl.id": id})
 
 		scanServices(c, conn, builder)
 	}
@@ -419,10 +408,8 @@ func GetAnalystServices(conn *pgxpool.Pool) gin.HandlerFunc {
 		filters.Normalize()
 
 		builder := serviceBuilder(filters).
-			From("service s").
-			Join("proposal_letter p ON s.proposal_letter_id = p.id").
-			Join("analyst a ON p.analyst_id = a.id").
-			Where(squirrel.Eq{"a.id": id})
+			From("service s").Join("proposal_letter p ON s.proposal_letter_id = p.id").
+			Join("analyst a ON p.analyst_id = a.id").Where(squirrel.Eq{"a.id": id})
 
 		scanServices(c, conn, builder)
 	}

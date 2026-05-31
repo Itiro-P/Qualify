@@ -41,7 +41,6 @@ func GetUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			PlaceholderFormat(squirrel.Dollar).ToSql()
 
 		profile, err := pkg.ScanProfile(conn.QueryRow(c.Request.Context(), query, args...))
-
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -83,22 +82,19 @@ func CreateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		if pkg.HandleErr(c, err) {
 			return
-		}
-
-		if exists {
+		} else if exists {
 			c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Profile already exists"))
 			return
 		}
 
 		query, args, err := squirrel.Insert("user_profile").Values(id, profile.Biography).
-			Suffix(`RETURNING user_id, biography, COALESCE(picture, 'default_picture.png')`).PlaceholderFormat(squirrel.Dollar).ToSql()
-
+			Suffix(`RETURNING user_id, biography, COALESCE(picture, 'default_picture.png')`).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
 
 		profile, err = pkg.ScanProfile(conn.QueryRow(c.Request.Context(), query, args...))
-
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -141,7 +137,6 @@ func UploadProfilePicture(conn *pgxpool.Pool) gin.HandlerFunc {
 		newFileName := fmt.Sprintf("user_%d_%d%s", id, time.Now().Unix(), ext)
 		savePath := filepath.Join("/app/uploads", newFileName)
 		dbPath := "/uploads/" + newFileName
-
 		if err := c.SaveUploadedFile(file, savePath); err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Fail when saving image file"))
 			return
@@ -151,8 +146,7 @@ func UploadProfilePicture(conn *pgxpool.Pool) gin.HandlerFunc {
 			Set("picture", dbPath).
 			Where(squirrel.Eq{"user_id": id}).
 			Suffix("RETURNING user_id, biography, picture").
-			PlaceholderFormat(squirrel.Dollar).
-			ToSql()
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -160,9 +154,7 @@ func UploadProfilePicture(conn *pgxpool.Pool) gin.HandlerFunc {
 		profile, err := pkg.ScanProfile(conn.QueryRow(c.Request.Context(), query, args...))
 		if pkg.HandleErr(c, err) {
 			return
-		}
-
-		if oldFileName != nil && *oldFileName != "" && *oldFileName != "/uploads/default_picture.png" {
+		} else if oldFileName != nil && *oldFileName != "" && *oldFileName != "/uploads/default_picture.png" {
 			_ = os.Remove("." + *oldFileName)
 		}
 
@@ -207,7 +199,6 @@ func UpdateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			 WHERE user_id = $2
 			 RETURNING user_id, biography, COALESCE(picture, 'default_picture.png')`,
 			profile.Biography, id))
-
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -246,8 +237,7 @@ func DeleteUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		query, args, err := squirrel.Delete("user_profile").
 			Where(squirrel.Eq{"user_id": id}).
-			PlaceholderFormat(squirrel.Dollar).
-			ToSql()
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -255,9 +245,7 @@ func DeleteUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		result, err := conn.Exec(c.Request.Context(), query, args...)
 		if pkg.HandleErr(c, err) {
 			return
-		}
-
-		if result.RowsAffected() == 0 {
+		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Profile not found"))
 			return
 		}
@@ -340,8 +328,7 @@ func CreateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			`SELECT EXISTS(SELECT 1 FROM analyst_profile WHERE analyst_id = $1)`, id).Scan(&exists)
 		if pkg.HandleErr(c, err) {
 			return
-		}
-		if exists {
+		} else if exists {
 			c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Analyst profile already exists for this user"))
 			return
 		}
@@ -374,13 +361,9 @@ func CreateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			ToSql()
 		if pkg.HandleErr(c, err) {
 			return
-		}
-
-		if _, err = tx.Exec(c.Request.Context(), analystProfileQuery, analystProfileArgs...); pkg.HandleErr(c, err) {
+		} else if _, err = tx.Exec(c.Request.Context(), analystProfileQuery, analystProfileArgs...); pkg.HandleErr(c, err) {
 			return
-		}
-
-		if err = tx.Commit(c.Request.Context()); pkg.HandleErr(c, err) {
+		} else if err = tx.Commit(c.Request.Context()); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -412,9 +395,7 @@ func UpdateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		var profile pkg.AnalystProfile
 		if err := c.BindJSON(&profile); pkg.HandleErr(c, err) {
 			return
-		}
-
-		if profile.Biography == "" {
+		} else if profile.Biography == "" {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty biography"))
 			return
 		}
@@ -477,9 +458,7 @@ func DeleteAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		result, err := conn.Exec(c.Request.Context(), query, args...)
 		if pkg.HandleErr(c, err) {
 			return
-		}
-
-		if result.RowsAffected() == 0 {
+		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst profile not found"))
 			return
 		}
@@ -562,8 +541,7 @@ func CreateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			`SELECT EXISTS(SELECT 1 FROM client_profile WHERE client_id = $1)`, id).Scan(&exists)
 		if pkg.HandleErr(c, err) {
 			return
-		}
-		if exists {
+		} else if exists {
 			c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Client profile already exists"))
 			return
 		}
@@ -596,13 +574,9 @@ func CreateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			ToSql()
 		if pkg.HandleErr(c, err) {
 			return
-		}
-
-		if _, err = tx.Exec(c.Request.Context(), clientProfileQuery, clientProfileArgs...); pkg.HandleErr(c, err) {
+		} else if _, err = tx.Exec(c.Request.Context(), clientProfileQuery, clientProfileArgs...); pkg.HandleErr(c, err) {
 			return
-		}
-
-		if err = tx.Commit(c.Request.Context()); pkg.HandleErr(c, err) {
+		} else if err = tx.Commit(c.Request.Context()); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -677,7 +651,6 @@ func DeleteClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		var fileName string
 		_ = conn.QueryRow(c.Request.Context(),
 			"SELECT COALESCE(picture, '') FROM user_profile WHERE user_id = $1", id).Scan(&fileName)
-
 		if fileName != "" && fileName != "default_picture.png" {
 			_ = os.Remove(filepath.Join("uploads", fileName))
 		}
@@ -693,9 +666,7 @@ func DeleteClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		result, err := conn.Exec(c.Request.Context(), query, args...)
 		if pkg.HandleErr(c, err) {
 			return
-		}
-
-		if result.RowsAffected() == 0 {
+		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Client profile not found"))
 			return
 		}

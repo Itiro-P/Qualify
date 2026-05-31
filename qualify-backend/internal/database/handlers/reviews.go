@@ -12,8 +12,7 @@ import (
 const reviewSelect = "id, analyst_id, client_id, service_id, rating, comment, time_created"
 
 func reviewBuilder(filters pkg.ReviewFilter) squirrel.SelectBuilder {
-	builder := squirrel.Select(reviewSelect).
-		From("review").
+	builder := squirrel.Select(reviewSelect).From("review").
 		PlaceholderFormat(squirrel.Dollar)
 
 	if filters.AnalystId != nil {
@@ -60,15 +59,8 @@ func scanReviews(c *gin.Context, conn *pgxpool.Pool, builder squirrel.SelectBuil
 	}
 	defer rows.Close()
 
-	var reviews []pkg.Review
-	for rows.Next() {
-		review, err := pkg.ScanReview(rows)
-		if pkg.HandleErr(c, err) {
-			return
-		}
-		reviews = append(reviews, review)
-	}
-	if err = rows.Err(); pkg.HandleErr(c, err) {
+	reviews, err := pkg.ScanRows(c, rows, pkg.ScanReview)
+	if pkg.HandleErr(c, err) {
 		return
 	}
 
@@ -221,11 +213,12 @@ func UpdateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		query, args, err := squirrel.Update("review").
-			Set("analyst_id", review.Analyst_id).
-			Set("client_id", review.Client_id).
-			Set("service_id", review.Service_id).
-			Set("rating", review.Rating).
-			Set("comment", review.Comment).
+			SetMap(map[string]any{
+				"analyst_id": review.Analyst_id,
+				"client_id":  review.Client_id,
+				"service_id": review.Service_id,
+				"rating":     review.Rating,
+				"comment":    review.Comment}).
 			Where(squirrel.Eq{"id": id}).
 			Suffix("RETURNING " + reviewSelect).
 			PlaceholderFormat(squirrel.Dollar).ToSql()
@@ -335,8 +328,7 @@ func DeleteReview(conn *pgxpool.Pool) gin.HandlerFunc {
 		result, err := conn.Exec(c.Request.Context(), query, args...)
 		if pkg.HandleErr(c, err) {
 			return
-		}
-		if result.RowsAffected() == 0 {
+		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Review not found"))
 			return
 		}
@@ -377,8 +369,7 @@ func GetClientReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 		filters.Normalize()
 
 		builder := reviewBuilder(filters).
-			From("review r").
-			Join("client cl ON r.client_id = cl.id").
+			From("review r").Join("client cl ON r.client_id = cl.id").
 			Where(squirrel.Eq{"cl.id": id})
 
 		scanReviews(c, conn, builder, filters)
@@ -417,8 +408,7 @@ func GetAnalystReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 		filters.Normalize()
 
 		builder := reviewBuilder(filters).
-			From("review r").
-			Join("analyst a ON r.analyst_id = a.id").
+			From("review r").Join("analyst a ON r.analyst_id = a.id").
 			Where(squirrel.Eq{"a.id": id})
 
 		scanReviews(c, conn, builder, filters)

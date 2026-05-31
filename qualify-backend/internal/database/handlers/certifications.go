@@ -74,23 +74,14 @@ func GetCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
-
 		if pkg.HandleErr(c, err) {
 			return
 		}
 
 		defer rows.Close()
 
-		var certs []pkg.Certification
-		for rows.Next() {
-			cert, err := pkg.ScanCertification(rows)
-			if pkg.HandleErr(c, err) {
-				return
-			}
-			certs = append(certs, cert)
-		}
-
-		if err = rows.Err(); pkg.HandleErr(c, err) {
+		certs, err := pkg.ScanRows(c, rows, pkg.ScanCertification)
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -118,11 +109,8 @@ func GetCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		query, args, err := squirrel.Select(certificationSelect).
-			From("certification").
-			Where(squirrel.Eq{"id": id}).
-			PlaceholderFormat(squirrel.Dollar).
-			ToSql()
-
+			From("certification").Where(squirrel.Eq{"id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -179,8 +167,7 @@ func CreateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 			cert.Name, cert.Institution).Scan(&exists)
 		if pkg.HandleErr(c, err) {
 			return
-		}
-		if exists {
+		} else if exists {
 			c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Certification already exists"))
 			return
 		}
@@ -193,8 +180,7 @@ func CreateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 			ToSql()
 		if pkg.HandleErr(c, err) {
 			return
-		}
-		if pkg.HandleErr(c, conn.QueryRow(c.Request.Context(), insertQuery, insertArgs...).Scan(&cert.Id)) {
+		} else if pkg.HandleErr(c, conn.QueryRow(c.Request.Context(), insertQuery, insertArgs...).Scan(&cert.Id)) {
 			return
 		}
 
@@ -246,14 +232,14 @@ func UpdateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		query, args, err := squirrel.Update("certification").
-			Set("name", cert.Name).
-			Set("year", cert.Year).
-			Set("description", cert.Description).
-			Set("institution", cert.Institution).
-			Where(squirrel.Eq{"id": id}).
+			SetMap(map[string]any{
+				"name":        cert.Name,
+				"year":        cert.Year,
+				"description": cert.Description,
+				"institution": cert.Institution,
+			}).Where(squirrel.Eq{"id": id}).
 			Suffix("RETURNING " + certificationSelect).
-			PlaceholderFormat(squirrel.Dollar).
-			ToSql()
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -316,16 +302,13 @@ func UpdateCertificationPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			builder = builder.Set("institution", *req.Institution)
 			hasFields = true
 		}
-
 		if !hasFields {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "No valid fields were given"))
 			return
 		}
 
-		query, args, err := builder.
-			Where(squirrel.Eq{"id": id}).
-			Suffix("RETURNING " + certificationSelect).
-			ToSql()
+		query, args, err := builder.Where(squirrel.Eq{"id": id}).
+			Suffix("RETURNING " + certificationSelect).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -361,8 +344,7 @@ func DeleteCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		query, args, err := squirrel.Delete("certification").
 			Where(squirrel.Eq{"id": id}).
-			PlaceholderFormat(squirrel.Dollar).
-			ToSql()
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -370,8 +352,7 @@ func DeleteCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 		result, err := conn.Exec(c.Request.Context(), query, args...)
 		if pkg.HandleErr(c, err) {
 			return
-		}
-		if result.RowsAffected() == 0 {
+		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Certification not found"))
 			return
 		}
@@ -401,10 +382,8 @@ func GetAnalystCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 		query, args, err := squirrel.Select("c.id, c.name, c.year, c.description, c.institution").
 			From("certification c").
 			Join("analyst_certification ac ON c.id = ac.certification_id").
-			Where(squirrel.Eq{"ac.analyst_id": id}).
-			OrderBy("c.year DESC").
-			PlaceholderFormat(squirrel.Dollar).
-			ToSql()
+			Where(squirrel.Eq{"ac.analyst_id": id}).OrderBy("c.year DESC").
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -415,15 +394,8 @@ func GetAnalystCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 		defer rows.Close()
 
-		var certs []pkg.Certification
-		for rows.Next() {
-			cert, err := pkg.ScanCertification(rows)
-			if pkg.HandleErr(c, err) {
-				return
-			}
-			certs = append(certs, cert)
-		}
-		if err = rows.Err(); pkg.HandleErr(c, err) {
+		certs, err := pkg.ScanRows(c, rows, pkg.ScanCertification)
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -459,10 +431,8 @@ func AssociateAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		query, args, err := squirrel.Select(certificationSelect).
-			From("certification").
-			Where(squirrel.Eq{"id": certID}).
-			PlaceholderFormat(squirrel.Dollar).
-			ToSql()
+			From("certification").Where(squirrel.Eq{"id": certID}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -473,15 +443,11 @@ func AssociateAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		insertQuery, insertArgs, err := squirrel.Insert("analyst_certification").
-			Columns("analyst_id", "certification_id").
-			Values(analystID, certID).
-			PlaceholderFormat(squirrel.Dollar).
-			ToSql()
+			Columns("analyst_id", "certification_id").Values(analystID, certID).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
-		}
-
-		if _, err = conn.Exec(c.Request.Context(), insertQuery, insertArgs...); pkg.HandleErr(c, err) {
+		} else if _, err = conn.Exec(c.Request.Context(), insertQuery, insertArgs...); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -526,8 +492,7 @@ func CreateAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, id).Scan(&analystExists)
 		if pkg.HandleErr(c, err) {
 			return
-		}
-		if !analystExists {
+		} else if !analystExists {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst not found"))
 			return
 		}
@@ -561,8 +526,7 @@ func CreateAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 			ToSql()
 		if pkg.HandleErr(c, err) {
 			return
-		}
-		if _, err = conn.Exec(c.Request.Context(), assocQuery, assocArgs...); pkg.HandleErr(c, err) {
+		} else if _, err = conn.Exec(c.Request.Context(), assocQuery, assocArgs...); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -607,8 +571,7 @@ func DeleteAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 		result, err := conn.Exec(c.Request.Context(), query, args...)
 		if pkg.HandleErr(c, err) {
 			return
-		}
-		if result.RowsAffected() == 0 {
+		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst certification not found"))
 			return
 		}

@@ -44,15 +44,8 @@ func GetSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 		defer rows.Close()
 
-		var skills []pkg.Skill
-		for rows.Next() {
-			skill, err := pkg.ScanSkill(rows)
-			if pkg.HandleErr(c, err) {
-				return
-			}
-			skills = append(skills, skill)
-		}
-		if err = rows.Err(); pkg.HandleErr(c, err) {
+		skills, err := pkg.ScanRows(c, rows, pkg.ScanSkill)
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -120,8 +113,7 @@ func CreateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			`SELECT EXISTS(SELECT 1 FROM skill WHERE name = $1)`, skill.Name).Scan(&exists)
 		if pkg.HandleErr(c, err) {
 			return
-		}
-		if exists {
+		} else if exists {
 			c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Skill already exists"))
 			return
 		}
@@ -221,8 +213,7 @@ func DeleteSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 		result, err := conn.Exec(c.Request.Context(), query, args...)
 		if pkg.HandleErr(c, err) {
 			return
-		}
-		if result.RowsAffected() == 0 {
+		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Skill not found"))
 			return
 		}
@@ -266,15 +257,8 @@ func GetAnalystSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 		defer rows.Close()
 
-		var skills []pkg.Skill
-		for rows.Next() {
-			skill, err := pkg.ScanSkill(rows)
-			if pkg.HandleErr(c, err) {
-				return
-			}
-			skills = append(skills, skill)
-		}
-		if err = rows.Err(); pkg.HandleErr(c, err) {
+		skills, err := pkg.ScanRows(c, rows, pkg.ScanSkill)
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -326,9 +310,7 @@ func AssociateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
-		}
-
-		if _, err = conn.Exec(c.Request.Context(), insQuery, insArgs...); pkg.HandleErr(c, err) {
+		} else if _, err = conn.Exec(c.Request.Context(), insQuery, insArgs...); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -368,8 +350,7 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, id).Scan(&analystExists)
 		if pkg.HandleErr(c, err) {
 			return
-		}
-		if !analystExists {
+		} else if !analystExists {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst not found"))
 			return
 		}
@@ -379,11 +360,9 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		if err == pgx.ErrNoRows {
 			insQuery, insArgs, err := squirrel.Insert("skill").
-				Columns("name").
-				Values(skill.Name).
+				Columns("name").Values(skill.Name).
 				Suffix("RETURNING id, name").
-				PlaceholderFormat(squirrel.Dollar).
-				ToSql()
+				PlaceholderFormat(squirrel.Dollar).ToSql()
 			if pkg.HandleErr(c, err) {
 				return
 			}
@@ -400,9 +379,7 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
-		}
-
-		if _, err = conn.Exec(c.Request.Context(), assocQuery, assocArgs...); pkg.HandleErr(c, err) {
+		} else if _, err = conn.Exec(c.Request.Context(), assocQuery, assocArgs...); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -446,8 +423,7 @@ func DeleteAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 		result, err := conn.Exec(c.Request.Context(), query, args...)
 		if pkg.HandleErr(c, err) {
 			return
-		}
-		if result.RowsAffected() == 0 {
+		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst skill not found"))
 			return
 		}
