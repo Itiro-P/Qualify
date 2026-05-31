@@ -21,14 +21,13 @@ func CreateUser(ctx context.Context, conn *pgxpool.Pool, user *pkg.User) error {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = tx.Rollback(ctx)
-	}()
+
+	defer tx.Rollback(ctx)
 
 	// Adicionamos password_hash na lista de colunas e no VALUES ($9)
 	query := `
         INSERT INTO "user" (
-            name, email, phone, country_code, country_name, 
+            name, email, phone, country_code, country_name,
             country_state, city, timezone, password_hash
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -65,12 +64,12 @@ func CreateUser(ctx context.Context, conn *pgxpool.Pool, user *pkg.User) error {
 // @Failure 500 {object} pkg.ErrorResponse
 func AssignAnalystRole(ctx context.Context, conn *pgxpool.Pool, userID int, hourlyRate float64) (*pkg.Analyst, error) {
 	tx, err := conn.Begin(ctx)
+
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		_ = tx.Rollback(ctx)
-	}()
+
+	defer tx.Rollback(ctx)
 
 	var analyst pkg.Analyst
 	if err := tx.QueryRow(ctx,
@@ -110,12 +109,12 @@ func AssignAnalystRole(ctx context.Context, conn *pgxpool.Pool, userID int, hour
 // @Failure 500 {object} pkg.ErrorResponse
 func AssignClientRole(ctx context.Context, conn *pgxpool.Pool, userID int, proposedBudget float64) (*pkg.Client, error) {
 	tx, err := conn.Begin(ctx)
+
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		_ = tx.Rollback(ctx)
-	}()
+
+	defer tx.Rollback(ctx)
 
 	var client pkg.Client
 	if err := tx.QueryRow(ctx,

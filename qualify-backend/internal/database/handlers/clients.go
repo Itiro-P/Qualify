@@ -284,17 +284,13 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		// Make update atomic across user + client tables
 		tx, err := conn.Begin(c.Request.Context())
+
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
-		// ensure rollback on error
-		committed := false
-		defer func() {
-			if !committed {
-				_ = tx.Rollback(c.Request.Context())
-			}
-		}()
+
+		defer tx.Rollback(c.Request.Context())
 
 		_, err = tx.Exec(c.Request.Context(),
 			`UPDATE "user" SET name = $1, email = $2, phone = $3, country_code = $4,
@@ -339,7 +335,6 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
-		committed = true
 
 		c.JSON(http.StatusOK, pkg.ClientResponse{Client: client})
 	}
@@ -469,11 +464,8 @@ func UpdateClientPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
-		defer func() {
-			if err != nil {
-				_ = tx.Rollback(c.Request.Context())
-			}
-		}()
+
+		defer tx.Rollback(c.Request.Context())
 
 		if len(userSet) > 0 {
 			userArgs = append(userArgs, clientID)

@@ -342,11 +342,8 @@ func CreateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
-		defer func() {
-			if err != nil {
-				_ = tx.Rollback(c.Request.Context())
-			}
-		}()
+
+		defer tx.Rollback(c.Request.Context())
 
 		profile, err = pkg.ScanAnalystProfile(tx.QueryRow(c.Request.Context(),
 			`INSERT INTO user_profile (user_id, biography) VALUES ($1, $2)
@@ -557,11 +554,8 @@ func CreateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
-		defer func() {
-			if err != nil {
-				_ = tx.Rollback(c.Request.Context())
-			}
-		}()
+
+		defer tx.Rollback(c.Request.Context())
 
 		profile, err = pkg.ScanClientProfile(tx.QueryRow(c.Request.Context(),
 			`INSERT INTO user_profile (user_id, biography) VALUES ($1, $2)

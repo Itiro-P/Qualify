@@ -300,15 +300,13 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		tx, err := conn.Begin(c.Request.Context())
+
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
-		defer func() {
-			if err != nil {
-				_ = tx.Rollback(c.Request.Context())
-			}
-		}()
+
+		defer tx.Rollback(c.Request.Context())
 
 		// Update user if needed
 		if len(userSet) > 0 {
@@ -456,15 +454,13 @@ func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		// Usar transação para garantir atomicidade entre updates nas tabelas
 		tx, err := conn.Begin(c.Request.Context())
+
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
-		defer func() {
-			if err != nil {
-				_ = tx.Rollback(c.Request.Context())
-			}
-		}()
+
+		defer tx.Rollback(c.Request.Context())
 
 		_, err = tx.Exec(c.Request.Context(),
 			`UPDATE "user" SET name = $1, email = $2, phone = $3, country_code = $4,
