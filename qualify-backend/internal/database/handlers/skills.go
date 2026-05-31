@@ -1,13 +1,13 @@
 package handlers
 
 import (
-	"fmt"
 	"main/pkg"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/n-r-w/squirrel"
 )
 
 // Skill Handlers
@@ -25,17 +25,18 @@ import (
 // @Router /skills [get]
 func GetSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		query := `SELECT id, name FROM skill WHERE 1=1`
-		args := []interface{}{}
-		argCounter := 1
+		builder := squirrel.Select("id, name").
+			From("skill").OrderBy("name ASC").
+			PlaceholderFormat(squirrel.Dollar)
 
 		if name := c.Query("name"); name != "" {
-			query += fmt.Sprintf(" AND name ILIKE $%d", argCounter)
-			args = append(args, "%"+name+"%")
-			argCounter++
+			builder = builder.Where(squirrel.ILike{"name": pkg.PutPercent(name)})
 		}
 
-		query += " ORDER BY name ASC"
+		query, args, err := builder.ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
 		if pkg.HandleErr(c, err) {
@@ -51,7 +52,6 @@ func GetSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 			}
 			skills = append(skills, skill)
 		}
-
 		if err = rows.Err(); pkg.HandleErr(c, err) {
 			return
 		}
@@ -79,11 +79,18 @@ func GetSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		skill, err := pkg.ScanSkill(conn.QueryRow(c.Request.Context(), `SELECT id, name FROM skill WHERE id = $1`, id))
-
+		query, args, err := squirrel.Select("id, name").
+			From("skill").Where(squirrel.Eq{"id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
+
+		skill, err := pkg.ScanSkill(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
 		c.JSON(http.StatusOK, pkg.SkillResponse{Skill: skill})
 	}
 }
@@ -111,7 +118,6 @@ func CreateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 		var exists bool
 		err := conn.QueryRow(c.Request.Context(),
 			`SELECT EXISTS(SELECT 1 FROM skill WHERE name = $1)`, skill.Name).Scan(&exists)
-
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -120,12 +126,19 @@ func CreateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		skill, err = pkg.ScanSkill(conn.QueryRow(c.Request.Context(),
-			`INSERT INTO skill (name) VALUES ($1) RETURNING id, name`, skill.Name))
-
+		query, args, err := squirrel.Insert("skill").
+			Columns("name").Values(skill.Name).
+			Suffix("RETURNING id, name").
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
+
+		skill, err = pkg.ScanSkill(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
 		c.JSON(http.StatusCreated, pkg.SkillResponse{Skill: skill})
 	}
 }
@@ -152,8 +165,7 @@ func UpdateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		var skill pkg.Skill
-		if err := c.BindJSON(&skill); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&skill); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -162,12 +174,19 @@ func UpdateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		skill, err = pkg.ScanSkill(conn.QueryRow(c.Request.Context(),
-			`UPDATE skill SET name = $1 WHERE id = $2 RETURNING id, name`, skill.Name, id))
-
+		query, args, err := squirrel.Update("skill").
+			Set("name", skill.Name).Where(squirrel.Eq{"id": id}).
+			Suffix("RETURNING id, name").
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
+
+		skill, err = pkg.ScanSkill(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
 		c.JSON(http.StatusOK, pkg.SkillResponse{Skill: skill})
 	}
 }
@@ -192,13 +211,17 @@ func DeleteSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		result, err := conn.Exec(c.Request.Context(),
-			`DELETE FROM skill WHERE id = $1`, id)
-
+		query, args, err := squirrel.Delete("skill").
+			Where(squirrel.Eq{"id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
 
+		result, err := conn.Exec(c.Request.Context(), query, args...)
+		if pkg.HandleErr(c, err) {
+			return
+		}
 		if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Skill not found"))
 			return
@@ -229,14 +252,15 @@ func GetAnalystSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		rows, err := conn.Query(c.Request.Context(),
-			`SELECT s.id, s.name
-             FROM skill s
-             JOIN analyst_skill ac ON s.id = ac.skill_id
-             WHERE ac.analyst_id = $1
-             ORDER BY s.name`,
-			id)
+		query, args, err := squirrel.Select("s.id, s.name").
+			From("skill s").Join("analyst_skill ac ON s.id = ac.skill_id").
+			Where(squirrel.Eq{"ac.analyst_id": id}).OrderBy("s.name").
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
 
+		rows, err := conn.Query(c.Request.Context(), query, args...)
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -250,7 +274,6 @@ func GetAnalystSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 			}
 			skills = append(skills, skill)
 		}
-
 		if err = rows.Err(); pkg.HandleErr(c, err) {
 			return
 		}
@@ -286,17 +309,26 @@ func AssociateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		skill, err := pkg.ScanSkill(conn.QueryRow(c.Request.Context(),
-			`SELECT id, name FROM skill WHERE id = $1`, skillID))
+		selQuery, selArgs, err := squirrel.Select("id, name").
+			From("skill").Where(squirrel.Eq{"id": skillID}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		_, err = conn.Exec(c.Request.Context(),
-			`INSERT INTO analyst_skill (analyst_id, skill_id) VALUES ($1, $2)`,
-			id, skillID)
-
+		skill, err := pkg.ScanSkill(conn.QueryRow(c.Request.Context(), selQuery, selArgs...))
 		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		insQuery, insArgs, err := squirrel.Insert("analyst_skill").
+			Columns("analyst_id", "skill_id").Values(id, skillID).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		if _, err = conn.Exec(c.Request.Context(), insQuery, insArgs...); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -334,7 +366,6 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 		var analystExists bool
 		err = conn.QueryRow(c.Request.Context(),
 			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, id).Scan(&analystExists)
-
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -343,13 +374,20 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		// Busca ou cria a skill
 		err = conn.QueryRow(c.Request.Context(),
 			`SELECT id FROM skill WHERE name = $1`, skill.Name).Scan(&skill.Id)
 
 		if err == pgx.ErrNoRows {
-			skill, err = pkg.ScanSkill(conn.QueryRow(c.Request.Context(),
-				`INSERT INTO skill (name) VALUES ($1) RETURNING id, name`, skill.Name))
+			insQuery, insArgs, err := squirrel.Insert("skill").
+				Columns("name").
+				Values(skill.Name).
+				Suffix("RETURNING id, name").
+				PlaceholderFormat(squirrel.Dollar).
+				ToSql()
+			if pkg.HandleErr(c, err) {
+				return
+			}
+			skill, err = pkg.ScanSkill(conn.QueryRow(c.Request.Context(), insQuery, insArgs...))
 			if pkg.HandleErr(c, err) {
 				return
 			}
@@ -357,11 +395,14 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		// Associa a skill ao analyst
-		_, err = conn.Exec(c.Request.Context(),
-			`INSERT INTO analyst_skill (analyst_id, skill_id) VALUES ($1, $2)`,
-			id, skill.Id)
+		assocQuery, assocArgs, err := squirrel.Insert("analyst_skill").
+			Columns("analyst_id", "skill_id").Values(id, skill.Id).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		if _, err = conn.Exec(c.Request.Context(), assocQuery, assocArgs...); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -391,18 +432,21 @@ func DeleteAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		skillID, err := pkg.ParsePathQuery(c, "skill_id")
-
 		if err != nil {
 			return
 		}
 
-		result, err := conn.Exec(c.Request.Context(),
-			`DELETE FROM analyst_skill WHERE analyst_id = $1 AND skill_id = $2`, id, skillID)
-
+		query, args, err := squirrel.Delete("analyst_skill").
+			Where(squirrel.Eq{"analyst_id": id, "skill_id": skillID}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
 
+		result, err := conn.Exec(c.Request.Context(), query, args...)
+		if pkg.HandleErr(c, err) {
+			return
+		}
 		if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst skill not found"))
 			return

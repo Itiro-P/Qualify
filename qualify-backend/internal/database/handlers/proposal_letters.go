@@ -1,15 +1,76 @@
 package handlers
 
 import (
-	"fmt"
 	"main/pkg"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/n-r-w/squirrel"
 )
+
+const proposalSelect = "id, client_id, analyst_id, proposed_hourly_rate, title, content, time_created"
+
+func proposalBuilder(filters pkg.ProposalFilter) squirrel.SelectBuilder {
+	builder := squirrel.Select(proposalSelect).
+		From("proposal_letter").
+		PlaceholderFormat(squirrel.Dollar)
+
+	if filters.ClientId != nil {
+		builder = builder.Where(squirrel.Eq{"client_id": *filters.ClientId})
+	}
+	if filters.AnalystId != nil {
+		builder = builder.Where(squirrel.Eq{"analyst_id": *filters.AnalystId})
+	}
+	if filters.Title != "" {
+		builder = builder.Where(squirrel.ILike{"title": pkg.PutPercent(filters.Title)})
+	}
+	if filters.Content != "" {
+		builder = builder.Where(squirrel.ILike{"content": pkg.PutPercent(filters.Content)})
+	}
+	if filters.MinProposedHourlyRate != nil {
+		builder = builder.Where(squirrel.GtOrEq{"proposed_hourly_rate": *filters.MinProposedHourlyRate})
+	}
+	if filters.MaxProposedHourlyRate != nil {
+		builder = builder.Where(squirrel.LtOrEq{"proposed_hourly_rate": *filters.MaxProposedHourlyRate})
+	}
+
+	if order := filters.ValidateSort(pkg.ProposalSortFields); order != "" {
+		builder = builder.OrderBy(order)
+	} else {
+		builder = builder.OrderBy("time_created DESC")
+	}
+
+	builder = builder.Limit(uint64(filters.PageSize)).Offset(uint64(filters.Offset()))
+	return builder
+}
+
+func scanProposals(c *gin.Context, conn *pgxpool.Pool, builder squirrel.SelectBuilder) {
+	query, args, err := builder.ToSql()
+	if pkg.HandleErr(c, err) {
+		return
+	}
+
+	rows, err := conn.Query(c.Request.Context(), query, args...)
+	if pkg.HandleErr(c, err) {
+		return
+	}
+	defer rows.Close()
+
+	var proposals []pkg.ProposalLetter
+	for rows.Next() {
+		p, err := pkg.ScanProposalLetter(rows)
+		if pkg.HandleErr(c, err) {
+			return
+		}
+		proposals = append(proposals, p)
+	}
+	if err = rows.Err(); pkg.HandleErr(c, err) {
+		return
+	}
+
+	c.JSON(http.StatusOK, pkg.ProposalLettersResponse{Proposal_letters: proposals, Count: len(proposals)})
+}
 
 // GetProposalLetters godoc
 // @Summary Listar propostas
@@ -30,89 +91,14 @@ import (
 // @Router /proposals [get]
 func GetProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		query := `SELECT id, client_id, analyst_id, proposed_hourly_rate,
-                         title, content, time_created
-                  FROM proposal_letter WHERE 1=1`
-		args := []interface{}{}
-		argCounter := 1
-
-		if clientID := c.Query("client_id"); clientID != "" {
-			if clientIDVal, err := strconv.Atoi(clientID); err == nil {
-				query += fmt.Sprintf(" AND client_id = $%d", argCounter)
-				args = append(args, clientIDVal)
-				argCounter++
-			}
-		}
-		if analystID := c.Query("analyst_id"); analystID != "" {
-			if analystIDVal, err := strconv.Atoi(analystID); err == nil {
-				query += fmt.Sprintf(" AND analyst_id = $%d", argCounter)
-				args = append(args, analystIDVal)
-				argCounter++
-			}
-		}
-
-		if title := c.Query("title"); title != "" {
-			query += fmt.Sprintf(" AND title ILIKE $%d", argCounter)
-			args = append(args, "%"+title+"%")
-			argCounter++
-		}
-
-		if content := c.Query("content"); content != "" {
-			query += fmt.Sprintf(" AND content ILIKE $%d", argCounter)
-			args = append(args, "%"+content+"%")
-			argCounter++
-		}
-
-		if minRate := c.Query("min_proposed_hourly_rate"); minRate != "" {
-			if minRateVal, err := strconv.ParseFloat(minRate, 64); err == nil {
-				query += fmt.Sprintf(" AND proposed_hourly_rate >= $%d", argCounter)
-				args = append(args, minRateVal)
-				argCounter++
-			}
-		}
-
-		if maxRate := c.Query("max_proposed_hourly_rate"); maxRate != "" {
-			if maxRateVal, err := strconv.ParseFloat(maxRate, 64); err == nil {
-				query += fmt.Sprintf(" AND proposed_hourly_rate <= $%d", argCounter)
-				args = append(args, maxRateVal)
-				argCounter++
-			}
-		}
-
-		allowedSortFields := map[string]bool{
-			"title": true, "proposed_hourly_rate": true, "time_created": true,
-		}
-		if sortBy := c.Query("sort_by"); sortBy != "" {
-			if allowedSortFields[sortBy] {
-				order := c.DefaultQuery("order", "ASC")
-				if order == "ASC" || order == "DESC" {
-					query += fmt.Sprintf(" ORDER BY %s %s", sortBy, order)
-				}
-			}
-		} else {
-			query += " ORDER BY time_created DESC"
-		}
-
-		rows, err := conn.Query(c.Request.Context(), query, args...)
+		var filters pkg.ProposalFilter
+		err := c.ShouldBindQuery(&filters)
 		if pkg.HandleErr(c, err) {
 			return
 		}
-		defer rows.Close()
+		filters.Normalize()
 
-		var proposals []pkg.ProposalLetter
-		for rows.Next() {
-			p, err := pkg.ScanProposalLetter(rows)
-			if pkg.HandleErr(c, err) {
-				return
-			}
-			proposals = append(proposals, p)
-		}
-
-		if err = rows.Err(); pkg.HandleErr(c, err) {
-			return
-		}
-
-		c.JSON(http.StatusOK, pkg.ProposalLettersResponse{Proposal_letters: proposals, Count: len(proposals)})
+		scanProposals(c, conn, proposalBuilder(filters))
 	}
 }
 
@@ -135,18 +121,19 @@ func GetProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		row := conn.QueryRow(c.Request.Context(),
-			`SELECT id, client_id, analyst_id, proposed_hourly_rate,
-                    title, content, time_created
-             FROM proposal_letter WHERE id = $1`, id,
-		)
-
-		pproposal, err := pkg.ScanProposalLetter(row)
+		query, args, err := squirrel.Select(proposalSelect).
+			From("proposal_letter").Where(squirrel.Eq{"id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		c.JSON(http.StatusOK, pkg.ProposalLetterResponse{Proposal_letter: pproposal})
+		proposal, err := pkg.ScanProposalLetter(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		c.JSON(http.StatusOK, pkg.ProposalLetterResponse{Proposal_letter: proposal})
 	}
 }
 
@@ -170,12 +157,16 @@ func CreateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		proposal, err := pkg.ScanProposalLetter(conn.QueryRow(c.Request.Context(),
-			`INSERT INTO proposal_letter (title, content, client_id, analyst_id, proposed_hourly_rate)
-             VALUES ($1, $2, $3, $4, $5)
-             RETURNING id, client_id, analyst_id, proposed_hourly_rate, title, content, time_created`,
-			proposal.Title, proposal.Content, proposal.Client_id, proposal.Analyst_id, proposal.Proposed_hourly_rate))
+		query, args, err := squirrel.Insert("proposal_letter").
+			Columns("title", "content", "client_id", "analyst_id", "proposed_hourly_rate").
+			Values(proposal.Title, proposal.Content, proposal.Client_id, proposal.Analyst_id, proposal.Proposed_hourly_rate).
+			Suffix("RETURNING " + proposalSelect).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
 
+		proposal, err = pkg.ScanProposalLetter(conn.QueryRow(c.Request.Context(), query, args...))
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -210,18 +201,26 @@ func UpdateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		// Validando parâmetros obrigatórios
 		if proposal.Title == "" {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty title"))
 			return
 		}
 
-		proposal, err = pkg.ScanProposalLetter(conn.QueryRow(c.Request.Context(),
-			`UPDATE proposal_letter SET title = $1, content = $2, client_id = $3, analyst_id = $4, proposed_hourly_rate = $5
-             WHERE id = $6
-             RETURNING id, client_id, analyst_id, proposed_hourly_rate, title, content, time_created`,
-			proposal.Title, proposal.Content, proposal.Client_id, proposal.Analyst_id, proposal.Proposed_hourly_rate, id))
+		query, args, err := squirrel.Update("proposal_letter").
+			Set("title", proposal.Title).
+			Set("content", proposal.Content).
+			Set("client_id", proposal.Client_id).
+			Set("analyst_id", proposal.Analyst_id).
+			Set("proposed_hourly_rate", proposal.Proposed_hourly_rate).
+			Where(squirrel.Eq{"id": id}).
+			Suffix("RETURNING " + proposalSelect).
+			PlaceholderFormat(squirrel.Dollar).
+			ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
 
+		proposal, err = pkg.ScanProposalLetter(conn.QueryRow(c.Request.Context(), query, args...))
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -256,44 +255,40 @@ func UpdateProposalLetterPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		set := []string{}
-		args := []interface{}{}
-		argID := 1
+		builder := squirrel.Update("proposal_letter").PlaceholderFormat(squirrel.Dollar)
+		hasFields := false
 
 		if req.Title != nil {
-			set = append(set, fmt.Sprintf("title = $%d", argID))
-			args = append(args, *req.Title)
-			argID++
+			builder = builder.Set("title", *req.Title)
+			hasFields = true
 		}
 		if req.Content != nil {
-			set = append(set, fmt.Sprintf("content = $%d", argID))
-			args = append(args, *req.Content)
-			argID++
+			builder = builder.Set("content", *req.Content)
+			hasFields = true
 		}
 		if req.Proposed_hourly_rate != nil {
-			set = append(set, fmt.Sprintf("proposed_hourly_rate = $%d", argID))
-			args = append(args, *req.Proposed_hourly_rate)
-			argID++
+			builder = builder.Set("proposed_hourly_rate", *req.Proposed_hourly_rate)
+			hasFields = true
 		}
 
-		if len(set) == 0 {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Invalid arguments"))
+		if !hasFields {
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "No valid fields were given"))
 			return
 		}
 
-		// Adiciona o ID como último argumento
-		args = append(args, id)
-		query := fmt.Sprintf(
-			"UPDATE proposal_letter SET %s WHERE id = $%d RETURNING id, client_id, analyst_id, proposed_hourly_rate, title, content, time_created",
-			strings.Join(set, ", "), argID,
-		)
-
-		pproposal, err := pkg.ScanProposalLetter(conn.QueryRow(c.Request.Context(), query, args...))
+		query, args, err := builder.
+			Where(squirrel.Eq{"id": id}).
+			Suffix("RETURNING " + proposalSelect).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"proposal_letter": pproposal})
+		proposal, err := pkg.ScanProposalLetter(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		c.JSON(http.StatusOK, pkg.ProposalLetterResponse{Proposal_letter: proposal})
 	}
 }
 
@@ -317,9 +312,14 @@ func DeleteProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		result, err := conn.Exec(c.Request.Context(),
-			`DELETE FROM proposal_letter WHERE id = $1`, id)
+		query, args, err := squirrel.Delete("proposal_letter").
+			Where(squirrel.Eq{"id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
 
+		result, err := conn.Exec(c.Request.Context(), query, args...)
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -357,85 +357,19 @@ func GetClientProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		query := `SELECT p.id, p.client_id, p.analyst_id, p.proposed_hourly_rate,
-          p.title, p.content, p.time_created
-          FROM proposal_letter p
-          JOIN client c ON p.client_id = c.id
-          WHERE c.user_id = $1`
-		args := []interface{}{id}
-		argCounter := 2
-
-		if analystID := c.Query("analyst_id"); analystID != "" {
-			if analystIDVal, err := strconv.Atoi(analystID); err == nil {
-				query += fmt.Sprintf(" AND analyst_id = $%d", argCounter)
-				args = append(args, analystIDVal)
-				argCounter++
-			}
-		}
-
-		if title := c.Query("title"); title != "" {
-			query += fmt.Sprintf(" AND title ILIKE $%d", argCounter)
-			args = append(args, "%"+title+"%")
-			argCounter++
-		}
-
-		if content := c.Query("content"); content != "" {
-			query += fmt.Sprintf(" AND content ILIKE $%d", argCounter)
-			args = append(args, "%"+content+"%")
-			argCounter++
-		}
-
-		if minRate := c.Query("min_proposed_hourly_rate"); minRate != "" {
-			if minRateVal, err := strconv.ParseFloat(minRate, 64); err == nil {
-				query += fmt.Sprintf(" AND proposed_hourly_rate >= $%d", argCounter)
-				args = append(args, minRateVal)
-				argCounter++
-			}
-		}
-
-		if maxRate := c.Query("max_proposed_hourly_rate"); maxRate != "" {
-			if maxRateVal, err := strconv.ParseFloat(maxRate, 64); err == nil {
-				query += fmt.Sprintf(" AND proposed_hourly_rate <= $%d", argCounter)
-				args = append(args, maxRateVal)
-				argCounter++
-			}
-		}
-
-		allowedSortFields := map[string]bool{
-			"title": true, "proposed_hourly_rate": true, "time_created": true,
-		}
-		if sortBy := c.Query("sort_by"); sortBy != "" {
-			if allowedSortFields[sortBy] {
-				order := c.DefaultQuery("order", "ASC")
-				if order == "ASC" || order == "DESC" {
-					query += fmt.Sprintf(" ORDER BY %s %s", sortBy, order)
-				}
-			}
-		} else {
-			query += " ORDER BY time_created DESC"
-		}
-
-		rows, err := conn.Query(c.Request.Context(), query, args...)
+		var filters pkg.ProposalFilter
+		err = c.ShouldBindQuery(&filters)
 		if pkg.HandleErr(c, err) {
 			return
 		}
+		filters.Normalize()
 
-		defer rows.Close()
+		builder := proposalBuilder(filters).
+			From("proposal_letter p").
+			Join("client cl ON p.client_id = cl.id").
+			Where(squirrel.Eq{"cl.id": id})
 
-		var proposals []pkg.ProposalLetter
-		for rows.Next() {
-			proposal, err := pkg.ScanProposalLetter(rows)
-			if pkg.HandleErr(c, err) {
-				return
-			}
-			proposals = append(proposals, proposal)
-		}
-
-		if err = rows.Err(); pkg.HandleErr(c, err) {
-			return
-		}
-
-		c.JSON(http.StatusOK, pkg.ProposalLettersResponse{Proposal_letters: proposals, Count: len(proposals)})
+		scanProposals(c, conn, builder)
 	}
 }
 
@@ -463,84 +397,18 @@ func GetAnalystProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		query := `SELECT p.id, p.client_id, p.analyst_id, p.proposed_hourly_rate,
-          p.title, p.content, p.time_created
-          FROM proposal_letter p
-          JOIN analyst a ON p.analyst_id = a.id
-          WHERE a.user_id = $1`
-		args := []interface{}{id}
-		argCounter := 2
-
-		if clientID := c.Query("client_id"); clientID != "" {
-			if clientIDVal, err := strconv.Atoi(clientID); err == nil {
-				query += fmt.Sprintf(" AND client_id = $%d", argCounter)
-				args = append(args, clientIDVal)
-				argCounter++
-			}
-		}
-
-		if title := c.Query("title"); title != "" {
-			query += fmt.Sprintf(" AND title ILIKE $%d", argCounter)
-			args = append(args, "%"+title+"%")
-			argCounter++
-		}
-
-		if content := c.Query("content"); content != "" {
-			query += fmt.Sprintf(" AND content ILIKE $%d", argCounter)
-			args = append(args, "%"+content+"%")
-			argCounter++
-		}
-
-		if minRate := c.Query("min_proposed_hourly_rate"); minRate != "" {
-			if minRateVal, err := strconv.ParseFloat(minRate, 64); err == nil {
-				query += fmt.Sprintf(" AND proposed_hourly_rate >= $%d", argCounter)
-				args = append(args, minRateVal)
-				argCounter++
-			}
-		}
-
-		if maxRate := c.Query("max_proposed_hourly_rate"); maxRate != "" {
-			if maxRateVal, err := strconv.ParseFloat(maxRate, 64); err == nil {
-				query += fmt.Sprintf(" AND proposed_hourly_rate <= $%d", argCounter)
-				args = append(args, maxRateVal)
-				argCounter++
-			}
-		}
-
-		allowedSortFields := map[string]bool{
-			"title": true, "proposed_hourly_rate": true, "time_created": true,
-		}
-		if sortBy := c.Query("sort_by"); sortBy != "" {
-			if allowedSortFields[sortBy] {
-				order := c.DefaultQuery("order", "ASC")
-				if order == "ASC" || order == "DESC" {
-					query += fmt.Sprintf(" ORDER BY %s %s", sortBy, order)
-				}
-			}
-		} else {
-			query += " ORDER BY time_created DESC"
-		}
-
-		rows, err := conn.Query(c.Request.Context(), query, args...)
+		var filters pkg.ProposalFilter
+		err = c.ShouldBindQuery(&filters)
 		if pkg.HandleErr(c, err) {
 			return
 		}
+		filters.Normalize()
 
-		defer rows.Close()
+		builder := proposalBuilder(filters).
+			From("proposal_letter p").
+			Join("analyst a ON p.analyst_id = a.id").
+			Where(squirrel.Eq{"a.id": id})
 
-		var proposals []pkg.ProposalLetter
-		for rows.Next() {
-			proposal, err := pkg.ScanProposalLetter(rows)
-			if pkg.HandleErr(c, err) {
-				return
-			}
-			proposals = append(proposals, proposal)
-		}
-
-		if err = rows.Err(); pkg.HandleErr(c, err) {
-			return
-		}
-
-		c.JSON(http.StatusOK, pkg.ProposalLettersResponse{Proposal_letters: proposals, Count: len(proposals)})
+		scanProposals(c, conn, builder)
 	}
 }

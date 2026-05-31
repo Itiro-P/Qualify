@@ -1,16 +1,18 @@
 package handlers
 
 import (
-	"fmt"
 	"main/internal/database/services"
 	"main/pkg"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/n-r-w/squirrel"
 	"golang.org/x/crypto/bcrypt"
 )
+
+const userSelect = `id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone`
+const userFrom = `"user"`
 
 // GetUser godoc
 // @Summary Obter usuário
@@ -31,11 +33,16 @@ func GetUser(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		row := conn.QueryRow(c.Request.Context(),
-			`SELECT id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone
-             FROM "user" WHERE id = $1`, id)
+		query, args, err := squirrel.Select(userSelect).
+			From(userFrom).
+			Where(squirrel.Eq{"id": id}).
+			PlaceholderFormat(squirrel.Dollar).
+			ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
 
-		user, err := pkg.ScanUser(row)
+		user, err := pkg.ScanUser(conn.QueryRow(c.Request.Context(), query, args...))
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -70,10 +77,14 @@ func GetCurrentUser(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		user, err := pkg.ScanUser(conn.QueryRow(c.Request.Context(),
-			`SELECT id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone
-             FROM "user" WHERE id = $1`, userID))
+		query, args, err := squirrel.Select(userSelect).
+			From(userFrom).Where(squirrel.Eq{"id": userID}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
 
+		user, err := pkg.ScanUser(conn.QueryRow(c.Request.Context(), query, args...))
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -118,8 +129,7 @@ func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 			City:          reg.City,
 			Timezone:      reg.Timezone,
 		}
-		err = services.CreateUser(c.Request.Context(), conn, &user)
-		if pkg.HandleErr(c, err) {
+		if err = services.CreateUser(c.Request.Context(), conn, &user); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -153,14 +163,23 @@ func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		user, err = pkg.ScanUser(conn.QueryRow(c.Request.Context(),
-			`UPDATE "user" SET name = $1, email = $2, phone = $3, country_code = $4,
-             country_name = $5, country_state = $6, city = $7, timezone = $8
-             WHERE id = $9
-             RETURNING id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone`,
-			user.Name, user.Email, user.Phone, user.Country_code, user.Country_name,
-			user.Country_state, user.City, user.Timezone, id))
+		query, args, err := squirrel.Update(userFrom).
+			Set("name", user.Name).
+			Set("email", user.Email).
+			Set("phone", user.Phone).
+			Set("country_code", user.Country_code).
+			Set("country_name", user.Country_name).
+			Set("country_state", user.Country_state).
+			Set("city", user.City).
+			Set("timezone", user.Timezone).
+			Where(squirrel.Eq{"id": id}).
+			Suffix("RETURNING " + userSelect).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
 
+		user, err = pkg.ScanUser(conn.QueryRow(c.Request.Context(), query, args...))
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -195,40 +214,56 @@ func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		set := []string{}
-		args := []interface{}{}
-		i := 1
+		builder := squirrel.Update(userFrom).PlaceholderFormat(squirrel.Dollar)
+		hasFields := false
 
-		addToSet := func(field string, val interface{}) {
-			if val != nil {
-				set = append(set, fmt.Sprintf("%s = $%d", field, i))
-				args = append(args, val)
-				i++
-			}
+		if req.Name != nil {
+			builder = builder.Set("name", *req.Name)
+			hasFields = true
+		}
+		if req.Email != nil {
+			builder = builder.Set("email", *req.Email)
+			hasFields = true
+		}
+		if req.Phone != nil {
+			builder = builder.Set("phone", *req.Phone)
+			hasFields = true
+		}
+		if req.Country_code != nil {
+			builder = builder.Set("country_code", *req.Country_code)
+			hasFields = true
+		}
+		if req.Country_name != nil {
+			builder = builder.Set("country_name", *req.Country_name)
+			hasFields = true
+		}
+		if req.Country_state != nil {
+			builder = builder.Set("country_state", *req.Country_state)
+			hasFields = true
+		}
+		if req.City != nil {
+			builder = builder.Set("city", *req.City)
+			hasFields = true
+		}
+		if req.Timezone != nil {
+			builder = builder.Set("timezone", *req.Timezone)
+			hasFields = true
 		}
 
-		addToSet("name", req.Name)
-		addToSet("email", req.Email)
-		addToSet("phone", req.Phone)
-		addToSet("country_code", req.Country_code)
-		addToSet("country_name", req.Country_name)
-		addToSet("country_state", req.Country_state)
-		addToSet("city", req.City)
-		addToSet("timezone", req.Timezone)
-
-		if len(set) == 0 {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Invalid arguments"))
+		if !hasFields {
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "No valid fields were given"))
 			return
 		}
 
-		args = append(args, id)
-		query := fmt.Sprintf(
-			`UPDATE "user" SET %s WHERE id = $%d
-             RETURNING id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone`,
-			strings.Join(set, ", "), i)
+		query, args, err := builder.
+			Where(squirrel.Eq{"id": id}).
+			Suffix("RETURNING " + userSelect).
+			ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
 
 		user, err := pkg.ScanUser(conn.QueryRow(c.Request.Context(), query, args...))
-
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -257,7 +292,14 @@ func DeleteUser(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		result, err := conn.Exec(c.Request.Context(), `DELETE FROM "user" WHERE id = $1`, id)
+		query, args, err := squirrel.Delete(userFrom).
+			Where(squirrel.Eq{"id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		result, err := conn.Exec(c.Request.Context(), query, args...)
 		if pkg.HandleErr(c, err) {
 			return
 		}

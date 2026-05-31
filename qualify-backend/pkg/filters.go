@@ -62,7 +62,7 @@ func (s *SortOptions) ValidateSort(allowed map[string]bool) string {
 	if s.Order != "ASC" && s.Order != "DESC" {
 		s.Order = "ASC"
 	}
-	return fmt.Sprintf(" ORDER BY %s %s", s.SortBy, s.Order)
+	return fmt.Sprintf("%s %s", s.SortBy, s.Order)
 }
 
 type UserFilter struct {
@@ -155,7 +155,7 @@ var AnalystSortFields = mergeMaps(UserSortFields, map[string]bool{
 	"mean_rating":   true,
 })
 
-var ClientSortField = mergeMaps(UserSortFields, map[string]bool{
+var ClientSortFields = mergeMaps(UserSortFields, map[string]bool{
 	"proposed_budget": true,
 })
 

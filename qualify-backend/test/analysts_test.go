@@ -244,7 +244,7 @@ func TestAnalyst(t *testing.T) {
 		assert.Equal(t, analystsResponse.Analysts[0], analysts[joao])
 	})
 
-	t.Run("Listando analistas com filtro de maior valor", func(t *testing.T) {
+	t.Run("Listando analistas com filtro de mínimo valor", func(t *testing.T) {
 		maxim := slices.IndexFunc(analysts, func(a pkg.Analyst) bool {
 			return a.Hourly_rate >= 128.0
 		})
@@ -266,7 +266,7 @@ func TestAnalyst(t *testing.T) {
 		assert.Equal(t, analystsResponse.Analysts[0], analysts[maxim])
 	})
 
-	t.Run("Listando analistas com filtro de menor valor", func(t *testing.T) {
+	t.Run("Listando analistas com filtro de máximo valor", func(t *testing.T) {
 		maxim := slices.IndexFunc(analysts, func(a pkg.Analyst) bool {
 			return a.Hourly_rate <= 50.0
 		})
@@ -317,12 +317,12 @@ func TestAnalyst(t *testing.T) {
 	t.Run("Listando analistas com filtro de mínimo de média de avaliações", func(t *testing.T) {
 		expected := []pkg.Analyst{}
 		for _, a := range analysts {
-			if a.Mean_rating != nil && *a.Mean_rating >= 4.5 {
+			if a.Mean_rating != nil && *a.Mean_rating >= 4 {
 				expected = append(expected, a)
 			}
 		}
 
-		targetURL := "/analysts?min_mean_rating=4.5"
+		targetURL := "/analysts?min_rating=4"
 
 		req := httptest.NewRequest(http.MethodGet, targetURL, nil)
 		w := httptest.NewRecorder()
@@ -342,9 +342,9 @@ func TestAnalyst(t *testing.T) {
 	})
 
 	t.Run("Listando analistas ordenando do menor para o maior", func(t *testing.T) {
-		arr := analysts
+		arr := make([]pkg.Analyst, len(analysts))
+		copy(arr, analysts)
 		slices.SortFunc(arr, func(a, b pkg.Analyst) int {
-			// strings.Compare retorna -1 se a < b, 0 se a == b, 1 se a > b
 			return strings.Compare(a.User.Name, b.User.Name)
 		})
 

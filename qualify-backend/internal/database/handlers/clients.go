@@ -1,16 +1,20 @@
 package handlers
 
 import (
-	"fmt"
 	"main/internal/database/services"
 	"main/pkg"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/n-r-w/squirrel"
 )
+
+const clientSelect = `u.id, u.name, u.email, u.phone, u.time_created, 
+	u.country_code, u.country_name, u.country_state, u.city, u.timezone, 
+	c.proposed_budget`
+
+const clientJoin = `"user" u JOIN client c ON c.id = u.id`
 
 // GetClients godoc
 // @Summary Listar clientes
@@ -33,88 +37,63 @@ import (
 // @Router /clients [get]
 func GetClients(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		query := `
-            SELECT u.id, u.name, u.email, u.phone, u.time_created,
-                   u.country_code, u.country_name, u.country_state, u.city, u.timezone,
-                   c.proposed_budget
-            FROM "user" u
-            JOIN client c ON c.id = u.id
-            WHERE 1=1`
+		builder := squirrel.Select(clientSelect).From(clientJoin).PlaceholderFormat(squirrel.Dollar)
+		var filters pkg.ClientFilter
+		err := c.ShouldBindQuery(&filters)
+		if pkg.HandleErr(c, err) {
+			return
+		}
+		filters.Normalize()
 
-		args := []interface{}{}
-		argCounter := 1
-
-		if name := c.Query("name"); name != "" {
-			query += fmt.Sprintf(" AND u.name ILIKE $%d", argCounter)
-			args = append(args, "%"+name+"%")
-			argCounter++
+		if filters.Name != "" {
+			builder = builder.Where(squirrel.ILike{"u.name": pkg.PutPercent(filters.Name)})
 		}
 
-		if email := c.Query("email"); email != "" {
-			query += fmt.Sprintf(" AND u.email ILIKE $%d", argCounter)
-			args = append(args, "%"+email+"%")
-			argCounter++
+		if filters.Email != "" {
+			builder = builder.Where(squirrel.ILike{"u.email": pkg.PutPercent(filters.Email)})
 		}
 
-		if country := c.Query("country"); country != "" {
-			query += fmt.Sprintf(" AND u.country_name ILIKE $%d", argCounter)
-			args = append(args, "%"+country+"%")
-			argCounter++
+		if filters.Country != "" {
+			builder = builder.Where(squirrel.ILike{"u.country_name": pkg.PutPercent(filters.Country)})
 		}
 
-		if countryCode := c.Query("country_code"); countryCode != "" {
-			query += fmt.Sprintf(" AND u.country_code ILIKE $%d", argCounter)
-			args = append(args, "%"+countryCode+"%")
-			argCounter++
+		if filters.CountryCode != "" {
+			builder = builder.Where(squirrel.ILike{"u.country_code": pkg.PutPercent(filters.CountryCode)})
 		}
 
-		if countryState := c.Query("country_state"); countryState != "" {
-			query += fmt.Sprintf(" AND u.country_state ILIKE $%d", argCounter)
-			args = append(args, "%"+countryState+"%")
-			argCounter++
+		if filters.CountryState != "" {
+			builder = builder.Where(squirrel.ILike{"u.country_state": pkg.PutPercent(filters.CountryState)})
 		}
 
-		if city := c.Query("city"); city != "" {
-			query += fmt.Sprintf(" AND u.city ILIKE $%d", argCounter)
-			args = append(args, "%"+city+"%")
-			argCounter++
+		if filters.City != "" {
+			builder = builder.Where(squirrel.ILike{"u.city": pkg.PutPercent(filters.City)})
 		}
 
-		if timezone := c.Query("timezone"); timezone != "" {
-			query += fmt.Sprintf(" AND u.timezone ILIKE $%d", argCounter)
-			args = append(args, "%"+timezone+"%")
-			argCounter++
+		if filters.Timezone != "" {
+			builder = builder.Where(squirrel.ILike{"u.timezone": pkg.PutPercent(filters.Timezone)})
 		}
 
-		if minBudget := c.Query("min_proposed_budget"); minBudget != "" {
-			if minBudgetVal, err := strconv.ParseFloat(minBudget, 64); err == nil {
-				query += fmt.Sprintf(" AND c.proposed_budget >= $%d", argCounter)
-				args = append(args, minBudgetVal)
-				argCounter++
-			}
+		if filters.MinProposedBudget != nil {
+			builder = builder.Where(squirrel.GtOrEq{"c.proposed_budget": filters.MinProposedBudget})
 		}
 
-		if maxBudget := c.Query("max_proposed_budget"); maxBudget != "" {
-			if maxBudgetVal, err := strconv.ParseFloat(maxBudget, 64); err == nil {
-				query += fmt.Sprintf(" AND c.proposed_budget <= $%d", argCounter)
-				args = append(args, maxBudgetVal)
-				argCounter++
-			}
+		if filters.MaxProposedBudget != nil {
+			builder = builder.Where(squirrel.LtOrEq{"c.proposed_budget": filters.MaxProposedBudget})
 		}
 
-		allowedSortFields := map[string]bool{
-			"name": true, "country_name": true, "city": true,
-			"proposed_budget": true, "time_created": true,
-		}
-		if sortBy := c.Query("sort_by"); sortBy != "" {
-			if allowedSortFields[sortBy] {
-				order := c.DefaultQuery("order", "ASC")
-				if order == "ASC" || order == "DESC" {
-					query += fmt.Sprintf(" ORDER BY %s %s", sortBy, order)
-				}
-			}
+		orderClause := filters.SortOptions.ValidateSort(pkg.ClientSortFields)
+
+		if orderClause != "" {
+			builder = builder.OrderBy(orderClause)
 		} else {
-			query += " ORDER BY u.time_created DESC"
+			builder = builder.OrderBy("time_created DESC")
+		}
+
+		builder = builder.Limit(uint64(filters.PageSize)).Offset(uint64(filters.Offset()))
+
+		query, args, err := builder.ToSql()
+		if pkg.HandleErr(c, err) {
+			return
 		}
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
@@ -157,20 +136,21 @@ func GetClients(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/client [get]
 func GetClient(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		clientID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
 
-		row := conn.QueryRow(c.Request.Context(), `
-            SELECT u.id, u.name, u.email, u.phone, u.time_created,
-                   u.country_code, u.country_name, u.country_state, u.city, u.timezone,
-                   c.proposed_budget
-            FROM "user" u
-            JOIN client c ON c.id = u.id
-            WHERE u.id = $1`, clientID)
+		query, args, err := squirrel.Select(clientSelect).
+			From(clientJoin).Where(squirrel.Eq{"u.id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 
-		client, err := pkg.ScanClient(row)
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		client, err := pkg.ScanClient(conn.QueryRow(c.Request.Context(), query, args...))
+
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -195,7 +175,7 @@ func GetClient(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/client [post]
 func CreateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
@@ -203,7 +183,7 @@ func CreateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 		// Checando se o cliente já existe
 		var clientExists bool
 		err = conn.QueryRow(c.Request.Context(),
-			`SELECT EXISTS(SELECT 1 FROM client WHERE id = $1)`, userID).Scan(&clientExists)
+			`SELECT EXISTS(SELECT 1 FROM client WHERE id = $1)`, id).Scan(&clientExists)
 
 		if clientExists {
 			c.JSON(http.StatusConflict, pkg.Internal(c.FullPath(), "Client already exists"))
@@ -218,7 +198,7 @@ func CreateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		client, err := services.AssignClientRole(c.Request.Context(), conn, userID, request.Proposed_budget)
+		client, err := services.AssignClientRole(c.Request.Context(), conn, id, request.Proposed_budget)
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -242,7 +222,7 @@ func CreateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/client [put]
 func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		clientID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
@@ -252,7 +232,6 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		// Validando parâmetros obrigatórios
 		if client.Name == "" {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty name"))
 			return
@@ -262,47 +241,56 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 		if len(client.Country_code) != 2 {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty country code"))
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Country code must be exactly 2 characters"))
 			return
 		}
 
-		// Make update atomic across user + client tables
 		tx, err := conn.Begin(c.Request.Context())
+		if pkg.HandleErr(c, err) {
+			return
+		}
+		defer tx.Rollback(c.Request.Context())
+
+		userQuery, userArgs, err := squirrel.Update(`"user"`).
+			Set("name", client.Name).
+			Set("email", client.Email).
+			Set("phone", client.Phone).
+			Set("country_code", client.Country_code).
+			Set("country_name", client.Country_name).
+			Set("country_state", client.Country_state).
+			Set("city", client.City).
+			Set("timezone", client.Timezone).
+			Where(squirrel.Eq{"id": id}).
+			PlaceholderFormat(squirrel.Dollar).
+			ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+		if _, err = tx.Exec(c.Request.Context(), userQuery, userArgs...); pkg.HandleErr(c, err) {
+			return
+		}
+
+		clientQuery, clientArgs, err := squirrel.Update("client").
+			Set("proposed_budget", client.Proposed_budget).
+			Where(squirrel.Eq{"id": id}).
+			PlaceholderFormat(squirrel.Dollar).
+			ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+		if _, err = tx.Exec(c.Request.Context(), clientQuery, clientArgs...); pkg.HandleErr(c, err) {
+			return
+		}
+
+		selectQuery, selectArgs, err := squirrel.Select(clientSelect).
+			From(clientJoin).Where(squirrel.Eq{"u.id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 
 		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		defer func() { _ = tx.Rollback(c.Request.Context()) }()
-
-		_, err = tx.Exec(c.Request.Context(),
-			`UPDATE "user" SET name = $1, email = $2, phone = $3, country_code = $4,
-             country_name = $5, country_state = $6, city = $7, timezone = $8
-             WHERE id = $9`,
-			client.Name, client.Email, client.Phone, client.Country_code, client.Country_name, client.Country_state,
-			client.City, client.Timezone, clientID)
-		if pkg.HandleErr(c, err) {
-			return
-		}
-
-		_, err = tx.Exec(c.Request.Context(),
-			`UPDATE client SET proposed_budget = $1
-             WHERE id = $2`,
-			client.Proposed_budget, clientID)
-		if pkg.HandleErr(c, err) {
-			return
-		}
-
-		// Fetch the updated client within transaction
-		row := tx.QueryRow(c.Request.Context(), `
-            SELECT u.id, u.name, u.email, u.phone, u.time_created,
-                   u.country_code, u.country_name, u.country_state, u.city, u.timezone,
-                   c.proposed_budget
-            FROM "user" u
-            JOIN client c ON c.id = u.id
-            WHERE u.id = $1`, clientID)
-
-		client, err = pkg.ScanClient(row)
+		client, err = pkg.ScanClient(tx.QueryRow(c.Request.Context(), selectQuery, selectArgs...))
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -330,12 +318,20 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/client [delete]
 func DeleteClient(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		clientID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
 
-		result, err := conn.Exec(c.Request.Context(), `DELETE FROM client WHERE id = $1`, clientID)
+		query, args, err := squirrel.Delete("client").
+			Where(squirrel.Eq{"id": id}).
+			PlaceholderFormat(squirrel.Dollar).
+			ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		result, err := conn.Exec(c.Request.Context(), query, args...)
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -349,7 +345,6 @@ func DeleteClient(conn *pgxpool.Pool) gin.HandlerFunc {
 	}
 }
 
-// UpdateClientPartial godoc
 // @Summary Atualizar parcialmente um cliente
 // @Description Atualiza um ou mais campos do usuário/cliente
 // @Tags Clientes
@@ -365,7 +360,7 @@ func DeleteClient(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/client [patch]
 func UpdateClientPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		clientID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
@@ -375,60 +370,51 @@ func UpdateClientPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		userSet := []string{}
-		userArgs := []interface{}{}
-		i := 1
+		userBuilder := squirrel.Update(`"user"`).PlaceholderFormat(squirrel.Dollar)
+		clientBuilder := squirrel.Update("client").PlaceholderFormat(squirrel.Dollar)
+		userHasFields := false
+		clientHasFields := false
+
 		if req.Name != nil {
-			userSet = append(userSet, fmt.Sprintf("name = $%d", i))
-			userArgs = append(userArgs, *req.Name)
-			i++
+			userBuilder = userBuilder.Set("name", *req.Name)
+			userHasFields = true
 		}
 		if req.Email != nil {
-			userSet = append(userSet, fmt.Sprintf("email = $%d", i))
-			userArgs = append(userArgs, *req.Email)
-			i++
+			userBuilder = userBuilder.Set("email", *req.Email)
+			userHasFields = true
 		}
 		if req.Phone != nil {
-			userSet = append(userSet, fmt.Sprintf("phone = $%d", i))
-			userArgs = append(userArgs, *req.Phone)
-			i++
+			userBuilder = userBuilder.Set("phone", *req.Phone)
+			userHasFields = true
 		}
 		if req.Country_code != nil {
-			userSet = append(userSet, fmt.Sprintf("country_code = $%d", i))
-			userArgs = append(userArgs, *req.Country_code)
-			i++
+			userBuilder = userBuilder.Set("country_code", *req.Country_code)
+			userHasFields = true
 		}
 		if req.Country_name != nil {
-			userSet = append(userSet, fmt.Sprintf("country_name = $%d", i))
-			userArgs = append(userArgs, *req.Country_name)
-			i++
+			userBuilder = userBuilder.Set("country_name", *req.Country_name)
+			userHasFields = true
 		}
 		if req.Country_state != nil {
-			userSet = append(userSet, fmt.Sprintf("country_state = $%d", i))
-			userArgs = append(userArgs, *req.Country_state)
-			i++
+			userBuilder = userBuilder.Set("country_state", *req.Country_state)
+			userHasFields = true
 		}
 		if req.City != nil {
-			userSet = append(userSet, fmt.Sprintf("city = $%d", i))
-			userArgs = append(userArgs, *req.City)
-			i++
+			userBuilder = userBuilder.Set("city", *req.City)
+			userHasFields = true
 		}
 		if req.Timezone != nil {
-			userSet = append(userSet, fmt.Sprintf("timezone = $%d", i))
-			userArgs = append(userArgs, *req.Timezone)
-			i++
+			userBuilder = userBuilder.Set("timezone", *req.Timezone)
+			userHasFields = true
 		}
 
-		clientSet := []string{}
-		clientArgs := []interface{}{}
 		if req.Proposed_budget != nil {
-			clientSet = append(clientSet, fmt.Sprintf("proposed_budget = $%d", i))
-			clientArgs = append(clientArgs, *req.Proposed_budget)
-			i++
+			clientBuilder = clientBuilder.Set("proposed_budget", *req.Proposed_budget)
+			clientHasFields = true
 		}
 
-		if len(userSet) == 0 && len(clientSet) == 0 {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "No columns to change"))
+		if !userHasFields && !clientHasFields {
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "No valid fields were given"))
 			return
 		}
 
@@ -436,35 +422,37 @@ func UpdateClientPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		if pkg.HandleErr(c, err) {
 			return
 		}
+		defer tx.Rollback(c.Request.Context())
 
-		defer func() { _ = tx.Rollback(c.Request.Context()) }()
-
-		if len(userSet) > 0 {
-			userArgs = append(userArgs, clientID)
-			userQuery := fmt.Sprintf(`UPDATE "user" SET %s WHERE id = $%d`, strings.Join(userSet, ", "), len(userArgs))
-			if _, err := tx.Exec(c.Request.Context(), userQuery, userArgs...); pkg.HandleErr(c, err) {
+		if userHasFields {
+			query, args, err := userBuilder.Where(squirrel.Eq{"id": id}).ToSql()
+			if pkg.HandleErr(c, err) {
+				return
+			}
+			if _, err = tx.Exec(c.Request.Context(), query, args...); pkg.HandleErr(c, err) {
 				return
 			}
 		}
 
-		if len(clientSet) > 0 {
-			clientArgs = append(userArgs, clientArgs...)
-			clientArgs = append(clientArgs, clientID)
-			clientQuery := fmt.Sprintf(`UPDATE client SET %s WHERE id = $%d`, strings.Join(clientSet, ", "), len(clientArgs))
-			if _, err := tx.Exec(c.Request.Context(), clientQuery, clientArgs...); pkg.HandleErr(c, err) {
+		if clientHasFields {
+			query, args, err := clientBuilder.Where(squirrel.Eq{"id": id}).ToSql()
+			if pkg.HandleErr(c, err) {
+				return
+			}
+			if _, err = tx.Exec(c.Request.Context(), query, args...); pkg.HandleErr(c, err) {
 				return
 			}
 		}
 
-		row := tx.QueryRow(c.Request.Context(), `
-            SELECT u.id, u.name, u.email, u.phone, u.time_created,
-                   u.country_code, u.country_name, u.country_state, u.city, u.timezone,
-                   c.proposed_budget
-            FROM "user" u
-            JOIN client c ON c.id = u.id
-            WHERE u.id = $1`, clientID)
+		selectQuery, selectArgs, err := squirrel.Select(clientSelect).
+			From(clientJoin).Where(squirrel.Eq{"u.id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 
-		client, err := pkg.ScanClient(row)
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		client, err := pkg.ScanClient(tx.QueryRow(c.Request.Context(), selectQuery, selectArgs...))
 		if pkg.HandleErr(c, err) {
 			return
 		}
