@@ -399,8 +399,7 @@ func GetAnalystCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 			 FROM certification c
 			 JOIN analyst_certification ac ON c.id = ac.certification_id
 			 WHERE ac.analyst_id = $1
-			 ORDER BY c.year DESC`,
-			id)
+			 ORDER BY c.year DESC`, id)
 
 		if pkg.HandleErr(c, err) {
 			return
