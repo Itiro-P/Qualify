@@ -13,7 +13,7 @@ import (
 	"github.com/n-r-w/squirrel"
 )
 
-const userProfileSelect = `SELECT user_id, biography, COALESCE(picture, 'default_picture.png')`
+const userProfileSelect = `user_id, biography, COALESCE(picture, 'default_picture.png')`
 
 // User Profile Handlers
 
@@ -39,7 +39,9 @@ func GetUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		query, args, err := squirrel.Select(userProfileSelect).
 			From("user_profile").Where(squirrel.Eq{"user_id": id}).
 			PlaceholderFormat(squirrel.Dollar).ToSql()
-
+		if pkg.HandleErr(c, err) {
+			return
+		}
 		profile, err := pkg.ScanProfile(conn.QueryRow(c.Request.Context(), query, args...))
 		if pkg.HandleErr(c, err) {
 			return
@@ -59,6 +61,7 @@ func GetUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param profile body pkg.UserProfile true "Objeto perfil"
 // @Success 201 {object} pkg.UserProfileResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
 // @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
@@ -78,8 +81,7 @@ func CreateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		// Verificando se o perfil existe
 		var exists bool
 		err = conn.QueryRow(c.Request.Context(),
-			`SELECT EXISTS(SELECT 1 FROM user_profile WHERE id = $1)`, id).Scan(&exists)
-
+			`SELECT EXISTS(SELECT 1 FROM user_profile WHERE user_id = $1)`, id).Scan(&exists)
 		if pkg.HandleErr(c, err) {
 			return
 		} else if exists {
@@ -113,6 +115,7 @@ func CreateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param picture formData file true "Arquivo de imagem"
 // @Success 200 {object} pkg.UserProfileResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security BearerAuth
 // @Router /users/{id}/profile/picture [post]
@@ -120,6 +123,17 @@ func UploadProfilePicture(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
 		if err != nil {
+			return
+		}
+
+		// Verificando se o usuário existe
+		var exists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM "user" WHERE id = $1)`, id).Scan(&exists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if !exists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "User does not exists"))
 			return
 		}
 
@@ -307,6 +321,7 @@ func GetAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param profile body pkg.AnalystProfile true "Objeto perfil"
 // @Success 201 {object} pkg.AnalystProfileResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
 // @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
@@ -493,7 +508,7 @@ func GetClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			"u.biography",
 			"COALESCE(u.picture, 'default_picture.png')").
 			From("user_profile u").
-			Join("client_profile a ON u.user_id = c.client_id").
+			Join("client_profile cp ON u.user_id = cp.client_id").
 			Where(squirrel.Eq{"u.user_id": id}).
 			PlaceholderFormat(squirrel.Dollar).
 			ToSql()
@@ -520,6 +535,7 @@ func GetClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param profile body pkg.ClientProfile true "Objeto perfil"
 // @Success 201 {object} pkg.ClientProfileResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
 // @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
@@ -528,6 +544,16 @@ func CreateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
 		if err != nil {
+			return
+		}
+
+		var clientExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM client WHERE user_id = $1)`, id).Scan(&clientExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if !clientExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Client does not exists"))
 			return
 		}
 
@@ -553,11 +579,9 @@ func CreateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		defer func() { _ = tx.Rollback(c.Request.Context()) }()
 
 		userProfileQuery, userProfileArgs, err := squirrel.Insert("user_profile").
-			Columns("user_id", "biography").
-			Values(id, profile.Biography).
+			Columns("user_id", "biography").Values(id, profile.Biography).
 			Suffix("RETURNING user_id, biography, picture").
-			PlaceholderFormat(squirrel.Dollar).
-			ToSql()
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -607,6 +631,11 @@ func UpdateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		var profile pkg.ClientProfile
 		if err := c.BindJSON(&profile); pkg.HandleErr(c, err) {
+			return
+		}
+
+		if profile.Biography == "" {
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty biography"))
 			return
 		}
 

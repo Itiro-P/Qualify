@@ -11,10 +11,7 @@ import (
 
 const serviceSelect = "id, title, content, proposal_letter_id, hourly_rate, status, time_created"
 
-func serviceBuilder(filters pkg.ServiceFilter) squirrel.SelectBuilder {
-	builder := squirrel.Select(serviceSelect).
-		From("service").PlaceholderFormat(squirrel.Dollar)
-
+func applyServiceFilters(builder squirrel.SelectBuilder, filters pkg.ServiceFilter) squirrel.SelectBuilder {
 	if filters.Status != "" {
 		builder = builder.Where(squirrel.Eq{"status": filters.Status})
 	}
@@ -33,15 +30,19 @@ func serviceBuilder(filters pkg.ServiceFilter) squirrel.SelectBuilder {
 	if filters.MaxHourlyRate != nil {
 		builder = builder.Where(squirrel.LtOrEq{"hourly_rate": *filters.MaxHourlyRate})
 	}
-
 	if order := filters.ValidateSort(pkg.ServiceSortFields); order != "" {
 		builder = builder.OrderBy(order)
 	} else {
 		builder = builder.OrderBy("time_created DESC")
 	}
+	return builder.Limit(uint64(filters.PageSize)).Offset(uint64(filters.Offset()))
+}
 
-	builder = builder.Limit(uint64(filters.PageSize)).Offset(uint64(filters.Offset()))
-	return builder
+func serviceBuilder(filters pkg.ServiceFilter) squirrel.SelectBuilder {
+	return applyServiceFilters(
+		squirrel.Select(serviceSelect).From("service").PlaceholderFormat(squirrel.Dollar),
+		filters,
+	)
 }
 
 func scanServices(c *gin.Context, conn *pgxpool.Pool, builder squirrel.SelectBuilder) {
@@ -78,6 +79,8 @@ func scanServices(c *gin.Context, conn *pgxpool.Pool, builder squirrel.SelectBui
 // @Param max_hourly_rate query number false "Valor máximo por hora"
 // @Param sort_by query string false "Campo para ordenar: title,hourly_rate,status,time_created"
 // @Param order query string false "Direção: ASC ou DESC"
+// @Param page query int false "Página"
+// @Param page_size query int false "Tamanho da página"
 // @Success 200 {object} pkg.ServicesResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Router /services [get]
@@ -138,7 +141,7 @@ func GetService(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param service body pkg.Service true "Objeto serviço"
 // @Success 201 {object} pkg.ServiceResponse
 // @Failure 400 {object} pkg.ErrorResponse
-// @Failure 409 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /services [post]
@@ -350,13 +353,27 @@ func DeleteService(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param max_hourly_rate query number false "Valor máximo por hora"
 // @Param sort_by query string false "Campo para ordenar: title,hourly_rate,status,time_created"
 // @Param order query string false "Direção: ASC ou DESC"
+// @Param page query int false "Página"
+// @Param page_size query int false "Tamanho da página"
 // @Success 200 {object} pkg.ServicesResponse
+// @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Router /clients/{id}/services [get]
 func GetClientServices(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
 		if err != nil {
+			return
+		}
+
+		// Checando se o cliente já existe
+		var clientExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM client WHERE id = $1)`, id).Scan(&clientExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if clientExists {
+			c.JSON(http.StatusConflict, pkg.Internal(c.FullPath(), "Client already exists"))
 			return
 		}
 
@@ -367,10 +384,13 @@ func GetClientServices(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 		filters.Normalize()
 
-		builder := serviceBuilder(filters).
-			From("service s").Join("proposal_letter p ON s.proposal_letter_id = p.id").
-			Join("client cl ON p.client_id = cl.id").Where(squirrel.Eq{"cl.id": id})
-
+		builder := applyServiceFilters(
+			squirrel.Select(serviceSelect).
+				From("service s").
+				Join("proposal_letter p ON s.proposal_letter_id = p.id").
+				Join("client cl ON p.client_id = cl.id").
+				Where(squirrel.Eq{"cl.id": id}).
+				PlaceholderFormat(squirrel.Dollar), filters)
 		scanServices(c, conn, builder)
 	}
 }
@@ -390,13 +410,26 @@ func GetClientServices(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param max_hourly_rate query number false "Valor máximo por hora"
 // @Param sort_by query string false "Campo para ordenar: title,hourly_rate,status,time_created"
 // @Param order query string false "Direção: ASC ou DESC"
+// @Param page query int false "Página"
+// @Param page_size query int false "Tamanho da página"
 // @Success 200 {object} pkg.ServicesResponse
+// @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Router /analysts/{id}/services [get]
 func GetAnalystServices(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
 		if err != nil {
+			return
+		}
+
+		var analystExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, id).Scan(&analystExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if analystExists {
+			c.JSON(http.StatusConflict, pkg.Internal(c.FullPath(), "Analyst already exists"))
 			return
 		}
 
@@ -407,9 +440,13 @@ func GetAnalystServices(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 		filters.Normalize()
 
-		builder := serviceBuilder(filters).
-			From("service s").Join("proposal_letter p ON s.proposal_letter_id = p.id").
-			Join("analyst a ON p.analyst_id = a.id").Where(squirrel.Eq{"a.id": id})
+		builder := applyServiceFilters(
+			squirrel.Select(serviceSelect).
+				From("service s").
+				Join("proposal_letter p ON s.proposal_letter_id = p.id").
+				Join("analyst a ON p.analyst_id = a.id").
+				Where(squirrel.Eq{"a.id": id}).
+				PlaceholderFormat(squirrel.Dollar), filters)
 
 		scanServices(c, conn, builder)
 	}

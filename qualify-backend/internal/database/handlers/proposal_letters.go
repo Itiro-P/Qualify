@@ -11,11 +11,7 @@ import (
 
 const proposalSelect = "id, client_id, analyst_id, proposed_hourly_rate, title, content, time_created"
 
-func proposalBuilder(filters pkg.ProposalFilter) squirrel.SelectBuilder {
-	builder := squirrel.Select(proposalSelect).
-		From("proposal_letter").
-		PlaceholderFormat(squirrel.Dollar)
-
+func applyProposalFilters(builder squirrel.SelectBuilder, filters pkg.ProposalFilter) squirrel.SelectBuilder {
 	if filters.ClientId != nil {
 		builder = builder.Where(squirrel.Eq{"client_id": *filters.ClientId})
 	}
@@ -34,15 +30,19 @@ func proposalBuilder(filters pkg.ProposalFilter) squirrel.SelectBuilder {
 	if filters.MaxProposedHourlyRate != nil {
 		builder = builder.Where(squirrel.LtOrEq{"proposed_hourly_rate": *filters.MaxProposedHourlyRate})
 	}
-
 	if order := filters.ValidateSort(pkg.ProposalSortFields); order != "" {
 		builder = builder.OrderBy(order)
 	} else {
 		builder = builder.OrderBy("time_created DESC")
 	}
+	return builder.Limit(uint64(filters.PageSize)).Offset(uint64(filters.Offset()))
+}
 
-	builder = builder.Limit(uint64(filters.PageSize)).Offset(uint64(filters.Offset()))
-	return builder
+func proposalBuilder(filters pkg.ProposalFilter) squirrel.SelectBuilder {
+	return applyProposalFilters(
+		squirrel.Select(proposalSelect).From("proposal_letter").PlaceholderFormat(squirrel.Dollar),
+		filters,
+	)
 }
 
 func scanProposals(c *gin.Context, conn *pgxpool.Pool, builder squirrel.SelectBuilder) {
@@ -79,6 +79,8 @@ func scanProposals(c *gin.Context, conn *pgxpool.Pool, builder squirrel.SelectBu
 // @Param max_proposed_hourly_rate query number false "Valor máximo por hora proposto"
 // @Param sort_by query string false "Campo para ordenar: title,proposed_hourly_rate,time_created"
 // @Param order query string false "Direção: ASC ou DESC"
+// @Param page query int false "Página"
+// @Param page_size query int false "Tamanho da página"
 // @Success 200 {object} pkg.ProposalLettersResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Router /proposals [get]
@@ -139,7 +141,7 @@ func GetProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param proposal body pkg.ProposalLetter true "Objeto proposta"
 // @Success 201 {object} pkg.ProposalLetterResponse
 // @Failure 400 {object} pkg.ErrorResponse
-// @Failure 409 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /proposals [post]
@@ -147,6 +149,28 @@ func CreateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var proposal pkg.ProposalLetter
 		if err := c.BindJSON(&proposal); pkg.HandleErr(c, err) {
+			return
+		}
+
+		// Checando se o cliente já existe
+		var analystExists bool
+		err := conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, proposal.Analyst_id).Scan(&analystExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if !analystExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst does not exists"))
+			return
+		}
+
+		// Checando se o cliente já existe
+		var clientExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM client WHERE id = $1)`, proposal.Client_id).Scan(&clientExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if !clientExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Client does not exists"))
 			return
 		}
 
@@ -337,13 +361,27 @@ func DeleteProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param max_proposed_hourly_rate query number false "Valor máximo por hora proposto"
 // @Param sort_by query string false "Campo para ordenar: title,proposed_hourly_rate,time_created"
 // @Param order query string false "Direção: ASC ou DESC"
+// @Param page query int false "Página"
+// @Param page_size query int false "Tamanho da página"
 // @Success 200 {object} pkg.ProposalLettersResponse
+// @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Router /clients/{id}/proposals [get]
 func GetClientProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
 		if err != nil {
+			return
+		}
+
+		// Checando se o cliente já existe
+		var clientExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM client WHERE id = $1)`, id).Scan(&clientExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if !clientExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Client does not exists"))
 			return
 		}
 
@@ -354,10 +392,12 @@ func GetClientProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 		filters.Normalize()
 
-		builder := proposalBuilder(filters).
+		builder := squirrel.Select("p." + proposalSelect).
 			From("proposal_letter p").
 			Join("client cl ON p.client_id = cl.id").
-			Where(squirrel.Eq{"cl.id": id})
+			Where(squirrel.Eq{"cl.id": id}).
+			PlaceholderFormat(squirrel.Dollar)
+		builder = applyProposalFilters(builder, filters)
 
 		scanProposals(c, conn, builder)
 	}
@@ -377,13 +417,27 @@ func GetClientProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param max_proposed_hourly_rate query number false "Valor máximo por hora proposto"
 // @Param sort_by query string false "Campo para ordenar: title,proposed_hourly_rate,time_created"
 // @Param order query string false "Direção: ASC ou DESC"
+// @Param page query int false "Página"
+// @Param page_size query int false "Tamanho da página"
 // @Success 200 {object} pkg.ProposalLettersResponse
+// @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Router /analysts/{id}/proposals [get]
 func GetAnalystProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
 		if err != nil {
+			return
+		}
+
+		// Checando se o analista já existe
+		var analystExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, id).Scan(&analystExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if !analystExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst does not exists"))
 			return
 		}
 
@@ -394,10 +448,12 @@ func GetAnalystProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 		filters.Normalize()
 
-		builder := proposalBuilder(filters).
+		builder := squirrel.Select("p." + proposalSelect).
 			From("proposal_letter p").
-			Join("analyst a ON p.analyst_id = a.id").
-			Where(squirrel.Eq{"a.id": id})
+			Join("client cl ON p.client_id = cl.id").
+			Where(squirrel.Eq{"cl.id": id}).
+			PlaceholderFormat(squirrel.Dollar)
+		builder = applyProposalFilters(builder, filters)
 
 		scanProposals(c, conn, builder)
 	}

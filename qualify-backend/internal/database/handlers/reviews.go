@@ -11,10 +11,7 @@ import (
 
 const reviewSelect = "id, analyst_id, client_id, service_id, rating, comment, time_created"
 
-func reviewBuilder(filters pkg.ReviewFilter) squirrel.SelectBuilder {
-	builder := squirrel.Select(reviewSelect).From("review").
-		PlaceholderFormat(squirrel.Dollar)
-
+func applyReviewFilters(builder squirrel.SelectBuilder, filters pkg.ReviewFilter) squirrel.SelectBuilder {
 	if filters.AnalystId != nil {
 		builder = builder.Where(squirrel.Eq{"analyst_id": *filters.AnalystId})
 	}
@@ -36,15 +33,19 @@ func reviewBuilder(filters pkg.ReviewFilter) squirrel.SelectBuilder {
 	if filters.Comment != "" {
 		builder = builder.Where(squirrel.ILike{"comment": pkg.PutPercent(filters.Comment)})
 	}
-
 	if order := filters.ValidateSort(pkg.ReviewSortFields); order != "" {
 		builder = builder.OrderBy(order)
 	} else {
 		builder = builder.OrderBy("time_created DESC")
 	}
+	return builder.Limit(uint64(filters.PageSize)).Offset(uint64(filters.Offset()))
+}
 
-	builder = builder.Limit(uint64(filters.PageSize)).Offset(uint64(filters.Offset()))
-	return builder
+func reviewBuilder(filters pkg.ReviewFilter) squirrel.SelectBuilder {
+	return applyReviewFilters(
+		squirrel.Select(reviewSelect).From("review").PlaceholderFormat(squirrel.Dollar),
+		filters,
+	)
 }
 
 func scanReviews(c *gin.Context, conn *pgxpool.Pool, builder squirrel.SelectBuilder, filters pkg.ReviewFilter) {
@@ -202,6 +203,16 @@ func UpdateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
+		var reviewExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM review WHERE id = $1)`, id).Scan(&reviewExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if !reviewExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Review does not exists"))
+			return
+		}
+
 		var review pkg.Review
 		if err := c.BindJSON(&review); pkg.HandleErr(c, err) {
 			return
@@ -253,6 +264,16 @@ func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
 		if err != nil {
+			return
+		}
+
+		var reviewExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM review WHERE id = $1)`, id).Scan(&reviewExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if !reviewExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Review does not exists"))
 			return
 		}
 
@@ -352,12 +373,24 @@ func DeleteReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param page query int false "Página"
 // @Param page_size query int false "Tamanho da página"
 // @Success 200 {object} pkg.ReviewsResponse
+// @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Router /clients/{id}/reviews [get]
 func GetClientReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
 		if err != nil {
+			return
+		}
+
+		// Checando se o cliente já existe
+		var clientExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM client WHERE id = $1)`, id).Scan(&clientExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if !clientExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Client does not exists"))
 			return
 		}
 
@@ -368,9 +401,12 @@ func GetClientReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 		filters.Normalize()
 
-		builder := reviewBuilder(filters).
-			From("review r").Join("client cl ON r.client_id = cl.id").
-			Where(squirrel.Eq{"cl.id": id})
+		builder := applyReviewFilters(
+			squirrel.Select(reviewSelect).
+				From("review r").
+				Join("client cl ON r.client_id = cl.id").
+				Where(squirrel.Eq{"cl.id": id}).
+				PlaceholderFormat(squirrel.Dollar), filters)
 
 		scanReviews(c, conn, builder, filters)
 	}
@@ -391,12 +427,24 @@ func GetClientReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param page query int false "Página"
 // @Param page_size query int false "Tamanho da página"
 // @Success 200 {object} pkg.ReviewsResponse
+// @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Router /analysts/{id}/reviews [get]
 func GetAnalystReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
 		if err != nil {
+			return
+		}
+
+		// Checando se o analista já existe
+		var analystExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, id).Scan(&analystExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if !analystExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst does not exists"))
 			return
 		}
 
@@ -407,9 +455,12 @@ func GetAnalystReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 		filters.Normalize()
 
-		builder := reviewBuilder(filters).
-			From("review r").Join("analyst a ON r.analyst_id = a.id").
-			Where(squirrel.Eq{"a.id": id})
+		builder := applyReviewFilters(
+			squirrel.Select(reviewSelect).
+				From("review r").
+				Join("analyst a ON r.analyst_id = a.id").
+				Where(squirrel.Eq{"a.id": id}).
+				PlaceholderFormat(squirrel.Dollar), filters)
 
 		scanReviews(c, conn, builder, filters)
 	}

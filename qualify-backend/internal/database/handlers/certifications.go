@@ -23,8 +23,10 @@ const certificationSelect = `id, name, year, description, institution`
 // @Param year query int false "Ano"
 // @Param from_year query int false "Ano inicial"
 // @Param to_year query int false "Ano final"
-// @Param sort_by query string false "Campo para ordenar: name,year,institution"
-// @Param order query string false "Direção: ASC ou DESC"
+// @Param sort_by query string false "Campo para ordenar: name,year,institution" enums(name,year,institution)
+// @Param order query string false "Direção: ASC ou DESC" enums(ASC,DESC)
+// @Param page query int false "Página"
+// @Param page_size query int false "Tamanho da página"
 // @Success 200 {object} pkg.CertificationsResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Router /certifications [get]
@@ -41,21 +43,17 @@ func GetCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 		if filters.Name != "" {
 			builder = builder.Where(squirrel.ILike{"name": pkg.PutPercent(filters.Name)})
 		}
-
 		if filters.Year != nil {
 			builder = builder.Where(squirrel.Eq{"year": *filters.Year})
 		}
-
 		if filters.FromYear != nil {
 			builder = builder.Where(squirrel.GtOrEq{"year": *filters.FromYear})
 		}
-
 		if filters.ToYear != nil {
 			builder = builder.Where(squirrel.LtOrEq{"year": *filters.ToYear})
 		}
-
 		if filters.Institution != "" {
-			builder = builder.Where(squirrel.ILike{"institution": filters.Institution})
+			builder = builder.Where(squirrel.ILike{"institution": pkg.PutPercent(filters.Institution)}) // ← faltava
 		}
 
 		orderClause := filters.SortOptions.ValidateSort(pkg.CertificationSortFields)
@@ -370,6 +368,7 @@ func DeleteCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param id path int true "ID do usuário (analista)"
 // @Success 200 {object} pkg.CertificationsResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Router /users/{id}/analyst/certifications [get]
 func GetAnalystCertifications(conn *pgxpool.Pool) gin.HandlerFunc {

@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"errors"
 	"main/internal/database/services"
 	"main/pkg"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/n-r-w/squirrel"
 	"golang.org/x/crypto/bcrypt"
@@ -100,8 +102,8 @@ func GetCurrentUser(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param user body pkg.UserRegister true "Objeto do usuário"
 // @Success 201 {object} pkg.UserResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
-// @Security     BearerAuth
 // @Router /register [post]
 func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -127,6 +129,7 @@ func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 			City:          reg.City,
 			Timezone:      reg.Timezone,
 		}
+
 		if err = services.CreateUser(c.Request.Context(), conn, &user); pkg.HandleErr(c, err) {
 			return
 		}
@@ -180,6 +183,10 @@ func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		user, err = pkg.ScanUser(conn.QueryRow(c.Request.Context(), query, args...))
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "User not found"))
+			return
+		}
 		if pkg.HandleErr(c, err) {
 			return
 		}
@@ -255,13 +262,16 @@ func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		query, args, err := builder.Where(squirrel.Eq{"id": id}).
-			Suffix("RETURNING " + userSelect).ToSql()
+		query, args, err := builder.Where(squirrel.Eq{"id": id}).Suffix("RETURNING " + userSelect).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
 
 		user, err := pkg.ScanUser(conn.QueryRow(c.Request.Context(), query, args...))
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "User not found"))
+			return
+		}
 		if pkg.HandleErr(c, err) {
 			return
 		}

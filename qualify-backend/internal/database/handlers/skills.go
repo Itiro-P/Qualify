@@ -80,7 +80,10 @@ func GetSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		skill, err := pkg.ScanSkill(conn.QueryRow(c.Request.Context(), query, args...))
-		if pkg.HandleErr(c, err) {
+		if err == pgx.ErrNoRows {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Skill not found"))
+			return
+		} else if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -301,7 +304,10 @@ func AssociateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		skill, err := pkg.ScanSkill(conn.QueryRow(c.Request.Context(), selQuery, selArgs...))
-		if pkg.HandleErr(c, err) {
+		if err == pgx.ErrNoRows {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Skill not found"))
+			return
+		} else if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -325,7 +331,7 @@ func AssociateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do analista"
-// @Param skill body pkg.Skill true "Objeto skill (envie apenas `name`)"
+// @Param skill body pkg.SkillCreateRequest true "Objeto skill"
 // @Success 201 {object} pkg.SkillResponse
 // @Failure 400 {object} pkg.ErrorResponse
 // @Failure 404 {object} pkg.ErrorResponse
@@ -340,14 +346,25 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
+		var skillCreateRequest pkg.SkillCreateRequest
+
 		var skill pkg.Skill
-		if err := c.BindJSON(&skill); pkg.HandleErr(c, err) {
+		if err := c.BindJSON(&skillCreateRequest); pkg.HandleErr(c, err) {
 			return
 		}
 
+		skill.Name = skillCreateRequest.Name
+
+		ctx := c.Request.Context()
+
+		tx, err := conn.Begin(ctx)
+		if pkg.HandleErr(c, err) {
+			return
+		}
+		defer tx.Rollback(ctx)
+
 		var analystExists bool
-		err = conn.QueryRow(c.Request.Context(),
-			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, id).Scan(&analystExists)
+		err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, id).Scan(&analystExists)
 		if pkg.HandleErr(c, err) {
 			return
 		} else if !analystExists {
@@ -355,8 +372,7 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		err = conn.QueryRow(c.Request.Context(),
-			`SELECT id FROM skill WHERE name = $1`, skill.Name).Scan(&skill.Id)
+		err = tx.QueryRow(ctx, `SELECT id FROM skill WHERE name = $1`, skillCreateRequest.Name).Scan(&skill.Id)
 
 		if err == pgx.ErrNoRows {
 			insQuery, insArgs, err := squirrel.Insert("skill").
@@ -366,7 +382,7 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			if pkg.HandleErr(c, err) {
 				return
 			}
-			skill, err = pkg.ScanSkill(conn.QueryRow(c.Request.Context(), insQuery, insArgs...))
+			skill, err = pkg.ScanSkill(tx.QueryRow(ctx, insQuery, insArgs...))
 			if pkg.HandleErr(c, err) {
 				return
 			}
@@ -379,7 +395,11 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
-		} else if _, err = conn.Exec(c.Request.Context(), assocQuery, assocArgs...); pkg.HandleErr(c, err) {
+		}
+
+		if _, err = tx.Exec(ctx, assocQuery, assocArgs...); pkg.HandleErr(c, err) {
+			return
+		} else if err := tx.Commit(ctx); pkg.HandleErr(c, err) {
 			return
 		}
 

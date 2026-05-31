@@ -1,5 +1,9 @@
 package pkg
 
+type SkillCreateRequest struct {
+	Name string `json:"name"`
+}
+
 type Skill struct {
 	Id   int    `json:"id,omitempty"`
 	Name string `json:"name"`

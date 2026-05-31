@@ -31,8 +31,11 @@ const clientJoin = `"user" u JOIN client c ON c.id = u.id`
 // @Param timezone query string false "Fuso horário"
 // @Param min_proposed_budget query number false "Orçamento mínimo"
 // @Param max_proposed_budget query number false "Orçamento máximo"
+// @Param sort_by query string false "Campo para ordenar: name,country_name,country_state,city,proposed_budget,time_created" enums(name,country_name,country_state,city,proposed_budget,time_created)
+// @Param order query string false "Direção: ASC ou DESC" enums(ASC,DESC)
+// @Param page query int false "Página"
+// @Param page_size query int false "Tamanho da página"
 // @Success 200 {object} pkg.ClientsResponse
-// @Failure 400 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Router /clients [get]
 func GetClients(conn *pgxpool.Pool) gin.HandlerFunc {
@@ -110,9 +113,10 @@ func GetClient(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do usuário"
-// @Param proposed_budget body object true "{\"proposed_budget\": number}"
+// @Param client body pkg.ClientCreateRequest true "Objeto cliente"
 // @Success 201 {object} pkg.ClientResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
 // @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
@@ -128,14 +132,14 @@ func CreateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 		var clientExists bool
 		err = conn.QueryRow(c.Request.Context(),
 			`SELECT EXISTS(SELECT 1 FROM client WHERE id = $1)`, id).Scan(&clientExists)
-		if clientExists {
+		if pkg.HandleErr(c, err) {
+			return
+		} else if clientExists {
 			c.JSON(http.StatusConflict, pkg.Internal(c.FullPath(), "Client already exists"))
 			return
 		}
 
-		var request struct {
-			Proposed_budget float64 `json:"proposed_budget"`
-		}
+		var request pkg.ClientCreateRequest
 		if err := c.BindJSON(&request); pkg.HandleErr(c, err) {
 			return
 		}
@@ -278,6 +282,7 @@ func DeleteClient(conn *pgxpool.Pool) gin.HandlerFunc {
 	}
 }
 
+// UpdateClientPartial godoc
 // @Summary Atualizar parcialmente um cliente
 // @Description Atualiza um ou mais campos do usuário/cliente
 // @Tags Clientes

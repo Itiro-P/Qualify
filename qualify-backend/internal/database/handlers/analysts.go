@@ -32,9 +32,13 @@ const analystJoin = `"user" u JOIN analyst a ON a.id = u.id`
 // @Param min_hourly_rate query number false "Valor mínimo por hora"
 // @Param max_hourly_rate query number false "Valor máximo por hora"
 // @Param min_total_reviews query int false "Quantidade mínima de avaliações totais"
-// @Param min_mean_rating query number false "Avaliação média mínima"
+// @Param max_total_reviews query int false "Quantidade máxima de avaliações totais"
+// @Param min_rating query int false "Avaliação média mínima"
+// @Param max_rating query int false "Avaliação média máxima"
 // @Param sort_by query string false "Campo para ordenar: name,country_name,country_state,city,timezone,hourly_rate,total_reviews,mean_rating,time_created"
 // @Param order query string false "Direção: ASC ou DESC"
+// @Param page query int false "Página"
+// @Param page_size query int false "Tamanho da página"
 // @Success 200 {object} pkg.AnalystsResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Router /analysts [get]
@@ -188,9 +192,10 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do usuário"
-// @Param analyst body pkg.Analyst true "Objeto analista (envie apenas `hourly_rate`)"
+// @Param analyst body pkg.AnalystCreateRequest true "Objeto analista (envie apenas `hourly_rate`)"
 // @Success 201 {object} pkg.AnalystResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
 // @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
@@ -205,14 +210,14 @@ func CreateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 		var analystExists bool
 		err = conn.QueryRow(c.Request.Context(),
 			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, id).Scan(&analystExists)
-		if analystExists {
+		if pkg.HandleErr(c, err) {
+			return
+		} else if analystExists {
 			c.JSON(http.StatusConflict, pkg.Internal(c.FullPath(), "Analyst already exists"))
 			return
 		}
 
-		var request struct {
-			Hourly_rate float64 `json:"hourly_rate"`
-		}
+		var request pkg.AnalystCreateRequest
 		if err := c.BindJSON(&request); pkg.HandleErr(c, err) {
 			return
 		}
@@ -271,27 +276,29 @@ func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 		defer tx.Rollback(c.Request.Context())
 
-		userQuery, userArgs, err := squirrel.Update(`"user"`).SetMap(map[string]any{
-			"name":          analyst.Name,
-			"email":         analyst.Email,
-			"phone":         analyst.Phone,
-			"country_code":  analyst.Country_code,
-			"country_name":  analyst.Country_name,
-			"country_state": analyst.Country_state,
-			"city":          analyst.City,
-			"timezone":      analyst.Timezone,
-		}).Where(squirrel.Eq{"id": id}).PlaceholderFormat(squirrel.Dollar).ToSql()
+		userQuery, userArgs, err := squirrel.Update(`"user"`).
+			SetMap(map[string]any{
+				"name":          analyst.Name,
+				"email":         analyst.Email,
+				"phone":         analyst.Phone,
+				"country_code":  analyst.Country_code,
+				"country_name":  analyst.Country_name,
+				"country_state": analyst.Country_state,
+				"city":          analyst.City,
+				"timezone":      analyst.Timezone,
+			}).Where(squirrel.Eq{"id": id}).PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		} else if _, err = tx.Exec(c.Request.Context(), userQuery, userArgs...); pkg.HandleErr(c, err) {
 			return
 		}
 
-		analystQuery, analystArgs, err := squirrel.Update("analyst").SetMap(map[string]any{
-			"hourly_rate":   analyst.Hourly_rate,
-			"total_reviews": analyst.Total_reviews,
-			"mean_rating":   analyst.Mean_rating,
-		}).Where(squirrel.Eq{"id": id}).PlaceholderFormat(squirrel.Dollar).ToSql()
+		analystQuery, analystArgs, err := squirrel.Update("analyst").
+			SetMap(map[string]any{
+				"hourly_rate":   analyst.Hourly_rate,
+				"total_reviews": analyst.Total_reviews,
+				"mean_rating":   analyst.Mean_rating,
+			}).Where(squirrel.Eq{"id": id}).PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		} else if _, err = tx.Exec(c.Request.Context(), analystQuery, analystArgs...); pkg.HandleErr(c, err) {
