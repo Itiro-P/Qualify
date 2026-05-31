@@ -136,7 +136,7 @@ func GetProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /proposals/{id} [get]
 func GetProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		proposalID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
@@ -144,10 +144,10 @@ func GetProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 		row := conn.QueryRow(c.Request.Context(),
 			`SELECT id, client_id, analyst_id, proposed_hourly_rate,
                     title, content, time_created
-             FROM proposal_letter WHERE id = $1`, proposalID,
+             FROM proposal_letter WHERE id = $1`, id,
 		)
 
-		p, err := pkg.ScanProposalLetter(row)
+		pproposal, err := pkg.ScanProposalLetter(row)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -157,7 +157,7 @@ func GetProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, pkg.ProposalLetterResponse{Proposal_letter: p})
+		c.JSON(http.StatusOK, pkg.ProposalLetterResponse{Proposal_letter: pproposal})
 	}
 }
 
@@ -192,10 +192,10 @@ func CreateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 			if errors.As(err, &pgErr) {
 				switch pgErr.Code {
 				case "23505":
-					c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Proposal letter already exists"))
+					c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), err.Error()))
 					return
 				case "23503":
-					c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Client or analyst not found"))
+					c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 					return
 				}
 			}
@@ -223,10 +223,11 @@ func CreateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /proposals/{id} [put]
 func UpdateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		proposalID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
+
 		var proposal pkg.ProposalLetter
 		if err := c.BindJSON(&proposal); err != nil {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
@@ -239,13 +240,12 @@ func UpdateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		row := conn.QueryRow(c.Request.Context(),
+		proposal, err = pkg.ScanProposalLetter(conn.QueryRow(c.Request.Context(),
 			`UPDATE proposal_letter SET title = $1, content = $2, client_id = $3, analyst_id = $4, proposed_hourly_rate = $5
              WHERE id = $6
              RETURNING id, client_id, analyst_id, proposed_hourly_rate, title, content, time_created`,
-			proposal.Title, proposal.Content, proposal.Client_id, proposal.Analyst_id, proposal.Proposed_hourly_rate, proposalID)
+			proposal.Title, proposal.Content, proposal.Client_id, proposal.Analyst_id, proposal.Proposed_hourly_rate, id))
 
-		proposal, err = pkg.ScanProposalLetter(row)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -275,7 +275,7 @@ func UpdateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /proposals/{id} [patch]
 func UpdateProposalLetterPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		proposalID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
@@ -312,14 +312,13 @@ func UpdateProposalLetterPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		// Adiciona o ID como último argumento
-		args = append(args, proposalID)
+		args = append(args, id)
 		query := fmt.Sprintf(
 			"UPDATE proposal_letter SET %s WHERE id = $%d RETURNING id, client_id, analyst_id, proposed_hourly_rate, title, content, time_created",
 			strings.Join(set, ", "), argID,
 		)
 
-		row := conn.QueryRow(c.Request.Context(), query, args...)
-		p, err := pkg.ScanProposalLetter(row)
+		pproposal, err := pkg.ScanProposalLetter(conn.QueryRow(c.Request.Context(), query, args...))
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -329,7 +328,7 @@ func UpdateProposalLetterPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"proposal_letter": p})
+		c.JSON(http.StatusOK, gin.H{"proposal_letter": pproposal})
 	}
 }
 
@@ -348,13 +347,13 @@ func UpdateProposalLetterPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /proposals/{id} [delete]
 func DeleteProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		proposalID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
 
 		result, err := conn.Exec(c.Request.Context(),
-			`DELETE FROM proposal_letter WHERE id = $1`, proposalID)
+			`DELETE FROM proposal_letter WHERE id = $1`, id)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
@@ -388,7 +387,7 @@ func DeleteProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /clients/{id}/proposals [get]
 func GetClientProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		clientID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
@@ -398,7 +397,7 @@ func GetClientProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
           FROM proposal_letter p
           JOIN client c ON p.client_id = c.id
           WHERE c.user_id = $1`
-		args := []interface{}{clientID}
+		args := []interface{}{id}
 		argCounter := 2
 
 		if analystID := c.Query("analyst_id"); analystID != "" {
@@ -460,12 +459,12 @@ func GetClientProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		var proposals []pkg.ProposalLetter
 		for rows.Next() {
-			p, err := pkg.ScanProposalLetter(rows)
+			proposal, err := pkg.ScanProposalLetter(rows)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
 			}
-			proposals = append(proposals, p)
+			proposals = append(proposals, proposal)
 		}
 
 		if err = rows.Err(); err != nil {
@@ -496,7 +495,7 @@ func GetClientProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /analysts/{id}/proposals [get]
 func GetAnalystProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		analystID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
@@ -506,7 +505,7 @@ func GetAnalystProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
           FROM proposal_letter p
           JOIN analyst a ON p.analyst_id = a.id
           WHERE a.user_id = $1`
-		args := []interface{}{analystID}
+		args := []interface{}{id}
 		argCounter := 2
 
 		if clientID := c.Query("client_id"); clientID != "" {
@@ -568,12 +567,12 @@ func GetAnalystProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		var proposals []pkg.ProposalLetter
 		for rows.Next() {
-			p, err := pkg.ScanProposalLetter(rows)
+			proposal, err := pkg.ScanProposalLetter(rows)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
 			}
-			proposals = append(proposals, p)
+			proposals = append(proposals, proposal)
 		}
 
 		if err = rows.Err(); err != nil {

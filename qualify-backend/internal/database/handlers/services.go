@@ -131,16 +131,15 @@ func GetServices(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /services/{id} [get]
 func GetService(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		serviceID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
 
-		row := conn.QueryRow(c.Request.Context(),
+		service, err := pkg.ScanService(conn.QueryRow(c.Request.Context(),
 			`SELECT id, title, content, proposal_letter_id, hourly_rate, status, time_created
-             FROM service WHERE id = $1`, serviceID,
-		)
-		s, err := pkg.ScanService(row)
+             FROM service WHERE id = $1`, id))
+
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -150,7 +149,7 @@ func GetService(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, pkg.ServiceResponse{Service: s})
+		c.JSON(http.StatusOK, pkg.ServiceResponse{Service: service})
 	}
 }
 
@@ -180,10 +179,11 @@ func CreateService(conn *pgxpool.Pool) gin.HandlerFunc {
              VALUES ($1, $2, $3, $4, $5)
              RETURNING id, title, content, proposal_letter_id, hourly_rate, status, time_created`,
 			service.Proposal_letter_id, service.Title, service.Content, service.Hourly_rate, service.Status))
+
 		if err != nil {
 			var pgErr *pgconn.PgError
 			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-				c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Service already exists"))
+				c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), err.Error()))
 				return
 			}
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
@@ -210,7 +210,7 @@ func CreateService(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /services/{id} [put]
 func UpdateService(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		serviceID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
@@ -230,13 +230,12 @@ func UpdateService(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		row := conn.QueryRow(c.Request.Context(),
+		service, err = pkg.ScanService(conn.QueryRow(c.Request.Context(),
 			`UPDATE service SET proposal_letter_id = $1, title = $2, content = $3, hourly_rate = $4, status = $5
              WHERE id = $6
              RETURNING id, title, content, proposal_letter_id, hourly_rate, status, time_created`,
-			service.Proposal_letter_id, service.Title, service.Content, service.Hourly_rate, service.Status, serviceID)
+			service.Proposal_letter_id, service.Title, service.Content, service.Hourly_rate, service.Status, id))
 
-		service, err = pkg.ScanService(row)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -266,7 +265,7 @@ func UpdateService(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /services/{id} [patch]
 func UpdateServicePartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		serviceID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
@@ -311,13 +310,13 @@ func UpdateServicePartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		args = append(args, serviceID)
+		args = append(args, id)
 
 		query := fmt.Sprintf("UPDATE service SET %s WHERE id = $%d RETURNING id, title, content, proposal_letter_id, hourly_rate, status, time_created",
 			strings.Join(set, ", "), i)
 
-		row := conn.QueryRow(c.Request.Context(), query, args...)
-		updatedService, err := pkg.ScanService(row)
+		updatedService, err := pkg.ScanService(conn.QueryRow(c.Request.Context(), query, args...))
+
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -346,13 +345,12 @@ func UpdateServicePartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /services/{id} [delete]
 func DeleteService(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		serviceID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
 
-		result, err := conn.Exec(c.Request.Context(),
-			`DELETE FROM service WHERE id = $1`, serviceID)
+		result, err := conn.Exec(c.Request.Context(), `DELETE FROM service WHERE id = $1`, id)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
@@ -387,7 +385,7 @@ func DeleteService(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /clients/{id}/services [get]
 func GetClientServices(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		clientID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
@@ -397,7 +395,7 @@ func GetClientServices(conn *pgxpool.Pool) gin.HandlerFunc {
           JOIN proposal_letter p ON s.proposal_letter_id = p.id
           JOIN client c ON p.client_id = c.id
           WHERE c.user_id = $1`
-		args := []interface{}{clientID}
+		args := []interface{}{id}
 		argCounter := 2
 
 		if status := c.Query("status"); status != "" {
@@ -495,7 +493,7 @@ func GetClientServices(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /analysts/{id}/services [get]
 func GetAnalystServices(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		analystID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
@@ -505,7 +503,7 @@ func GetAnalystServices(conn *pgxpool.Pool) gin.HandlerFunc {
           JOIN proposal_letter p ON s.proposal_letter_id = p.id
           JOIN analyst a ON p.analyst_id = a.id
           WHERE a.user_id = $1`
-		args := []interface{}{analystID}
+		args := []interface{}{id}
 		argCounter := 2
 
 		if status := c.Query("status"); status != "" {
@@ -568,12 +566,12 @@ func GetAnalystServices(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		var services []pkg.Service
 		for rows.Next() {
-			s, err := pkg.ScanService(rows)
+			service, err := pkg.ScanService(rows)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
 			}
-			services = append(services, s)
+			services = append(services, service)
 		}
 		if err = rows.Err(); err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))

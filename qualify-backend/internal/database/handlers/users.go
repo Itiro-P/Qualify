@@ -27,14 +27,14 @@ import (
 // @Router /users/{id} [get]
 func GetUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
 
 		row := conn.QueryRow(c.Request.Context(),
-			`SELECT id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone 
-             FROM "user" WHERE id = $1`, userID)
+			`SELECT id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone
+             FROM "user" WHERE id = $1`, id)
 
 		user, err := pkg.ScanUser(row)
 		if err != nil {
@@ -76,11 +76,10 @@ func GetCurrentUser(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		row := conn.QueryRow(c.Request.Context(),
-			`SELECT id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone 
-             FROM "user" WHERE id = $1`, userID)
+		user, err := pkg.ScanUser(conn.QueryRow(c.Request.Context(),
+			`SELECT id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone
+             FROM "user" WHERE id = $1`, userID))
 
-		user, err := pkg.ScanUser(row)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -161,7 +160,7 @@ func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id} [put]
 func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
@@ -172,15 +171,14 @@ func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		row := conn.QueryRow(c.Request.Context(),
-			`UPDATE "user" SET name = $1, email = $2, phone = $3, country_code = $4, 
+		user, err = pkg.ScanUser(conn.QueryRow(c.Request.Context(),
+			`UPDATE "user" SET name = $1, email = $2, phone = $3, country_code = $4,
              country_name = $5, country_state = $6, city = $7, timezone = $8
              WHERE id = $9
              RETURNING id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone`,
 			user.Name, user.Email, user.Phone, user.Country_code, user.Country_name,
-			user.Country_state, user.City, user.Timezone, userID)
+			user.Country_state, user.City, user.Timezone, id))
 
-		user, err = pkg.ScanUser(row)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -210,7 +208,7 @@ func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id} [patch]
 func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
@@ -247,15 +245,14 @@ func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		args = append(args, userID)
+		args = append(args, id)
 		query := fmt.Sprintf(
-			`UPDATE "user" SET %s WHERE id = $%d 
+			`UPDATE "user" SET %s WHERE id = $%d
              RETURNING id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone`,
-			strings.Join(set, ", "), i,
-		)
+			strings.Join(set, ", "), i)
 
-		row := conn.QueryRow(c.Request.Context(), query, args...)
-		user, err := pkg.ScanUser(row)
+		user, err := pkg.ScanUser(conn.QueryRow(c.Request.Context(), query, args...))
+
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -284,12 +281,12 @@ func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id} [delete]
 func DeleteUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
 
-		result, err := conn.Exec(c.Request.Context(), `DELETE FROM "user" WHERE id = $1`, userID)
+		result, err := conn.Exec(c.Request.Context(), `DELETE FROM "user" WHERE id = $1`, id)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return

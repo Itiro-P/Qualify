@@ -167,7 +167,7 @@ func GetClient(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		row := conn.QueryRow(c.Request.Context(), `
-            SELECT u.id, u.name, u.email, u.phone, u.time_created, 
+            SELECT u.id, u.name, u.email, u.phone, u.time_created,
                    u.country_code, u.country_name, u.country_state, u.city, u.timezone,
                    c.proposed_budget
             FROM "user" u
@@ -212,8 +212,7 @@ func CreateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 		// Checando se o cliente já existe
 		var clientExists bool
 		err = conn.QueryRow(c.Request.Context(),
-			`SELECT EXISTS(SELECT 1 FROM client WHERE id = $1)`, userID,
-		).Scan(&clientExists)
+			`SELECT EXISTS(SELECT 1 FROM client WHERE id = $1)`, userID).Scan(&clientExists)
 
 		if clientExists {
 			c.JSON(http.StatusConflict, pkg.Internal(c.FullPath(), "Client already exists"))
@@ -262,6 +261,7 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 		if err != nil {
 			return
 		}
+
 		var client pkg.Client
 		if err := c.BindJSON(&client); err != nil {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
@@ -297,7 +297,7 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 		}()
 
 		_, err = tx.Exec(c.Request.Context(),
-			`UPDATE "user" SET name = $1, email = $2, phone = $3, country_code = $4, 
+			`UPDATE "user" SET name = $1, email = $2, phone = $3, country_code = $4,
              country_name = $5, country_state = $6, city = $7, timezone = $8
              WHERE id = $9`,
 			client.Name, client.Email, client.Phone, client.Country_code, client.Country_name, client.Country_state,
@@ -318,7 +318,7 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		// Fetch the updated client within transaction
 		row := tx.QueryRow(c.Request.Context(), `
-            SELECT u.id, u.name, u.email, u.phone, u.time_created, 
+            SELECT u.id, u.name, u.email, u.phone, u.time_created,
                    u.country_code, u.country_name, u.country_state, u.city, u.timezone,
                    c.proposed_budget
             FROM "user" u
@@ -497,7 +497,7 @@ func UpdateClientPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		row := tx.QueryRow(c.Request.Context(), `
-            SELECT u.id, u.name, u.email, u.phone, u.time_created, 
+            SELECT u.id, u.name, u.email, u.phone, u.time_created,
                    u.country_code, u.country_name, u.country_state, u.city, u.timezone,
                    c.proposed_budget
             FROM "user" u

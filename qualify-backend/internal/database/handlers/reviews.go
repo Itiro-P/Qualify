@@ -33,7 +33,7 @@ import (
 // @Router /reviews [get]
 func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		query := `SELECT id, analyst_id, client_id, service_id, rating, comment, time_created 
+		query := `SELECT id, analyst_id, client_id, service_id, rating, comment, time_created
                   FROM review WHERE 1=1`
 
 		args := []interface{}{}
@@ -184,12 +184,12 @@ func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /reviews/{id} [get]
 func GetReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		reviewID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
 
-		row := conn.QueryRow(c.Request.Context(), "SELECT id, analyst_id, client_id, service_id, rating, comment, time_created FROM review WHERE id = $1", reviewID)
+		row := conn.QueryRow(c.Request.Context(), "SELECT id, analyst_id, client_id, service_id, rating, comment, time_created FROM review WHERE id = $1", id)
 		review, err := pkg.ScanReview(row)
 		if err != nil {
 			if err == pgx.ErrNoRows {
@@ -265,10 +265,11 @@ func CreateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /reviews/{id} [put]
 func UpdateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		reviewID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
+
 		var review pkg.Review
 		if err := c.BindJSON(&review); err != nil {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
@@ -280,13 +281,12 @@ func UpdateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		row := conn.QueryRow(c.Request.Context(),
+		review, err = pkg.ScanReview(conn.QueryRow(c.Request.Context(),
 			`UPDATE review SET analyst_id = $1, client_id = $2, service_id = $3, rating = $4, comment = $5
              WHERE id = $6
              RETURNING id, analyst_id, client_id, service_id, rating, comment, time_created`,
-			review.Analyst_id, review.Client_id, review.Service_id, review.Rating, review.Comment, reviewID)
+			review.Analyst_id, review.Client_id, review.Service_id, review.Rating, review.Comment, id))
 
-		review, err = pkg.ScanReview(row)
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -316,10 +316,11 @@ func UpdateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /reviews/{id} [patch]
 func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		reviewID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
+
 		var review pkg.ReviewUpdateRequest
 		if err := c.BindJSON(&review); err != nil {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
@@ -350,13 +351,12 @@ func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		args = append(args, reviewID)
+		args = append(args, id)
 
 		query := fmt.Sprintf("UPDATE review SET %s WHERE id = $%d RETURNING id, analyst_id, client_id, service_id, rating, comment, time_created",
 			strings.Join(set, ", "), i)
 
-		row := conn.QueryRow(c.Request.Context(), query, args...)
-		updatedReview, err := pkg.ScanReview(row)
+		updatedReview, err := pkg.ScanReview(conn.QueryRow(c.Request.Context(), query, args...))
 		if err != nil {
 			if err == pgx.ErrNoRows {
 				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
@@ -385,12 +385,12 @@ func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /reviews/{id} [delete]
 func DeleteReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		reviewID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
 
-		result, err := conn.Exec(c.Request.Context(), `DELETE FROM review WHERE id = $1`, reviewID)
+		result, err := conn.Exec(c.Request.Context(), `DELETE FROM review WHERE id = $1`, id)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
@@ -424,7 +424,7 @@ func DeleteReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /clients/{id}/reviews [get]
 func GetClientReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		clientID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
@@ -433,7 +433,7 @@ func GetClientReviews(conn *pgxpool.Pool) gin.HandlerFunc {
                   FROM review r
                   JOIN client c ON r.client_id = c.id
                   WHERE c.user_id = $1`
-		args := []interface{}{clientID}
+		args := []interface{}{id}
 		argCounter := 2
 
 		if analystID := c.Query("analyst_id"); analystID != "" {
@@ -563,7 +563,7 @@ func GetClientReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /analysts/{id}/reviews [get]
 func GetAnalystReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		analystID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
@@ -572,7 +572,7 @@ func GetAnalystReviews(conn *pgxpool.Pool) gin.HandlerFunc {
                   FROM review r
                   JOIN analyst a ON r.analyst_id = a.id
                   WHERE a.user_id = $1`
-		args := []interface{}{analystID}
+		args := []interface{}{id}
 		argCounter := 2
 
 		if clientID := c.Query("client_id"); clientID != "" {

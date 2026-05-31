@@ -180,7 +180,6 @@ func GetAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, err.Error())
 			return
 		}
 
@@ -224,7 +223,6 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -337,7 +335,7 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		analyst, errScan := pkg.ScanAnalyst(tx.QueryRow(c.Request.Context(), `
-			SELECT u.id, u.name, u.email, u.phone, u.time_created, 
+			SELECT u.id, u.name, u.email, u.phone, u.time_created,
 				   u.country_code, u.country_name, u.country_state, u.city, u.timezone,
 				   a.hourly_rate, a.total_reviews, a.mean_rating
 			FROM "user" u
@@ -380,16 +378,14 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 func CreateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
-
-		if id == -1 {
+		if err != nil {
 			return
 		}
 
 		// Checando se o analista já existe
 		var analystExists bool
 		err = conn.QueryRow(c.Request.Context(),
-			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, id,
-		).Scan(&analystExists)
+			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, id).Scan(&analystExists)
 
 		if analystExists {
 			c.JSON(http.StatusConflict, pkg.Internal(c.FullPath(), "Analyst already exists"))
@@ -434,10 +430,8 @@ func CreateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/analyst [put]
 func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		analystID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 		var analyst pkg.Analyst
@@ -473,11 +467,11 @@ func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 		}()
 
 		_, err = tx.Exec(c.Request.Context(),
-			`UPDATE "user" SET name = $1, email = $2, phone = $3, country_code = $4, 
+			`UPDATE "user" SET name = $1, email = $2, phone = $3, country_code = $4,
 			 country_name = $5, country_state = $6, city = $7, timezone = $8
 			 WHERE id = $9`,
 			analyst.Name, analyst.Email, analyst.Phone, analyst.Country_code, analyst.Country_name, analyst.Country_state,
-			analyst.City, analyst.Timezone, analystID)
+			analyst.City, analyst.Timezone, id)
 		if err != nil {
 			_ = tx.Rollback(c.Request.Context())
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
@@ -487,7 +481,7 @@ func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 		_, err = tx.Exec(c.Request.Context(),
 			`UPDATE analyst SET hourly_rate = $1, total_reviews = $2, mean_rating = $3
 			 WHERE id = $4`,
-			analyst.Hourly_rate, analyst.Total_reviews, analyst.Mean_rating, analystID)
+			analyst.Hourly_rate, analyst.Total_reviews, analyst.Mean_rating, id)
 		if err != nil {
 			_ = tx.Rollback(c.Request.Context())
 			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
@@ -495,12 +489,12 @@ func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		analyst, err = pkg.ScanAnalyst(tx.QueryRow(c.Request.Context(),
-			`SELECT u.id, u.name, u.email, u.phone, u.time_created, 
+			`SELECT u.id, u.name, u.email, u.phone, u.time_created,
 				   u.country_code, u.country_name, u.country_state, u.city, u.timezone,
 				   a.hourly_rate, a.total_reviews, a.mean_rating
 			FROM "user" u
 			JOIN analyst a ON a.id = u.id
-			WHERE u.id = $1`, analystID))
+			WHERE u.id = $1`, id))
 
 		if err != nil {
 			_ = tx.Rollback(c.Request.Context())
@@ -536,10 +530,8 @@ func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/analyst [delete]
 func DeleteAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		analystID, err := strconv.Atoi(id)
+		analystID, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
