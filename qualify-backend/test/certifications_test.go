@@ -53,7 +53,7 @@ func TestCertifications(t *testing.T) {
 	routes.SetupRoutes(router, TestPool)
 
 	userRegister := pkg.UserRegister{
-		Name:          "Paulo Sabo",
+		Name:          "Paulo Sabotagem",
 		Email:         "sabo@utfpr.edu.br",
 		Password:      "aabbccddee",
 		Phone:         "45999697000",
@@ -97,11 +97,10 @@ func TestCertifications(t *testing.T) {
 	}
 
 	// Agora veremos se as listagens estão funcionando
-	t.Run("Listando todos os analistas", func(t *testing.T) {
+	t.Run("Listando todas as certificações", func(t *testing.T) {
 		targetURL := "/certifications"
 		req := httptest.NewRequest(http.MethodGet, targetURL, nil)
 		req.Header.Set("Content-Type", "application/json")
-
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -112,7 +111,6 @@ func TestCertifications(t *testing.T) {
 		json.Unmarshal(w.Body.Bytes(), &certificationResponse)
 		assert.ElementsMatch(t, certifications, certificationResponse.Certifications)
 	})
-
 	// Agora veremos o GET por ID
 	for _, c := range certifications {
 		t.Run("Listando Certificação para "+c.Name, func(t *testing.T) {
@@ -122,7 +120,6 @@ func TestCertifications(t *testing.T) {
 
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
-
 			assert.Equal(t, http.StatusOK, w.Code)
 			var certificationReponse pkg.CertificationResponse
 			json.Unmarshal(w.Body.Bytes(), &certificationReponse)
@@ -185,7 +182,15 @@ func TestCertifications(t *testing.T) {
 		// Agora faremos o cleanup do analista criado
 		targetURL = fmt.Sprintf("/users/%d/analyst", analyst.User.Id)
 
-		req = httptest.NewRequest(http.MethodDelete, targetURL, nil)
+		req = authRequest(http.MethodDelete, targetURL, nil, token)
+
+		w = httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		// E agora do usuário
+		targetURL = fmt.Sprintf("/users/%d", analyst.User.Id)
+
+		req = authRequest(http.MethodDelete, targetURL, nil, token)
 
 		w = httptest.NewRecorder()
 		router.ServeHTTP(w, req)
