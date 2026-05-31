@@ -17,6 +17,16 @@ export function SearchResult({
   const [error, setError] = useState("");
   const [analysts, setAnalysts] = useState<Analyst[]>([]);
 
+  useState(() => {
+    if (!formResponse) return;
+
+    setLoading(true);
+    setError("");
+    setAnalysts([]);
+
+    // Pegar os analistas recomendados com base na resposta do formulário
+  });
+
   return (
     <div>
       {error && <Alert variant="error">{error}</Alert>}
