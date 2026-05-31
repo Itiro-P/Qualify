@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
 	"main/pkg"
 	"net/http"
@@ -9,8 +8,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -94,8 +91,7 @@ func GetServices(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 		defer rows.Close()
@@ -103,14 +99,12 @@ func GetServices(conn *pgxpool.Pool) gin.HandlerFunc {
 		var services []pkg.Service
 		for rows.Next() {
 			s, err := pkg.ScanService(rows)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			if pkg.HandleErr(c, err) {
 				return
 			}
 			services = append(services, s)
 		}
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if err = rows.Err(); pkg.HandleErr(c, err) {
 			return
 		}
 		c.JSON(http.StatusOK, pkg.ServicesResponse{Services: services, Count: len(services)})
@@ -140,12 +134,7 @@ func GetService(conn *pgxpool.Pool) gin.HandlerFunc {
 			`SELECT id, title, content, proposal_letter_id, hourly_rate, status, time_created
              FROM service WHERE id = $1`, id))
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -180,13 +169,7 @@ func CreateService(conn *pgxpool.Pool) gin.HandlerFunc {
              RETURNING id, title, content, proposal_letter_id, hourly_rate, status, time_created`,
 			service.Proposal_letter_id, service.Title, service.Content, service.Hourly_rate, service.Status))
 
-		if err != nil {
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-				c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -236,12 +219,7 @@ func UpdateService(conn *pgxpool.Pool) gin.HandlerFunc {
              RETURNING id, title, content, proposal_letter_id, hourly_rate, status, time_created`,
 			service.Proposal_letter_id, service.Title, service.Content, service.Hourly_rate, service.Status, id))
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -271,8 +249,7 @@ func UpdateServicePartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		var service pkg.ServiceUpdateRequest
-		if err := c.BindJSON(&service); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&service); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -317,12 +294,7 @@ func UpdateServicePartial(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		updatedService, err := pkg.ScanService(conn.QueryRow(c.Request.Context(), query, args...))
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -351,8 +323,7 @@ func DeleteService(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		result, err := conn.Exec(c.Request.Context(), `DELETE FROM service WHERE id = $1`, id)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -450,23 +421,21 @@ func GetClientServices(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 		defer rows.Close()
 
 		var services []pkg.Service
 		for rows.Next() {
-			s, err := pkg.ScanService(rows)
+			service, err := pkg.ScanService(rows)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 				return
 			}
-			services = append(services, s)
+			services = append(services, service)
 		}
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if err = rows.Err(); pkg.HandleErr(c, err) {
 			return
 		}
 		c.JSON(http.StatusOK, pkg.ServicesResponse{Services: services, Count: len(services)})
@@ -558,8 +527,7 @@ func GetAnalystServices(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 		defer rows.Close()
@@ -567,14 +535,12 @@ func GetAnalystServices(conn *pgxpool.Pool) gin.HandlerFunc {
 		var services []pkg.Service
 		for rows.Next() {
 			service, err := pkg.ScanService(rows)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			if pkg.HandleErr(c, err) {
 				return
 			}
 			services = append(services, service)
 		}
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if err = rows.Err(); pkg.HandleErr(c, err) {
 			return
 		}
 		c.JSON(http.StatusOK, pkg.ServicesResponse{Services: services, Count: len(services)})

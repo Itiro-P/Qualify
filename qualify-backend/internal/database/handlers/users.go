@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -37,12 +36,7 @@ func GetUser(conn *pgxpool.Pool) gin.HandlerFunc {
              FROM "user" WHERE id = $1`, id)
 
 		user, err := pkg.ScanUser(row)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -80,12 +74,7 @@ func GetCurrentUser(conn *pgxpool.Pool) gin.HandlerFunc {
 			`SELECT id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone
              FROM "user" WHERE id = $1`, userID))
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -114,8 +103,7 @@ func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(reg.Password), bcrypt.DefaultCost)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -131,12 +119,7 @@ func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 			Timezone:      reg.Timezone,
 		}
 		err = services.CreateUser(c.Request.Context(), conn, &user)
-		if err != nil {
-			if strings.Contains(err.Error(), "unique constraint") {
-				c.JSON(http.StatusConflict, gin.H{"error": "E-mail already registered"})
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -166,8 +149,7 @@ func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		var user pkg.User
-		if err := c.BindJSON(&user); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&user); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -179,12 +161,7 @@ func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 			user.Name, user.Email, user.Phone, user.Country_code, user.Country_name,
 			user.Country_state, user.City, user.Timezone, id))
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -214,8 +191,7 @@ func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		var req pkg.UserUpdateRequest
-		if err := c.BindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&req); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -253,12 +229,7 @@ func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		user, err := pkg.ScanUser(conn.QueryRow(c.Request.Context(), query, args...))
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -287,11 +258,9 @@ func DeleteUser(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		result, err := conn.Exec(c.Request.Context(), `DELETE FROM "user" WHERE id = $1`, id)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
-
 		if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "User not found"))
 			return

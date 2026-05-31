@@ -1,18 +1,14 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
 	"main/pkg"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -42,14 +38,10 @@ func GetUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			`SELECT user_id, biography, COALESCE(picture, 'default_picture.png') FROM user_profile WHERE user_id = $1`,
 			id).Scan(&profile.User_id, &profile.Biography, &profile.Picture)
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Perfil não encontrado"))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
+
 		c.JSON(http.StatusOK, pkg.UserProfileResponse{User_profile: profile})
 	}
 }
@@ -76,8 +68,7 @@ func CreateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		var profile pkg.UserProfile
-		if err := c.BindJSON(&profile); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&profile); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -86,10 +77,10 @@ func CreateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		err = conn.QueryRow(c.Request.Context(),
 			`SELECT EXISTS(SELECT 1 FROM user_profile WHERE id = $1)`, id).Scan(&exists)
 
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
+
 		if exists {
 			c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Profile already exists"))
 			return
@@ -101,10 +92,10 @@ func CreateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			id, profile.Biography).
 			Scan(&profile.User_id, &profile.Biography, &profile.Picture)
 
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
+
 		c.JSON(http.StatusCreated, pkg.UserProfileResponse{User_profile: profile})
 	}
 }
@@ -153,8 +144,7 @@ func UploadProfilePicture(conn *pgxpool.Pool) gin.HandlerFunc {
 			RETURNING user_id, biography, picture`,
 			dbPath, id))
 
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -188,8 +178,7 @@ func UpdateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		var profile pkg.UserProfile
-		if err := c.BindJSON(&profile); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&profile); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -205,12 +194,7 @@ func UpdateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			 RETURNING user_id, biography, COALESCE(picture, 'default_picture.png')`,
 			profile.Biography, id))
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -225,7 +209,7 @@ func UpdateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do usuário"
-// @Success 200 {object} map[string]string
+// @Success 204 "Deleção com sucesso"
 // @Failure 400 {object} pkg.ErrorResponse
 // @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
@@ -247,16 +231,15 @@ func DeleteUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		result, err := conn.Exec(c.Request.Context(), `DELETE FROM user_profile WHERE user_id = $1`, id)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
 		if result.RowsAffected() == 0 {
-			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Perfil não encontrado"))
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Profile not found"))
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"message": "Perfil removido"})
+		c.Status(http.StatusNoContent)
 	}
 }
 
@@ -277,6 +260,9 @@ func DeleteUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 func GetAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
+		if err != nil {
+			return
+		}
 
 		profile, err := pkg.ScanAnalystProfile(conn.QueryRow(c.Request.Context(),
 			`SELECT u.user_id, u.biography, COALESCE(u.picture, 'default_picture.png')
@@ -285,12 +271,7 @@ func GetAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			 WHERE u.user_id = $1`,
 			id))
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analista não encontrado"))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 		c.JSON(http.StatusOK, pkg.AnalystProfileResponse{Analyst_profile: profile})
@@ -319,8 +300,7 @@ func CreateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		var profile pkg.AnalystProfile
-		if err := c.BindJSON(&profile); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&profile); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -328,8 +308,7 @@ func CreateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		err = conn.QueryRow(c.Request.Context(),
 			`SELECT EXISTS(SELECT 1 FROM analyst_profile WHERE analyst_id = $1)`, id).Scan(&exists)
 
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 		if exists {
@@ -338,35 +317,27 @@ func CreateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		tx, err := conn.Begin(c.Request.Context())
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		defer tx.Rollback(c.Request.Context())
+		defer func() { _ = tx.Rollback(c.Request.Context()) }()
 
 		profile, err = pkg.ScanAnalystProfile(tx.QueryRow(c.Request.Context(),
 			`INSERT INTO user_profile (user_id, biography) VALUES ($1, $2)
              RETURNING user_id, biography, picture`,
 			id, profile.Biography))
-		if err != nil {
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgErr.Code == "23503" {
-				c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "User not found"))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
 		_, err = tx.Exec(c.Request.Context(), `INSERT INTO analyst_profile (analyst_id) VALUES ($1)`, id)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		if err = tx.Commit(c.Request.Context()); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if err = tx.Commit(c.Request.Context()); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -396,8 +367,7 @@ func UpdateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		var profile pkg.AnalystProfile
-		if err := c.BindJSON(&profile); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&profile); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -413,12 +383,7 @@ func UpdateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			 RETURNING user_id, biography, COALESCE(picture, 'default_picture.png')`,
 			profile.Biography, id))
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -458,8 +423,7 @@ func DeleteAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			`DELETE FROM user_profile WHERE user_id = $1`,
 			id)
 
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -489,6 +453,9 @@ func DeleteAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 func GetClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
+		if err != nil {
+			return
+		}
 
 		profile, err := pkg.ScanClientProfile(conn.QueryRow(c.Request.Context(),
 			`SELECT u.user_id, u.biography, COALESCE(u.picture, 'default_picture.png')
@@ -497,14 +464,10 @@ func GetClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			 WHERE u.user_id = $1`,
 			id))
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
+
 		c.JSON(http.StatusOK, pkg.ClientProfileResponse{Client_profile: profile})
 	}
 }
@@ -525,61 +488,52 @@ func GetClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/client/profile [post]
 func CreateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, err := pkg.ParseIdParam(c)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
 			return
 		}
 
 		var profile pkg.ClientProfile
-		if err := c.BindJSON(&profile); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&profile); pkg.HandleErr(c, err) {
 			return
 		}
 
 		var exists bool
 		err = conn.QueryRow(c.Request.Context(),
-			`SELECT EXISTS(SELECT 1 FROM client_profile WHERE client_id = $1)`, userID).Scan(&exists)
+			`SELECT EXISTS(SELECT 1 FROM client_profile WHERE client_id = $1)`, id).Scan(&exists)
 
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
+
 		if exists {
-			c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), err.Error()))
+			c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Client profile already exists"))
 			return
 		}
 
 		tx, err := conn.Begin(c.Request.Context())
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		defer tx.Rollback(c.Request.Context())
+		defer func() { _ = tx.Rollback(c.Request.Context()) }()
 
 		profile, err = pkg.ScanClientProfile(tx.QueryRow(c.Request.Context(),
 			`INSERT INTO user_profile (user_id, biography) VALUES ($1, $2)
              RETURNING user_id, biography, picture`,
-			userID, profile.Biography))
-		if err != nil {
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgErr.Code == "23503" {
-				c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			id, profile.Biography))
+
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
 		_, err = tx.Exec(c.Request.Context(),
-			`INSERT INTO client_profile (client_id) VALUES ($1)`, userID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			`INSERT INTO client_profile (client_id) VALUES ($1)`, id)
+		if pkg.HandleErr(c, err) {
 			return
 		}
-
-		if err = tx.Commit(c.Request.Context()); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if err = tx.Commit(c.Request.Context()); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -609,8 +563,7 @@ func UpdateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		var profile pkg.ClientProfile
-		if err := c.BindJSON(&profile); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&profile); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -620,12 +573,7 @@ func UpdateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			RETURNING user_id, biography, COALESCE(picture, 'default_picture.png')`,
 			profile.Biography, id))
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -648,10 +596,8 @@ func UpdateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/client/profile [delete]
 func DeleteClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
@@ -664,10 +610,9 @@ func DeleteClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		result, err := conn.Exec(c.Request.Context(),
-			`DELETE FROM user_profile WHERE user_id = $1`,
-			userID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			`DELETE FROM user_profile WHERE user_id = $1`, id)
+
+		if pkg.HandleErr(c, err) {
 			return
 		}
 

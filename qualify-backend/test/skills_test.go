@@ -80,23 +80,21 @@ func TestSkill(t *testing.T) {
 	})
 
 	t.Run("Colocando skill no analista", func(t *testing.T) {
-		// Associação Analista <-> Skill
-		assocBody := pkg.AnalystSkill{Skill_id: skillID}
+		assocBody := pkg.Skill{Name: "aaaa"} // nome após o update
 		body, _ := json.Marshal(assocBody)
-
 		req := authRequest(http.MethodPost, fmt.Sprintf("/users/%d/analyst/skills", analystUserID), body, analystToken)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-
 		assert.Equal(t, http.StatusCreated, w.Code)
 	})
 
 	t.Run("Removendo skill do analista", func(t *testing.T) {
+		t.Logf("skillID ao remover = %d", skillID)
 		targetURL := fmt.Sprintf("/users/%d/analyst/skills?skill_id=%d", analystUserID, skillID)
 		req := authRequest(http.MethodDelete, targetURL, nil, analystToken)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-
+		t.Logf("resposta remoção: %s", w.Body.String())
 		assert.Equal(t, http.StatusNoContent, w.Code)
 	})
 

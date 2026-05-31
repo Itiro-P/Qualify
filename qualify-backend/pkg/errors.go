@@ -2,73 +2,46 @@ package pkg
 
 import "time"
 
-func NotFound(path string, message string) ErrorResponse {
+func newError(path, httpError, code, message string) ErrorResponse {
 	return ErrorResponse{
-		Error:     "Not Found",
+		Error:     httpError,
 		Message:   message,
-		Code:      "NOT_FOUND",
+		Code:      code,
 		Timestamp: time.Now(),
 		Path:      path,
 	}
 }
 
-func Unauthorized(path string, message string) ErrorResponse {
-	return ErrorResponse{
-		Error:     "Unauthorized",
-		Message:   message,
-		Code:      "UNAUTHORIZED",
-		Timestamp: time.Now(),
-		Path:      path,
-	}
+func NotFound(path, message string) ErrorResponse {
+	return newError(path, "Not Found", "NOT_FOUND", message)
 }
 
-func Forbidden(path string, message string) ErrorResponse {
-	return ErrorResponse{
-		Error:     "Forbidden",
-		Message:   message,
-		Code:      "FORBIDDEN",
-		Timestamp: time.Now(),
-		Path:      path,
-	}
+func UnprocessableEntity(path, message string) ErrorResponse {
+	return newError(path, "Unprocessable Entity", "UNPROCESSABLE_ENTITY", message)
 }
 
-func Conflict(path string, message string) ErrorResponse {
-	return ErrorResponse{
-		Error:     "Conflict",
-		Message:   message,
-		Code:      "CONFLICT",
-		Timestamp: time.Now(),
-		Path:      path,
-	}
+func Unauthorized(path, message string) ErrorResponse {
+	return newError(path, "Unauthorized", "UNAUTHORIZED", message)
 }
 
-func BadRequest(path string, message string) ErrorResponse {
-	return ErrorResponse{
-		Error:     "Bad Request",
-		Message:   message,
-		Code:      "BAD_REQUEST",
-		Timestamp: time.Now(),
-		Path:      path,
-	}
+func Forbidden(path, message string) ErrorResponse {
+	return newError(path, "Forbidden", "FORBIDDEN", message)
 }
 
-func ValidationFailed(path string, message string, validationErrors map[string]string) ErrorResponse {
-	return ErrorResponse{
-		Error:            "Validation Error",
-		Message:          message,
-		Code:             "VALIDATION_ERROR",
-		Timestamp:        time.Now(),
-		Path:             path,
-		ValidationErrors: validationErrors,
-	}
+func Conflict(path, message string) ErrorResponse {
+	return newError(path, "Conflict", "CONFLICT", message)
 }
 
-func Internal(path string, message string) ErrorResponse {
-	return ErrorResponse{
-		Error:     "Internal Server Error",
-		Message:   message,
-		Code:      "INTERNAL_ERROR",
-		Timestamp: time.Now(),
-		Path:      path,
-	}
+func BadRequest(path, message string) ErrorResponse {
+	return newError(path, "Bad Request", "BAD_REQUEST", message)
+}
+
+func Internal(path, message string) ErrorResponse {
+	return newError(path, "Internal Server Error", "INTERNAL_ERROR", message)
+}
+
+func ValidationFailed(path, message string, validationErrors map[string]string) ErrorResponse {
+	r := newError(path, "Validation Error", "VALIDATION_ERROR", message)
+	r.ValidationErrors = validationErrors
+	return r
 }

@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -119,8 +118,7 @@ func GetClients(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 		defer rows.Close()
@@ -128,15 +126,13 @@ func GetClients(conn *pgxpool.Pool) gin.HandlerFunc {
 		var clients []pkg.Client
 		for rows.Next() {
 			client, err := pkg.ScanClient(rows)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			if pkg.HandleErr(c, err) {
 				return
 			}
 			clients = append(clients, client)
 		}
 
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if err = rows.Err(); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -175,12 +171,7 @@ func GetClient(conn *pgxpool.Pool) gin.HandlerFunc {
             WHERE u.id = $1`, clientID)
 
 		client, err := pkg.ScanClient(row)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -222,21 +213,15 @@ func CreateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 		var request struct {
 			Proposed_budget float64 `json:"proposed_budget"`
 		}
-		if err := c.BindJSON(&request); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+
+		if err := c.BindJSON(&request); pkg.HandleErr(c, err) {
 			return
 		}
 
 		client, err := services.AssignClientRole(c.Request.Context(), conn, userID, request.Proposed_budget)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
-
 		c.JSON(http.StatusCreated, pkg.ClientResponse{Client: *client})
 	}
 }
@@ -263,8 +248,7 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		var client pkg.Client
-		if err := c.BindJSON(&client); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&client); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -285,12 +269,11 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 		// Make update atomic across user + client tables
 		tx, err := conn.Begin(c.Request.Context())
 
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		defer tx.Rollback(c.Request.Context())
+		defer func() { _ = tx.Rollback(c.Request.Context()) }()
 
 		_, err = tx.Exec(c.Request.Context(),
 			`UPDATE "user" SET name = $1, email = $2, phone = $3, country_code = $4,
@@ -298,8 +281,7 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
              WHERE id = $9`,
 			client.Name, client.Email, client.Phone, client.Country_code, client.Country_name, client.Country_state,
 			client.City, client.Timezone, clientID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -307,8 +289,7 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 			`UPDATE client SET proposed_budget = $1
              WHERE id = $2`,
 			client.Proposed_budget, clientID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -322,17 +303,11 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
             WHERE u.id = $1`, clientID)
 
 		client, err = pkg.ScanClient(row)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		if err = tx.Commit(c.Request.Context()); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if err = tx.Commit(c.Request.Context()); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -361,8 +336,7 @@ func DeleteClient(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		result, err := conn.Exec(c.Request.Context(), `DELETE FROM client WHERE id = $1`, clientID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -397,8 +371,7 @@ func UpdateClientPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		var req pkg.ClientUpdateRequest
-		if err := c.BindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&req); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -455,24 +428,21 @@ func UpdateClientPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		if len(userSet) == 0 && len(clientSet) == 0 {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "No columns to change"))
 			return
 		}
 
 		tx, err := conn.Begin(c.Request.Context())
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		defer tx.Rollback(c.Request.Context())
+		defer func() { _ = tx.Rollback(c.Request.Context()) }()
 
 		if len(userSet) > 0 {
 			userArgs = append(userArgs, clientID)
 			userQuery := fmt.Sprintf(`UPDATE "user" SET %s WHERE id = $%d`, strings.Join(userSet, ", "), len(userArgs))
-			if _, err := tx.Exec(c.Request.Context(), userQuery, userArgs...); err != nil {
-				_ = tx.Rollback(c.Request.Context())
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			if _, err := tx.Exec(c.Request.Context(), userQuery, userArgs...); pkg.HandleErr(c, err) {
 				return
 			}
 		}
@@ -481,9 +451,7 @@ func UpdateClientPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			clientArgs = append(userArgs, clientArgs...)
 			clientArgs = append(clientArgs, clientID)
 			clientQuery := fmt.Sprintf(`UPDATE client SET %s WHERE id = $%d`, strings.Join(clientSet, ", "), len(clientArgs))
-			if _, err := tx.Exec(c.Request.Context(), clientQuery, clientArgs...); err != nil {
-				_ = tx.Rollback(c.Request.Context())
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			if _, err := tx.Exec(c.Request.Context(), clientQuery, clientArgs...); pkg.HandleErr(c, err) {
 				return
 			}
 		}
@@ -497,18 +465,11 @@ func UpdateClientPartial(conn *pgxpool.Pool) gin.HandlerFunc {
             WHERE u.id = $1`, clientID)
 
 		client, err := pkg.ScanClient(row)
-		if err != nil {
-			_ = tx.Rollback(c.Request.Context())
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		if err = tx.Commit(c.Request.Context()); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if err = tx.Commit(c.Request.Context()); pkg.HandleErr(c, err) {
 			return
 		}
 

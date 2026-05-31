@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -139,8 +138,7 @@ func GetAnalysts(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 		defer rows.Close()
@@ -148,15 +146,13 @@ func GetAnalysts(conn *pgxpool.Pool) gin.HandlerFunc {
 		var analysts []pkg.Analyst
 		for rows.Next() {
 			analyst, err := pkg.ScanAnalyst(rows)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			if pkg.HandleErr(c, err) {
 				return
 			}
 			analysts = append(analysts, analyst)
 		}
 
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if err = rows.Err(); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -192,12 +188,7 @@ func GetAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 				JOIN analyst a ON a.id = u.id
 				WHERE u.id = $1`, id))
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -227,8 +218,7 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		var req pkg.AnalystUpdateRequest
-		if err := c.BindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&req); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -301,20 +291,17 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		tx, err := conn.Begin(c.Request.Context())
 
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		defer tx.Rollback(c.Request.Context())
+		defer func() { _ = tx.Rollback(c.Request.Context()) }()
 
 		// Update user if needed
 		if len(userSet) > 0 {
 			userArgs = append(userArgs, id)
 			userQuery := fmt.Sprintf(`UPDATE "user" SET %s WHERE id = $%d`, strings.Join(userSet, ", "), len(userArgs))
-			if _, err := tx.Exec(c.Request.Context(), userQuery, userArgs...); err != nil {
-				_ = tx.Rollback(c.Request.Context())
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			if _, err := tx.Exec(c.Request.Context(), userQuery, userArgs...); pkg.HandleErr(c, err) {
 				return
 			}
 		}
@@ -325,9 +312,7 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			// analystArgs currently has userArgs followed by analystArgs; ensure id param at end
 			analystArgs = append(analystArgs, id)
 			analystQuery := fmt.Sprintf(`UPDATE analyst SET %s WHERE id = $%d`, strings.Join(analystSet, ", "), len(analystArgs))
-			if _, err := tx.Exec(c.Request.Context(), analystQuery, analystArgs...); err != nil {
-				_ = tx.Rollback(c.Request.Context())
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			if _, err := tx.Exec(c.Request.Context(), analystQuery, analystArgs...); pkg.HandleErr(c, err) {
 				return
 			}
 		}
@@ -340,18 +325,11 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			JOIN analyst a ON a.id = u.id
 			WHERE u.id = $1`, id))
 
-		if errScan != nil {
-			_ = tx.Rollback(c.Request.Context())
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, errScan) {
 			return
 		}
 
-		if err = tx.Commit(c.Request.Context()); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if err = tx.Commit(c.Request.Context()); pkg.HandleErr(c, errScan) {
 			return
 		}
 
@@ -393,18 +371,13 @@ func CreateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 		var request struct {
 			Hourly_rate float64 `json:"hourly_rate"`
 		}
-		if err := c.BindJSON(&request); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+
+		if err := c.BindJSON(&request); pkg.HandleErr(c, err) {
 			return
 		}
 
 		analyst, err := services.AssignAnalystRole(c.Request.Context(), conn, id, request.Hourly_rate)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -432,35 +405,34 @@ func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 		if err != nil {
 			return
 		}
+
 		var analyst pkg.Analyst
-		if err := c.BindJSON(&analyst); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&analyst); pkg.HandleErr(c, err) {
 			return
 		}
 
 		// Validando parâmetros obrigatórios
 		if analyst.Name == "" {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty name"))
 			return
 		}
 		if analyst.Email == "" {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty email"))
 			return
 		}
 		if len(analyst.Country_code) != 2 {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Country code needs to have ONLY 2 characters"))
 			return
 		}
 
 		// Usar transação para garantir atomicidade entre updates nas tabelas
 		tx, err := conn.Begin(c.Request.Context())
 
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		defer tx.Rollback(c.Request.Context())
+		defer func() { _ = tx.Rollback(c.Request.Context()) }()
 
 		_, err = tx.Exec(c.Request.Context(),
 			`UPDATE "user" SET name = $1, email = $2, phone = $3, country_code = $4,
@@ -468,9 +440,8 @@ func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 			 WHERE id = $9`,
 			analyst.Name, analyst.Email, analyst.Phone, analyst.Country_code, analyst.Country_name, analyst.Country_state,
 			analyst.City, analyst.Timezone, id)
-		if err != nil {
-			_ = tx.Rollback(c.Request.Context())
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -478,9 +449,8 @@ func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 			`UPDATE analyst SET hourly_rate = $1, total_reviews = $2, mean_rating = $3
 			 WHERE id = $4`,
 			analyst.Hourly_rate, analyst.Total_reviews, analyst.Mean_rating, id)
-		if err != nil {
-			_ = tx.Rollback(c.Request.Context())
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -492,18 +462,11 @@ func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 			JOIN analyst a ON a.id = u.id
 			WHERE u.id = $1`, id))
 
-		if err != nil {
-			_ = tx.Rollback(c.Request.Context())
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		if err = tx.Commit(c.Request.Context()); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if err = tx.Commit(c.Request.Context()); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -532,8 +495,8 @@ func DeleteAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		result, err := conn.Exec(c.Request.Context(), `DELETE FROM analyst WHERE id = $1`, analystID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+
+		if pkg.HandleErr(c, err) {
 			return
 		}
 

@@ -174,11 +174,7 @@ func TestCertifications(t *testing.T) {
 
 		targetURL = fmt.Sprintf("/users/%d/analyst/certifications", analyst.Id)
 
-		reqBody := pkg.AnalystCertification{
-			Certification_id: certification.Id,
-			Analyst_id:       analyst.Id,
-		}
-		body, _ = json.Marshal(reqBody)
+		body, _ = json.Marshal(certification) // envia o objeto Certification completo
 		req = authRequest(http.MethodPost, targetURL, body, token)
 
 		w = httptest.NewRecorder()

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
 	"main/pkg"
 	"net/http"
@@ -9,8 +8,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -97,8 +94,7 @@ func GetProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 		defer rows.Close()
@@ -106,15 +102,13 @@ func GetProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 		var proposals []pkg.ProposalLetter
 		for rows.Next() {
 			p, err := pkg.ScanProposalLetter(rows)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			if pkg.HandleErr(c, err) {
 				return
 			}
 			proposals = append(proposals, p)
 		}
 
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if err = rows.Err(); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -148,12 +142,7 @@ func GetProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 		)
 
 		pproposal, err := pkg.ScanProposalLetter(row)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -177,8 +166,7 @@ func GetProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 func CreateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var proposal pkg.ProposalLetter
-		if err := c.BindJSON(&proposal); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&proposal); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -187,19 +175,8 @@ func CreateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
              VALUES ($1, $2, $3, $4, $5)
              RETURNING id, client_id, analyst_id, proposed_hourly_rate, title, content, time_created`,
 			proposal.Title, proposal.Content, proposal.Client_id, proposal.Analyst_id, proposal.Proposed_hourly_rate))
-		if err != nil {
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) {
-				switch pgErr.Code {
-				case "23505":
-					c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), err.Error()))
-					return
-				case "23503":
-					c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
-					return
-				}
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -229,8 +206,7 @@ func UpdateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		var proposal pkg.ProposalLetter
-		if err := c.BindJSON(&proposal); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&proposal); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -246,12 +222,7 @@ func UpdateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
              RETURNING id, client_id, analyst_id, proposed_hourly_rate, title, content, time_created`,
 			proposal.Title, proposal.Content, proposal.Client_id, proposal.Analyst_id, proposal.Proposed_hourly_rate, id))
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -281,8 +252,7 @@ func UpdateProposalLetterPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		var req pkg.ProposalLetterUpdateRequest
-		if err := c.BindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&req); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -319,12 +289,7 @@ func UpdateProposalLetterPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 		)
 
 		pproposal, err := pkg.ScanProposalLetter(conn.QueryRow(c.Request.Context(), query, args...))
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -354,8 +319,8 @@ func DeleteProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		result, err := conn.Exec(c.Request.Context(),
 			`DELETE FROM proposal_letter WHERE id = $1`, id)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -451,24 +416,22 @@ func GetClientProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
+
 		defer rows.Close()
 
 		var proposals []pkg.ProposalLetter
 		for rows.Next() {
 			proposal, err := pkg.ScanProposalLetter(rows)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			if pkg.HandleErr(c, err) {
 				return
 			}
 			proposals = append(proposals, proposal)
 		}
 
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if err = rows.Err(); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -559,24 +522,22 @@ func GetAnalystProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
+
 		defer rows.Close()
 
 		var proposals []pkg.ProposalLetter
 		for rows.Next() {
 			proposal, err := pkg.ScanProposalLetter(rows)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			if pkg.HandleErr(c, err) {
 				return
 			}
 			proposals = append(proposals, proposal)
 		}
 
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if err = rows.Err(); pkg.HandleErr(c, err) {
 			return
 		}
 

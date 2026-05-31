@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
 	"main/pkg"
 	"net/http"
@@ -9,8 +8,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -139,8 +136,7 @@ func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 		args = append(args, pageSize, offset)
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 		defer rows.Close()
@@ -156,8 +152,7 @@ func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 			reviews = append(reviews, review)
 		}
 
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if err = rows.Err(); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -191,12 +186,7 @@ func GetReview(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		row := conn.QueryRow(c.Request.Context(), "SELECT id, analyst_id, client_id, service_id, rating, comment, time_created FROM review WHERE id = $1", id)
 		review, err := pkg.ScanReview(row)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -235,13 +225,7 @@ func CreateReview(conn *pgxpool.Pool) gin.HandlerFunc {
              VALUES ($1, $2, $3, $4, $5)
              RETURNING id, analyst_id, client_id, service_id, rating, comment, time_created`,
 			review.Analyst_id, review.Client_id, review.Service_id, review.Rating, review.Comment))
-		if err != nil {
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-				c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Review already exists"))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -287,12 +271,7 @@ func UpdateReview(conn *pgxpool.Pool) gin.HandlerFunc {
              RETURNING id, analyst_id, client_id, service_id, rating, comment, time_created`,
 			review.Analyst_id, review.Client_id, review.Service_id, review.Rating, review.Comment, id))
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -357,12 +336,7 @@ func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			strings.Join(set, ", "), i)
 
 		updatedReview, err := pkg.ScanReview(conn.QueryRow(c.Request.Context(), query, args...))
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -391,11 +365,9 @@ func DeleteReview(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		result, err := conn.Exec(c.Request.Context(), `DELETE FROM review WHERE id = $1`, id)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
-
 		if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Review not found"))
 			return
@@ -520,8 +492,7 @@ func GetClientReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 		args = append(args, pageSize, offset)
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 		defer rows.Close()
@@ -529,17 +500,14 @@ func GetClientReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 		var reviews []pkg.Review
 		for rows.Next() {
 			review, err := pkg.ScanReview(rows)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			if pkg.HandleErr(c, err) {
 				return
 			}
 			reviews = append(reviews, review)
 		}
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if err = rows.Err(); pkg.HandleErr(c, err) {
 			return
 		}
-
 		c.JSON(http.StatusOK, pkg.ReviewsResponse{Reviews: reviews, Count: len(reviews), Page: page, Page_size: pageSize})
 	}
 }
@@ -659,8 +627,7 @@ func GetAnalystReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 		args = append(args, pageSize, offset)
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 		defer rows.Close()
@@ -668,14 +635,12 @@ func GetAnalystReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 		var reviews []pkg.Review
 		for rows.Next() {
 			review, err := pkg.ScanReview(rows)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			if pkg.HandleErr(c, err) {
 				return
 			}
 			reviews = append(reviews, review)
 		}
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if err = rows.Err(); pkg.HandleErr(c, err) {
 			return
 		}
 

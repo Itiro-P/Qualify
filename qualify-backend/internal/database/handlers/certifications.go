@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
 	"main/pkg"
 	"net/http"
@@ -10,7 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -87,24 +85,23 @@ func GetCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+
+		if pkg.HandleErr(c, err) {
 			return
 		}
+
 		defer rows.Close()
 
 		var certs []pkg.Certification
 		for rows.Next() {
 			cert, err := pkg.ScanCertification(rows)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			if pkg.HandleErr(c, err) {
 				return
 			}
 			certs = append(certs, cert)
 		}
 
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if err = rows.Err(); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -127,7 +124,6 @@ func GetCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 func GetCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
-
 		if err != nil {
 			return
 		}
@@ -135,12 +131,8 @@ func GetCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 		certification, err := pkg.ScanCertification(conn.QueryRow(c.Request.Context(),
 			`SELECT id, name, year, description, institution
 			FROM certification WHERE id = $1`, id))
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -164,8 +156,7 @@ func GetCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 func CreateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var cert pkg.Certification
-		if err := c.BindJSON(&cert); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&cert); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -195,21 +186,18 @@ func CreateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 			`SELECT EXISTS(SELECT 1 FROM certification WHERE name = $1 AND institution = $2)`,
 			cert.Name, cert.Institution).Scan(&exists)
 
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
+
 		if exists {
 			c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Certification already exists"))
 			return
 		}
 
-		err = conn.QueryRow(c.Request.Context(),
+		if pkg.HandleErr(c, conn.QueryRow(c.Request.Context(),
 			`INSERT INTO certification (name, year, description, institution) VALUES ($1, $2, $3, $4) RETURNING id`,
-			cert.Name, cert.Year, cert.Description, cert.Institution,
-		).Scan(&cert.Id)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			cert.Name, cert.Year, cert.Description, cert.Institution).Scan(&cert.Id)) {
 			return
 		}
 		c.JSON(http.StatusCreated, pkg.CertificationResponse{Certification: cert})
@@ -268,14 +256,10 @@ func UpdateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 			`UPDATE certification SET name = $1, year = $2, description = $3, institution = $4 WHERE id = $5 RETURNING id, name, year, description, institution`,
 			cert.Name, cert.Year, cert.Description, cert.Institution, id))
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
+
 		c.JSON(http.StatusOK, pkg.CertificationResponse{Certification: cert})
 	}
 }
@@ -348,12 +332,7 @@ func UpdateCertificationPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		updatedCert, err := pkg.ScanCertification(conn.QueryRow(c.Request.Context(), query, args...))
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -382,10 +361,9 @@ func DeleteCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		result, err := conn.Exec(c.Request.Context(),
-			`DELETE FROM certification WHERE id = $1`, id,
-		)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			`DELETE FROM certification WHERE id = $1`, id)
+
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -422,10 +400,9 @@ func GetAnalystCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 			 JOIN analyst_certification ac ON c.id = ac.certification_id
 			 WHERE ac.analyst_id = $1
 			 ORDER BY c.year DESC`,
-			id,
-		)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			id)
+
+		if pkg.HandleErr(c, err) {
 			return
 		}
 		defer rows.Close()
@@ -433,14 +410,13 @@ func GetAnalystCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 		var certs []pkg.Certification
 		for rows.Next() {
 			cert, err := pkg.ScanCertification(rows)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			if pkg.HandleErr(c, err) {
 				return
 			}
 			certs = append(certs, cert)
 		}
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+
+		if err = rows.Err(); pkg.HandleErr(c, err) {
 			return
 		}
 		c.JSON(http.StatusOK, pkg.CertificationsResponse{Certifications: certs, Count: len(certs)})
@@ -476,25 +452,16 @@ func AssociateAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		cert, err := pkg.ScanCertification(conn.QueryRow(c.Request.Context(),
 			`SELECT id, name, year, description, institution FROM certification WHERE id = $1`, certID))
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Certification not found"))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
 		_, err = conn.Exec(c.Request.Context(),
 			`INSERT INTO analyst_certification (analyst_id, certification_id) VALUES ($1, $2)`,
 			analystID, certID)
-		if err != nil {
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-				c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Analyst already has this certification"))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -530,14 +497,19 @@ func CreateAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
+		if cert.Year < 1900 || cert.Year > 2030 {
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received invalid year. Must be between 1900 and 2030"))
+			return
+		}
+
 		var analystExists bool
 		err = conn.QueryRow(c.Request.Context(),
 			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, id).Scan(&analystExists)
 
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
+
 		if !analystExists {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst not found"))
 			return
@@ -545,37 +517,26 @@ func CreateAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		err = conn.QueryRow(c.Request.Context(),
 			`SELECT id FROM certification WHERE name = $1 AND institution = $2`,
-			cert.Name, cert.Institution,
-		).Scan(&cert.Id)
+			cert.Name, cert.Institution).Scan(&cert.Id)
+
 		if err == pgx.ErrNoRows {
-			if cert.Year < 1900 || cert.Year > 2030 {
-				c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received invalid year. Must be between 1900 and 2030"))
-				return
-			}
 			cert, err = pkg.ScanCertification(conn.QueryRow(c.Request.Context(),
 				`INSERT INTO certification (name, year, description, institution)
 				 VALUES ($1, $2, $3, $4)
 				 RETURNING id, name, year, description, institution`,
 				cert.Name, cert.Year, cert.Description, cert.Institution))
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			if pkg.HandleErr(c, err) {
 				return
 			}
-		} else if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		} else if pkg.HandleErr(c, err) {
 			return
 		}
 
 		_, err = conn.Exec(c.Request.Context(),
 			`INSERT INTO analyst_certification (analyst_id, certification_id) VALUES ($1, $2)`,
 			id, cert.Id)
-		if err != nil {
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-				c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Analyst already has this certification"))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -611,10 +572,9 @@ func DeleteAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		result, err := conn.Exec(c.Request.Context(),
 			`DELETE FROM analyst_certification WHERE analyst_id = $1 AND certification_id = $2`,
-			userID, certID,
-		)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			userID, certID)
+
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
