@@ -25,6 +25,8 @@ export function SearchResult({
     setAnalysts([]);
 
     // Pegar os analistas recomendados com base na resposta do formulário
+
+    setLoading(false);
   });
 
   return (
