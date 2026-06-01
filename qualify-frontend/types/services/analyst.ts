@@ -71,7 +71,9 @@ export interface AnalystSkillsResponse {
 
 export interface ListAnalystsParams {
   name?: string;
+  email?: string;
   country?: string;
+  country_state?: string;
   city?: string;
   min_hourly_rate?: number;
   max_hourly_rate?: number;
