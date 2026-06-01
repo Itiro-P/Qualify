@@ -2,7 +2,16 @@
 
 import { FormButton, FormInput } from "@/components/ui";
 import { IFormResponse } from "@/types/customer/formResponse";
-import { Dispatch, SetStateAction, useEffect } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
+
+function handleChange(
+  e: React.ChangeEvent<HTMLInputElement>,
+  setForm: Dispatch<SetStateAction<string>>,
+) {
+  const { value } = e.target;
+
+  setForm(value);
+}
 
 function removeSkill(
   setFormResponse: Dispatch<SetStateAction<IFormResponse | null>>,
@@ -30,7 +39,7 @@ function SkillsSaves({
       className="m-1 py-2! px-4! text-sm"
       type="button"
     >
-      {skill}
+      {skill} X
     </FormButton>
   );
 }
@@ -42,6 +51,7 @@ export function SearchForm({
   formResponse: IFormResponse | null;
   setFormResponse: Dispatch<SetStateAction<IFormResponse | null>>;
 }) {
+  const [skill, setSkill] = useState<string>("");
   useEffect(() => {
     if (!formResponse) {
       setFormResponse({
@@ -56,22 +66,14 @@ export function SearchForm({
         },
       });
     }
-
-    if (formResponse) {
-      if (formResponse.min_hourly_rate > formResponse?.max_hourly_rate) {
-        setFormResponse({
-          ...formResponse,
-          max_hourly_rate: formResponse.min_hourly_rate,
-        });
-      }
-    }
-  }, [formResponse]);
+  }, []);
   return (
     <form>
       <h3>Rating</h3>
 
       <FormInput
         label="Rating mínimo"
+        value={formResponse?.rating || 0}
         onChange={(e) =>
           setFormResponse({
             min_hourly_rate: formResponse?.min_hourly_rate || 0,
@@ -91,21 +93,24 @@ export function SearchForm({
 
       <FormInput
         label="Habilidades"
-        onChange={(e) =>
-          setFormResponse({
-            min_hourly_rate: formResponse?.min_hourly_rate || 0,
-            max_hourly_rate: formResponse?.max_hourly_rate || 0,
-            rating: formResponse?.rating || 0,
-            skills: formResponse
-              ? [...formResponse.skills, e.target.value]
-              : [e.target.value],
-            localization: formResponse?.localization || {
-              country: "",
-              state: "",
-              city: "",
-            },
-          })
-        }
+        value={skill}
+        onChange={(e) => handleChange(e, setSkill)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            setFormResponse((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    skills: prev.skills.includes(skill)
+                      ? prev.skills
+                      : [...prev.skills, skill],
+                  }
+                : null,
+            );
+            setSkill("");
+          }
+        }}
       />
 
       {formResponse?.skills.length ? (
@@ -189,7 +194,7 @@ export function SearchForm({
       <FormInput
         label="Estado"
         value={formResponse?.localization?.state || ""}
-        onChange={(e) =>
+        onChange={(e) => {
           setFormResponse({
             min_hourly_rate: formResponse?.min_hourly_rate || 0,
             max_hourly_rate: formResponse?.max_hourly_rate || 0,
@@ -205,14 +210,22 @@ export function SearchForm({
                   state: e.target.value,
                   city: "",
                 },
-          })
-        }
+          });
+          if (formResponse) {
+            if (formResponse.min_hourly_rate > formResponse?.max_hourly_rate) {
+              setFormResponse({
+                ...formResponse,
+                max_hourly_rate: formResponse.min_hourly_rate,
+              });
+            }
+          }
+        }}
       />
 
       <FormInput
         label="Cidade"
         value={formResponse?.localization?.city || ""}
-        onChange={(e) =>
+        onChange={(e) => {
           setFormResponse({
             min_hourly_rate: formResponse?.min_hourly_rate || 0,
             max_hourly_rate: formResponse?.max_hourly_rate || 0,
@@ -228,8 +241,16 @@ export function SearchForm({
                   state: "",
                   city: e.target.value,
                 },
-          })
-        }
+          });
+          if (formResponse) {
+            if (formResponse.min_hourly_rate > formResponse?.max_hourly_rate) {
+              setFormResponse({
+                ...formResponse,
+                max_hourly_rate: formResponse.min_hourly_rate,
+              });
+            }
+          }
+        }}
       />
     </form>
   );
