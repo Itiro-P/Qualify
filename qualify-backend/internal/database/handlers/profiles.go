@@ -6,13 +6,14 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/n-r-w/squirrel"
 )
+
+const userProfileSelect = `user_id, biography, COALESCE(picture, 'default_picture.png')`
 
 // User Profile Handlers
 
@@ -30,25 +31,22 @@ import (
 // @Router /users/{id}/profile [get]
 func GetUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "ID inválido"))
 			return
 		}
-		var profile pkg.UserProfile
-		err = conn.QueryRow(c.Request.Context(),
-			`SELECT user_id, biography, COALESCE(picture, 'default_picture.png') FROM user_profile WHERE user_id = $1`,
-			userID).Scan(&profile.User_id, &profile.Biography, &profile.Picture)
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Perfil não encontrado"))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		query, args, err := squirrel.Select(userProfileSelect).
+			From("user_profile").Where(squirrel.Eq{"user_id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
 			return
 		}
+		profile, err := pkg.ScanProfile(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
 		c.JSON(http.StatusOK, pkg.UserProfileResponse{User_profile: profile})
 	}
 }
@@ -63,30 +61,46 @@ func GetUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param profile body pkg.UserProfile true "Objeto perfil"
 // @Success 201 {object} pkg.UserProfileResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/profile [post]
 func CreateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, _ := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
+		if err != nil {
+			return
+		}
 
 		var profile pkg.UserProfile
-		if err := c.BindJSON(&profile); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&profile); pkg.HandleErr(c, err) {
 			return
 		}
 
-		err := conn.QueryRow(c.Request.Context(),
-			`INSERT INTO user_profile (user_id, biography) VALUES ($1, $2)
-             RETURNING user_id, biography, COALESCE(picture, 'default_picture.png')`,
-			userID, profile.Biography).
-			Scan(&profile.User_id, &profile.Biography, &profile.Picture)
-
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		// Verificando se o perfil existe
+		var exists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM user_profile WHERE user_id = $1)`, id).Scan(&exists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if exists {
+			c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Profile already exists"))
 			return
 		}
+
+		query, args, err := squirrel.Insert("user_profile").Values(id, profile.Biography).
+			Suffix(`RETURNING user_id, biography, COALESCE(picture, 'default_picture.png')`).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		profile, err = pkg.ScanProfile(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
 		c.JSON(http.StatusCreated, pkg.UserProfileResponse{User_profile: profile})
 	}
 }
@@ -101,45 +115,60 @@ func CreateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param picture formData file true "Arquivo de imagem"
 // @Success 200 {object} pkg.UserProfileResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security BearerAuth
 // @Router /users/{id}/profile/picture [post]
 func UploadProfilePicture(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, _ := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
+		if err != nil {
+			return
+		}
+
+		// Verificando se o usuário existe
+		var exists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM "user" WHERE id = $1)`, id).Scan(&exists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if !exists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "User does not exists"))
+			return
+		}
 
 		file, err := c.FormFile("picture")
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Arquivo não enviado"))
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "File not sent"))
 			return
 		}
 
 		var oldFileName *string
-		_ = conn.QueryRow(c.Request.Context(), "SELECT picture FROM user_profile WHERE user_id = $1", userID).Scan(&oldFileName)
+		_ = conn.QueryRow(c.Request.Context(),
+			`SELECT picture FROM user_profile WHERE user_id = $1`, id).Scan(&oldFileName)
 
 		ext := filepath.Ext(file.Filename)
-		newFileName := fmt.Sprintf("user_%d_%d%s", userID, time.Now().Unix(), ext)
+		newFileName := fmt.Sprintf("user_%d_%d%s", id, time.Now().Unix(), ext)
 		savePath := filepath.Join("/app/uploads", newFileName)
 		dbPath := "/uploads/" + newFileName
-
 		if err := c.SaveUploadedFile(file, savePath); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Falha ao salvar arquivo físico"))
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Fail when saving image file"))
 			return
 		}
 
-		var profile pkg.UserProfile
-		err = conn.QueryRow(c.Request.Context(),
-			`UPDATE user_profile SET picture = $1 WHERE user_id = $2 
-			RETURNING user_id, biography, picture`,
-			dbPath, userID).Scan(&profile.User_id, &profile.Biography, &profile.Picture)
-
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Erro ao atualizar banco"))
+		query, args, err := squirrel.Update("user_profile").
+			Set("picture", dbPath).
+			Where(squirrel.Eq{"user_id": id}).
+			Suffix("RETURNING user_id, biography, picture").
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		if oldFileName != nil && *oldFileName != "" && *oldFileName != "/uploads/default_picture.png" {
+		profile, err := pkg.ScanProfile(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
+			return
+		} else if oldFileName != nil && *oldFileName != "" && *oldFileName != "/uploads/default_picture.png" {
 			_ = os.Remove("." + *oldFileName)
 		}
 
@@ -163,15 +192,13 @@ func UploadProfilePicture(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/profile [put]
 func UpdateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
+
 		var profile pkg.UserProfile
-		if err := c.BindJSON(&profile); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&profile); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -181,19 +208,12 @@ func UpdateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		err = conn.QueryRow(c.Request.Context(),
+		profile, err = pkg.ScanProfile(conn.QueryRow(c.Request.Context(),
 			`UPDATE user_profile SET biography = $1
 			 WHERE user_id = $2
 			 RETURNING user_id, biography, COALESCE(picture, 'default_picture.png')`,
-			profile.Biography, userID).
-			Scan(&profile.User_id, &profile.Biography, &profile.Picture)
-
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+			profile.Biography, id))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -208,7 +228,7 @@ func UpdateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do usuário"
-// @Success 200 {object} map[string]string
+// @Success 204 "Deleção com sucesso"
 // @Failure 400 {object} pkg.ErrorResponse
 // @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
@@ -216,7 +236,10 @@ func UpdateUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/profile [delete]
 func DeleteUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
+		id, err := pkg.ParseIdParam(c)
+		if err != nil {
+			return
+		}
 
 		var fileName string
 		_ = conn.QueryRow(c.Request.Context(),
@@ -226,17 +249,22 @@ func DeleteUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			_ = os.Remove(filepath.Join("uploads", fileName))
 		}
 
-		result, err := conn.Exec(c.Request.Context(), `DELETE FROM user_profile WHERE user_id = $1`, id)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		query, args, err := squirrel.Delete("user_profile").
+			Where(squirrel.Eq{"user_id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		if result.RowsAffected() == 0 {
-			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Perfil não encontrado"))
+		result, err := conn.Exec(c.Request.Context(), query, args...)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if result.RowsAffected() == 0 {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Profile not found"))
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"message": "Perfil removido"})
+
+		c.Status(http.StatusNoContent)
 	}
 }
 
@@ -256,24 +284,29 @@ func DeleteUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/analyst/profile [get]
 func GetAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		var profile pkg.AnalystProfile
-
-		err := conn.QueryRow(c.Request.Context(),
-			`SELECT u.user_id, u.biography, COALESCE(u.picture, 'default_picture.png') 
-			 FROM user_profile u
-			 INNER JOIN analyst_profile a ON u.user_id = a.analyst_id 
-			 WHERE u.user_id = $1`,
-			id).Scan(&profile.User_id, &profile.Biography, &profile.Picture)
-
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analista não encontrado"))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
+
+		query, args, err := squirrel.Select(
+			"u.user_id",
+			"u.biography",
+			"COALESCE(u.picture, 'default_picture.png')").
+			From("user_profile u").
+			Join("analyst_profile a ON u.user_id = a.analyst_id").
+			Where(squirrel.Eq{"u.user_id": id}).
+			PlaceholderFormat(squirrel.Dollar).
+			ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		profile, err := pkg.ScanAnalystProfile(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
 		c.JSON(http.StatusOK, pkg.AnalystProfileResponse{Analyst_profile: profile})
 	}
 }
@@ -288,40 +321,72 @@ func GetAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param profile body pkg.AnalystProfile true "Objeto perfil"
 // @Success 201 {object} pkg.AnalystProfileResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/analyst/profile [post]
 func CreateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, _ := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
+		if err != nil {
+			return
+		}
+
 		var profile pkg.AnalystProfile
-		_ = c.BindJSON(&profile)
+		if err := c.BindJSON(&profile); pkg.HandleErr(c, err) {
+			return
+		}
+
+		var exists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM analyst_profile WHERE analyst_id = $1)`, id).Scan(&exists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if exists {
+			c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Analyst profile already exists for this user"))
+			return
+		}
 
 		tx, err := conn.Begin(c.Request.Context())
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Erro de transação"))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 		defer tx.Rollback(c.Request.Context())
 
-		err = tx.QueryRow(c.Request.Context(),
-			`INSERT INTO user_profile (user_id, biography) VALUES ($1, $2)
-			RETURNING user_id, biography, picture`,
-			userID, profile.Biography).Scan(&profile.User_id, &profile.Biography, &profile.Picture)
-
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Erro ao criar profile base"))
+		userProfileQuery, userProfileArgs, err := squirrel.Insert("user_profile").
+			Columns("user_id", "biography").
+			Values(id, profile.Biography).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		} else if _, err = tx.Exec(c.Request.Context(), userProfileQuery, userProfileArgs...); pkg.HandleErr(c, err) {
 			return
 		}
 
-		_, err = tx.Exec(c.Request.Context(), `INSERT INTO analyst_profile (analyst_id) VALUES ($1)`, userID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Erro ao criar profile analista"))
+		analystProfileQuery, analystProfileArgs, err := squirrel.Insert("analyst_profile").
+			Columns("analyst_id").Values(id).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		} else if _, err = tx.Exec(c.Request.Context(), analystProfileQuery, analystProfileArgs...); pkg.HandleErr(c, err) {
+			return
+		} else if err = tx.Commit(c.Request.Context()); pkg.HandleErr(c, err) {
 			return
 		}
 
-		tx.Commit(c.Request.Context())
+		query, args, err := squirrel.Select("u.user_id", "u.biography", "u.picture").
+			From("user_profile u").Join("analyst_profile a ON u.user_id = a.analyst_id").
+			Where(squirrel.Eq{"u.user_id": id}).PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		profile, err = pkg.ScanAnalystProfile(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
 		c.JSON(http.StatusCreated, pkg.AnalystProfileResponse{Analyst_profile: profile})
 	}
 }
@@ -342,37 +407,31 @@ func CreateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/analyst/profile [put]
 func UpdateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
-			return
-		}
-		var profile pkg.AnalystProfile
-		if err := c.BindJSON(&profile); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		// Validando parâmetros obrigatórios
-		if profile.Biography == "" {
+		var profile pkg.AnalystProfile
+		if err := c.BindJSON(&profile); pkg.HandleErr(c, err) {
+			return
+		} else if profile.Biography == "" {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty biography"))
 			return
 		}
 
-		err = conn.QueryRow(c.Request.Context(),
-			`UPDATE user_profile SET biography = $1
-			 WHERE user_id = $2
-			 RETURNING user_id, biography, COALESCE(picture, 'default_picture.png')`,
-			profile.Biography, userID).
-			Scan(&profile.User_id, &profile.Biography, &profile.Picture)
+		query, args, err := squirrel.Update("user_profile").
+			Set("biography", profile.Biography).
+			Where(squirrel.Eq{"user_id": id}).
+			Suffix("RETURNING user_id, biography, COALESCE(picture, 'default_picture.png')").
+			PlaceholderFormat(squirrel.Dollar).
+			ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		profile, err = pkg.ScanAnalystProfile(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -395,35 +454,49 @@ func UpdateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/analyst/profile [delete]
 func DeleteAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		var fileName string
-		_ = conn.QueryRow(c.Request.Context(),
-			"SELECT COALESCE(picture, '') FROM user_profile WHERE user_id = $1", id).Scan(&fileName)
+		ctx := c.Request.Context()
+		tx, err := conn.Begin(ctx)
+		if pkg.HandleErr(c, err) {
+			return
+		}
+		defer tx.Rollback(ctx)
 
+		var fileName string
+		_ = tx.QueryRow(ctx, "SELECT COALESCE(picture, '') FROM user_profile WHERE user_id = $1", id).Scan(&fileName)
 		if fileName != "" && fileName != "default_picture.png" {
 			_ = os.Remove(filepath.Join("uploads", fileName))
 		}
 
-		result, err := conn.Exec(c.Request.Context(),
-			`DELETE FROM user_profile WHERE user_id = $1`,
-			userID)
-
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		delSpecialist, argsSpec, err := squirrel.Delete("analyst_profile").
+			Where(squirrel.Eq{"analyst_id": id}).PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+		_, err = tx.Exec(ctx, delSpecialist, argsSpec...)
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		if result.RowsAffected() == 0 {
+		query, args, err := squirrel.Delete("user_profile").
+			Where(squirrel.Eq{"user_id": id}).PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		result, err := tx.Exec(ctx, query, args...)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst profile not found"))
 			return
+		} else if err = tx.Commit(ctx); pkg.HandleErr(c, err) {
+			return
 		}
-
 		c.Status(http.StatusNoContent)
 	}
 }
@@ -444,24 +517,29 @@ func DeleteAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/client/profile [get]
 func GetClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		var profile pkg.ClientProfile
-
-		err := conn.QueryRow(c.Request.Context(),
-			`SELECT u.user_id, u.biography, COALESCE(u.picture, 'default_picture.png') 
-			 FROM user_profile u
-			 INNER JOIN client_profile c_tab ON u.user_id = c_tab.client_id 
-			 WHERE u.user_id = $1`,
-			id).Scan(&profile.User_id, &profile.Biography, &profile.Picture)
-
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Cliente não encontrado"))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
+
+		query, args, err := squirrel.Select(
+			"u.user_id",
+			"u.biography",
+			"COALESCE(u.picture, 'default_picture.png')").
+			From("user_profile u").
+			Join("client_profile cp ON u.user_id = cp.client_id").
+			Where(squirrel.Eq{"u.user_id": id}).
+			PlaceholderFormat(squirrel.Dollar).
+			ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		profile, err := pkg.ScanClientProfile(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
 		c.JSON(http.StatusOK, pkg.ClientProfileResponse{Client_profile: profile})
 	}
 }
@@ -476,38 +554,82 @@ func GetClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param profile body pkg.ClientProfile true "Objeto perfil"
 // @Success 201 {object} pkg.ClientProfileResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/client/profile [post]
 func CreateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, _ := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
+		if err != nil {
+			return
+		}
+
+		var clientExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM client WHERE id = $1)`, id).Scan(&clientExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if !clientExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Client does not exist"))
+			return
+		}
+
 		var profile pkg.ClientProfile
-		_ = c.BindJSON(&profile)
+		if err := c.BindJSON(&profile); pkg.HandleErr(c, err) {
+			return
+		}
+
+		var exists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM client_profile WHERE client_id = $1)`, id).Scan(&exists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if exists {
+			c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Client profile already exists"))
+			return
+		}
 
 		tx, err := conn.Begin(c.Request.Context())
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Erro de transação"))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 		defer tx.Rollback(c.Request.Context())
 
-		err = tx.QueryRow(c.Request.Context(),
-			`INSERT INTO user_profile (user_id, biography) VALUES ($1, $2)
-             RETURNING user_id, biography, COALESCE(picture, 'default_picture.png')`,
-			userID, profile.Biography).Scan(&profile.User_id, &profile.Biography, &profile.Picture)
-
-		if err == nil {
-			_, err = tx.Exec(c.Request.Context(), `INSERT INTO client_profile (client_id) VALUES ($1)`, userID)
-		}
-
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		userProfileQuery, userProfileArgs, err := squirrel.Insert("user_profile").
+			Columns("user_id", "biography").
+			Values(id, profile.Biography).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		} else if _, err = tx.Exec(c.Request.Context(), userProfileQuery, userProfileArgs...); pkg.HandleErr(c, err) {
 			return
 		}
 
-		tx.Commit(c.Request.Context())
+		clientProfileQuery, clientProfileArgs, err := squirrel.Insert("client_profile").
+			Columns("client_id").Values(id).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		} else if _, err = tx.Exec(c.Request.Context(), clientProfileQuery, clientProfileArgs...); pkg.HandleErr(c, err) {
+			return
+		} else if err = tx.Commit(c.Request.Context()); pkg.HandleErr(c, err) {
+			return
+		}
+
+		query, args, err := squirrel.Select("u.user_id", "u.biography", "u.picture").
+			From("user_profile u").Join("client_profile cp ON u.user_id = cp.client_id").
+			Where(squirrel.Eq{"u.user_id": id}).PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		profile, err = pkg.ScanClientProfile(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
 		c.JSON(http.StatusCreated, pkg.ClientProfileResponse{Client_profile: profile})
 	}
 }
@@ -528,31 +650,32 @@ func CreateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/client/profile [put]
 func UpdateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
+
 		var profile pkg.ClientProfile
-		if err := c.BindJSON(&profile); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&profile); pkg.HandleErr(c, err) {
 			return
 		}
 
-		err = conn.QueryRow(c.Request.Context(),
-			`UPDATE user_profile SET biography = $1
-			WHERE user_id = $2
-			RETURNING user_id, biography, COALESCE(picture, 'default_picture.png')`,
-			profile.Biography, userID).
-			Scan(&profile.User_id, &profile.Biography, &profile.Picture)
+		if profile.Biography == "" {
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty biography"))
+			return
+		}
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		query, args, err := squirrel.Update("user_profile").
+			Set("biography", profile.Biography).
+			Where(squirrel.Eq{"user_id": id}).
+			Suffix("RETURNING user_id, biography, COALESCE(picture, 'default_picture.png')").
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		profile, err = pkg.ScanClientProfile(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -575,34 +698,50 @@ func UpdateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/client/profile [delete]
 func DeleteClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		var fileName string
-		_ = conn.QueryRow(c.Request.Context(),
-			"SELECT COALESCE(picture, '') FROM user_profile WHERE user_id = $1", id).Scan(&fileName)
+		ctx := c.Request.Context()
+		tx, err := conn.Begin(ctx)
+		if pkg.HandleErr(c, err) {
+			return
+		}
+		defer tx.Rollback(ctx)
 
+		var fileName string
+		_ = tx.QueryRow(ctx, "SELECT COALESCE(picture, '') FROM user_profile WHERE user_id = $1", id).Scan(&fileName)
 		if fileName != "" && fileName != "default_picture.png" {
 			_ = os.Remove(filepath.Join("uploads", fileName))
 		}
 
-		result, err := conn.Exec(c.Request.Context(),
-			`DELETE FROM user_profile WHERE user_id = $1`,
-			userID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		delSpecialist, argsSpec, err := squirrel.Delete("client_profile").
+			Where(squirrel.Eq{"client_id": id}).PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+		_, err = tx.Exec(ctx, delSpecialist, argsSpec...)
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		if result.RowsAffected() == 0 {
+		query, args, err := squirrel.Delete("user_profile").
+			Where(squirrel.Eq{"user_id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		result, err := tx.Exec(ctx, query, args...)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Client profile not found"))
 			return
+		} else if err = tx.Commit(ctx); pkg.HandleErr(c, err) {
+			return
 		}
-
 		c.Status(http.StatusNoContent)
 	}
 }

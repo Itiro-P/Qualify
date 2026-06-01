@@ -28,17 +28,10 @@ definitions:
       total_reviews:
         type: integer
     type: object
-  pkg.AnalystCertification:
+  pkg.AnalystCreateRequest:
     properties:
-      analyst_id:
-        type: integer
-      certification_id:
-        type: integer
-    type: object
-  pkg.AnalystCertificationResponse:
-    properties:
-      analyst_certification:
-        $ref: '#/definitions/pkg.AnalystCertification'
+      hourly_rate:
+        type: number
     type: object
   pkg.AnalystProfile:
     properties:
@@ -58,27 +51,6 @@ definitions:
     properties:
       analyst:
         $ref: '#/definitions/pkg.Analyst'
-    type: object
-  pkg.AnalystSkill:
-    properties:
-      analyst_id:
-        type: integer
-      skill_id:
-        type: integer
-    type: object
-  pkg.AnalystSkillResponse:
-    properties:
-      analyst_skill:
-        $ref: '#/definitions/pkg.AnalystSkill'
-    type: object
-  pkg.AnalystSkillsResponse:
-    properties:
-      analyst_skills:
-        items:
-          $ref: '#/definitions/pkg.AnalystSkill'
-        type: array
-      count:
-        type: integer
     type: object
   pkg.AnalystUpdateRequest:
     properties:
@@ -177,6 +149,11 @@ definitions:
         type: string
       timezone:
         type: string
+    type: object
+  pkg.ClientCreateRequest:
+    properties:
+      proposed_budget:
+        type: number
     type: object
   pkg.ClientProfile:
     properties:
@@ -412,6 +389,11 @@ definitions:
       name:
         type: string
     type: object
+  pkg.SkillCreateRequest:
+    properties:
+      name:
+        type: string
+    type: object
   pkg.SkillResponse:
     properties:
       skill:
@@ -602,10 +584,18 @@ paths:
         in: query
         name: min_total_reviews
         type: integer
+      - description: Quantidade máxima de avaliações totais
+        in: query
+        name: max_total_reviews
+        type: integer
       - description: Avaliação média mínima
         in: query
-        name: min_mean_rating
-        type: number
+        name: min_rating
+        type: integer
+      - description: Avaliação média máxima
+        in: query
+        name: max_rating
+        type: integer
       - description: 'Campo para ordenar: name,country_name,country_state,city,timezone,hourly_rate,total_reviews,mean_rating,time_created'
         in: query
         name: sort_by
@@ -614,6 +604,14 @@ paths:
         in: query
         name: order
         type: string
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
@@ -668,6 +666,14 @@ paths:
         in: query
         name: order
         type: string
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
@@ -675,6 +681,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/pkg.ProposalLettersResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -728,6 +738,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/pkg.ReviewsResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -778,6 +792,14 @@ paths:
         in: query
         name: order
         type: string
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
@@ -785,6 +807,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/pkg.ServicesResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -1078,13 +1104,28 @@ paths:
         name: to_year
         type: integer
       - description: 'Campo para ordenar: name,year,institution'
+        enum:
+        - name
+        - year
+        - institution
         in: query
         name: sort_by
         type: string
       - description: 'Direção: ASC ou DESC'
+        enum:
+        - ASC
+        - DESC
         in: query
         name: order
         type: string
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
@@ -1119,6 +1160,10 @@ paths:
             $ref: '#/definitions/pkg.CertificationResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":
@@ -1317,6 +1362,32 @@ paths:
         in: query
         name: max_proposed_budget
         type: number
+      - description: 'Campo para ordenar: name,country_name,country_state,city,proposed_budget,time_created'
+        enum:
+        - name
+        - country_name
+        - country_state
+        - city
+        - proposed_budget
+        - time_created
+        in: query
+        name: sort_by
+        type: string
+      - description: 'Direção: ASC ou DESC'
+        enum:
+        - ASC
+        - DESC
+        in: query
+        name: order
+        type: string
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
@@ -1324,10 +1395,6 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/pkg.ClientsResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -1375,6 +1442,14 @@ paths:
         in: query
         name: order
         type: string
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
@@ -1382,6 +1457,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/pkg.ProposalLettersResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -1435,6 +1514,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/pkg.ReviewsResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -1485,6 +1568,14 @@ paths:
         in: query
         name: order
         type: string
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
@@ -1492,6 +1583,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/pkg.ServicesResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -1537,6 +1632,14 @@ paths:
         in: query
         name: order
         type: string
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
@@ -1571,6 +1674,10 @@ paths:
             $ref: '#/definitions/pkg.ProposalLetterResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":
@@ -1750,12 +1857,14 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
-      security:
-      - BearerAuth: []
       summary: Criar usuário
       tags:
       - Usuários
@@ -1833,6 +1942,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -1873,38 +1986,6 @@ paths:
       security:
       - BearerAuth: []
       summary: Excluir avaliação
-      tags:
-      - Avaliações
-    get:
-      consumes:
-      - application/json
-      description: Retorna uma avaliação pelo ID
-      parameters:
-      - description: ID da avaliação
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/pkg.ReviewResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-      summary: Obter avaliação
       tags:
       - Avaliações
     patch:
@@ -2025,6 +2106,14 @@ paths:
         in: query
         name: order
         type: string
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
@@ -2037,37 +2126,6 @@ paths:
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
       summary: Listar serviços
-      tags:
-      - Serviços
-    post:
-      consumes:
-      - application/json
-      description: Cria um novo serviço associado a uma proposta
-      parameters:
-      - description: Objeto serviço
-        in: body
-        name: service
-        required: true
-        schema:
-          $ref: '#/definitions/pkg.Service'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/pkg.ServiceResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Criar serviço
       tags:
       - Serviços
   /services/{id}:
@@ -2263,6 +2321,10 @@ paths:
             $ref: '#/definitions/pkg.SkillResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":
@@ -2644,7 +2706,7 @@ paths:
         name: analyst
         required: true
         schema:
-          $ref: '#/definitions/pkg.Analyst'
+          $ref: '#/definitions/pkg.AnalystCreateRequest'
       produces:
       - application/json
       responses:
@@ -2654,6 +2716,14 @@ paths:
             $ref: '#/definitions/pkg.AnalystResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":
@@ -2764,6 +2834,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -2774,28 +2848,36 @@ paths:
     post:
       consumes:
       - application/json
-      description: Associa uma certificação a um analista
+      description: Cria uma certificação (se não existir) e a associa a um analista
       parameters:
-      - description: ID do usuário (analista)
+      - description: ID do analista
         in: path
         name: id
         required: true
         type: integer
-      - description: Objeto associação
+      - description: Objeto certificação
         in: body
         name: certification
         required: true
         schema:
-          $ref: '#/definitions/pkg.AnalystCertification'
+          $ref: '#/definitions/pkg.Certification'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/pkg.AnalystCertificationResponse'
+            $ref: '#/definitions/pkg.CertificationResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":
@@ -2804,7 +2886,51 @@ paths:
             $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Associar certificação ao analista
+      summary: Criar certificação e associar ao analista
+      tags:
+      - Certificações
+  /users/{id}/analyst/certifications/{cert_id}:
+    post:
+      consumes:
+      - application/json
+      description: Associa uma certificação já existente a um analista pelo ID
+      parameters:
+      - description: ID do analista
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID da certificação
+        in: path
+        name: cert_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/pkg.CertificationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Associar certificação existente ao analista
       tags:
       - Certificações
   /users/{id}/analyst/profile:
@@ -2897,6 +3023,14 @@ paths:
             $ref: '#/definitions/pkg.AnalystProfileResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":
@@ -3002,7 +3136,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.AnalystSkillsResponse'
+            $ref: '#/definitions/pkg.SkillsResponse'
         "400":
           description: Bad Request
           schema:
@@ -3021,26 +3155,26 @@ paths:
     post:
       consumes:
       - application/json
-      description: Cria uma nova habilidade para um analista pelo ID e ID da habilidade
+      description: Cria uma skill (se não existir) e a associa a um analista
       parameters:
       - description: ID do analista
         in: path
         name: id
         required: true
         type: integer
-      - description: Objeto associação
+      - description: Objeto skill
         in: body
-        name: certification
+        name: skill
         required: true
         schema:
-          $ref: '#/definitions/pkg.AnalystSkill'
+          $ref: '#/definitions/pkg.SkillCreateRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/pkg.AnalystSkillResponse'
+            $ref: '#/definitions/pkg.SkillResponse'
         "400":
           description: Bad Request
           schema:
@@ -3049,13 +3183,61 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Criar habilidade para o analista
+      summary: Adicionar skill ao analista
+      tags:
+      - Habilidades
+  /users/{id}/analyst/skills/{skill_id}:
+    post:
+      consumes:
+      - application/json
+      description: Associa uma skill já existente a um analista pelo ID
+      parameters:
+      - description: ID do analista
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID da skill
+        in: path
+        name: skill_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/pkg.SkillResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Associar skill existente ao analista
       tags:
       - Habilidades
   /users/{id}/client:
@@ -3173,12 +3355,12 @@ paths:
         name: id
         required: true
         type: integer
-      - description: '{\'
+      - description: Objeto cliente
         in: body
-        name: proposed_budget
+        name: client
         required: true
         schema:
-          type: object
+          $ref: '#/definitions/pkg.ClientCreateRequest'
       produces:
       - application/json
       responses:
@@ -3188,6 +3370,14 @@ paths:
             $ref: '#/definitions/pkg.ClientResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":
@@ -3331,6 +3521,14 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -3394,12 +3592,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
+        "204":
+          description: Deleção com sucesso
         "400":
           description: Bad Request
           schema:
@@ -3476,6 +3670,14 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -3550,6 +3752,10 @@ paths:
             $ref: '#/definitions/pkg.UserProfileResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":

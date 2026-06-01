@@ -3,7 +3,7 @@ package pkg
 import "time"
 
 type User struct {
-	Id            int       `json:"id"`
+	Id            int       `json:"id,omitempty"`
 	Name          string    `json:"name"`
 	Email         string    `json:"email"`
 	Phone         string    `json:"phone"`
@@ -47,7 +47,7 @@ type UserRegister struct {
 }
 
 type UserProfile struct {
-	User_id   int    `json:"user_id"`
+	User_id   int    `json:"user_id,omitempty"`
 	Picture   string `json:"picture"`
 	Biography string `json:"biography"`
 }

@@ -38,6 +38,7 @@ func Logout(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		// Extract user ID from authenticated context
 		userIDInterface, exists := c.Get("user_id")
+
 		if !exists {
 			// Try to extract from token (simplified - use proper JWT parsing)
 			c.JSON(http.StatusUnauthorized, pkg.ErrorResponse{
@@ -127,8 +128,8 @@ func logLogoutEvent(ctx context.Context, conn *pgxpool.Pool, userID int, ipAddre
 func RevokeAllTokens(ctx context.Context, conn *pgxpool.Pool, userID int) error {
 	now := time.Now()
 	_, err := conn.Exec(ctx,
-		`UPDATE refresh_token 
-		 SET revoked_at = $1 
+		`UPDATE refresh_token
+		 SET revoked_at = $1
 		 WHERE user_id = $2 AND revoked_at IS NULL`,
 		now, userID)
 
@@ -139,8 +140,8 @@ func RevokeAllTokens(ctx context.Context, conn *pgxpool.Pool, userID int) error 
 func RevokeTokensExcept(ctx context.Context, conn *pgxpool.Pool, userID int, exceptTokenHash string) error {
 	now := time.Now()
 	_, err := conn.Exec(ctx,
-		`UPDATE refresh_token 
-		 SET revoked_at = $1 
+		`UPDATE refresh_token
+		 SET revoked_at = $1
 		 WHERE user_id = $2 AND token_hash != $3 AND revoked_at IS NULL`,
 		now, userID, exceptTokenHash)
 

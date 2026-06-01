@@ -7,18 +7,22 @@ type Analyst struct {
 	Mean_rating   *float64 `json:"mean_rating"`
 }
 
+type AnalystCreateRequest struct {
+	Hourly_rate float64 `json:"hourly_rate"`
+}
+
 type AnalystProfile struct {
 	UserProfile
 }
 
 type AnalystSkill struct {
-	Analyst_id int `json:"analyst_id"`
+	Analyst_id int `json:"analyst_id,omitempty"`
 	Skill_id   int `json:"skill_id"`
 }
 
 type AnalystCertification struct {
+	Analyst_id       int `json:"analyst_id,omitempty"`
 	Certification_id int `json:"certification_id"`
-	Analyst_id       int `json:"analyst_id"`
 }
 
 type AnalystsResponse struct {
