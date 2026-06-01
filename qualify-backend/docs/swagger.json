@@ -82,9 +82,21 @@
                         "in": "query"
                     },
                     {
-                        "type": "number",
+                        "type": "integer",
+                        "description": "Quantidade máxima de avaliações totais",
+                        "name": "max_total_reviews",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "description": "Avaliação média mínima",
-                        "name": "min_mean_rating",
+                        "name": "min_rating",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Avaliação média máxima",
+                        "name": "max_rating",
                         "in": "query"
                     },
                     {
@@ -97,6 +109,18 @@
                         "type": "string",
                         "description": "Direção: ASC ou DESC",
                         "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
                         "in": "query"
                     }
                 ],
@@ -178,6 +202,18 @@
                         "description": "Direção: ASC ou DESC",
                         "name": "order",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -185,6 +221,12 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/pkg.ProposalLettersResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
                     "500": {
@@ -267,6 +309,12 @@
                             "$ref": "#/definitions/pkg.ReviewsResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -344,6 +392,18 @@
                         "description": "Direção: ASC ou DESC",
                         "name": "order",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -351,6 +411,12 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/pkg.ServicesResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
                     "500": {
@@ -800,15 +866,36 @@
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "name",
+                            "year",
+                            "institution"
+                        ],
                         "type": "string",
                         "description": "Campo para ordenar: name,year,institution",
                         "name": "sort_by",
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "ASC",
+                            "DESC"
+                        ],
                         "type": "string",
                         "description": "Direção: ASC ou DESC",
                         "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
                         "in": "query"
                     }
                 ],
@@ -1174,6 +1261,42 @@
                         "description": "Orçamento máximo",
                         "name": "max_proposed_budget",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "name",
+                            "country_name",
+                            "country_state",
+                            "city",
+                            "proposed_budget",
+                            "time_created"
+                        ],
+                        "type": "string",
+                        "description": "Campo para ordenar: name,country_name,country_state,city,proposed_budget,time_created",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "ASC",
+                            "DESC"
+                        ],
+                        "type": "string",
+                        "description": "Direção: ASC ou DESC",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1181,12 +1304,6 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/pkg.ClientsResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
                     "500": {
@@ -1260,6 +1377,18 @@
                         "description": "Direção: ASC ou DESC",
                         "name": "order",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1267,6 +1396,12 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/pkg.ProposalLettersResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
                     "500": {
@@ -1349,6 +1484,12 @@
                             "$ref": "#/definitions/pkg.ReviewsResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -1426,6 +1567,18 @@
                         "description": "Direção: ASC ou DESC",
                         "name": "order",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1433,6 +1586,12 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/pkg.ServicesResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
                     "500": {
@@ -1505,6 +1664,18 @@
                         "description": "Direção: ASC ou DESC",
                         "name": "order",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1563,8 +1734,8 @@
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
-                    "409": {
-                        "description": "Conflict",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -1804,11 +1975,6 @@
         },
         "/register": {
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
                 "description": "Registra e cria um novo usuário",
                 "consumes": [
                     "application/json"
@@ -1840,6 +2006,12 @@
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -1988,54 +2160,6 @@
             }
         },
         "/reviews/{id}": {
-            "get": {
-                "description": "Retorna uma avaliação pelo ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Avaliações"
-                ],
-                "summary": "Obter avaliação",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID da avaliação",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ReviewResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    }
-                }
-            },
             "put": {
                 "security": [
                     {
@@ -2272,6 +2396,18 @@
                         "description": "Direção: ASC ou DESC",
                         "name": "order",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2279,61 +2415,6 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/pkg.ServicesResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Cria um novo serviço associado a uma proposta",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Serviços"
-                ],
-                "summary": "Criar serviço",
-                "parameters": [
-                    {
-                        "description": "Objeto serviço",
-                        "name": "service",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/pkg.Service"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ServiceResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
                     "500": {
@@ -3195,7 +3276,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/pkg.Analyst"
+                            "$ref": "#/definitions/pkg.AnalystCreateRequest"
                         }
                     }
                 ],
@@ -3208,6 +3289,12 @@
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -3370,6 +3457,12 @@
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -3735,6 +3828,12 @@
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
                     "409": {
                         "description": "Conflict",
                         "schema": {
@@ -3875,12 +3974,12 @@
                         "required": true
                     },
                     {
-                        "description": "Objeto skill (envie apenas `name`)",
+                        "description": "Objeto skill",
                         "name": "skill",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/pkg.Skill"
+                            "$ref": "#/definitions/pkg.SkillCreateRequest"
                         }
                     }
                 ],
@@ -4180,12 +4279,12 @@
                         "required": true
                     },
                     {
-                        "description": "{\\",
-                        "name": "proposed_budget",
+                        "description": "Objeto cliente",
+                        "name": "client",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/pkg.ClientCreateRequest"
                         }
                     }
                 ],
@@ -4198,6 +4297,12 @@
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -4488,6 +4593,12 @@
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
                     "409": {
                         "description": "Conflict",
                         "schema": {
@@ -4712,6 +4823,12 @@
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
                     "409": {
                         "description": "Conflict",
                         "schema": {
@@ -4824,6 +4941,12 @@
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -4876,6 +4999,14 @@
                 },
                 "total_reviews": {
                     "type": "integer"
+                }
+            }
+        },
+        "pkg.AnalystCreateRequest": {
+            "type": "object",
+            "properties": {
+                "hourly_rate": {
+                    "type": "number"
                 }
             }
         },
@@ -5056,6 +5187,14 @@
                 },
                 "timezone": {
                     "type": "string"
+                }
+            }
+        },
+        "pkg.ClientCreateRequest": {
+            "type": "object",
+            "properties": {
+                "proposed_budget": {
+                    "type": "number"
                 }
             }
         },
@@ -5414,6 +5553,14 @@
                 "id": {
                     "type": "integer"
                 },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "pkg.SkillCreateRequest": {
+            "type": "object",
+            "properties": {
                 "name": {
                     "type": "string"
                 }

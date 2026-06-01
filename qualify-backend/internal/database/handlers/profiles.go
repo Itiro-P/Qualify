@@ -352,33 +352,38 @@ func CreateAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		if pkg.HandleErr(c, err) {
 			return
 		}
-		defer func() { _ = tx.Rollback(c.Request.Context()) }()
+		defer tx.Rollback(c.Request.Context())
 
 		userProfileQuery, userProfileArgs, err := squirrel.Insert("user_profile").
 			Columns("user_id", "biography").
 			Values(id, profile.Biography).
-			Suffix("RETURNING user_id, biography, picture").
-			PlaceholderFormat(squirrel.Dollar).
-			ToSql()
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
-		}
-
-		profile, err = pkg.ScanAnalystProfile(tx.QueryRow(c.Request.Context(), userProfileQuery, userProfileArgs...))
-		if pkg.HandleErr(c, err) {
+		} else if _, err = tx.Exec(c.Request.Context(), userProfileQuery, userProfileArgs...); pkg.HandleErr(c, err) {
 			return
 		}
 
 		analystProfileQuery, analystProfileArgs, err := squirrel.Insert("analyst_profile").
-			Columns("analyst_id").
-			Values(id).
-			PlaceholderFormat(squirrel.Dollar).
-			ToSql()
+			Columns("analyst_id").Values(id).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		} else if _, err = tx.Exec(c.Request.Context(), analystProfileQuery, analystProfileArgs...); pkg.HandleErr(c, err) {
 			return
 		} else if err = tx.Commit(c.Request.Context()); pkg.HandleErr(c, err) {
+			return
+		}
+
+		query, args, err := squirrel.Select("u.user_id", "u.biography", "u.picture").
+			From("user_profile u").Join("analyst_profile a ON u.user_id = a.analyst_id").
+			Where(squirrel.Eq{"u.user_id": id}).PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		profile, err = pkg.ScanAnalystProfile(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -454,30 +459,44 @@ func DeleteAnalystProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		var fileName string
-		_ = conn.QueryRow(c.Request.Context(),
-			"SELECT COALESCE(picture, '') FROM user_profile WHERE user_id = $1", id).Scan(&fileName)
+		ctx := c.Request.Context()
+		tx, err := conn.Begin(ctx)
+		if pkg.HandleErr(c, err) {
+			return
+		}
+		defer tx.Rollback(ctx)
 
+		var fileName string
+		_ = tx.QueryRow(ctx, "SELECT COALESCE(picture, '') FROM user_profile WHERE user_id = $1", id).Scan(&fileName)
 		if fileName != "" && fileName != "default_picture.png" {
 			_ = os.Remove(filepath.Join("uploads", fileName))
 		}
 
-		query, args, err := squirrel.Delete("user_profile").
-			Where(squirrel.Eq{"user_id": id}).
-			PlaceholderFormat(squirrel.Dollar).
-			ToSql()
+		delSpecialist, argsSpec, err := squirrel.Delete("analyst_profile").
+			Where(squirrel.Eq{"analyst_id": id}).PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+		_, err = tx.Exec(ctx, delSpecialist, argsSpec...)
 		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		result, err := conn.Exec(c.Request.Context(), query, args...)
+		query, args, err := squirrel.Delete("user_profile").
+			Where(squirrel.Eq{"user_id": id}).PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		result, err := tx.Exec(ctx, query, args...)
 		if pkg.HandleErr(c, err) {
 			return
 		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst profile not found"))
 			return
+		} else if err = tx.Commit(ctx); pkg.HandleErr(c, err) {
+			return
 		}
-
 		c.Status(http.StatusNoContent)
 	}
 }
@@ -549,11 +568,11 @@ func CreateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		var clientExists bool
 		err = conn.QueryRow(c.Request.Context(),
-			`SELECT EXISTS(SELECT 1 FROM client WHERE user_id = $1)`, id).Scan(&clientExists)
+			`SELECT EXISTS(SELECT 1 FROM client WHERE id = $1)`, id).Scan(&clientExists)
 		if pkg.HandleErr(c, err) {
 			return
 		} else if !clientExists {
-			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Client does not exists"))
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Client does not exist"))
 			return
 		}
 
@@ -576,31 +595,38 @@ func CreateClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		if pkg.HandleErr(c, err) {
 			return
 		}
-		defer func() { _ = tx.Rollback(c.Request.Context()) }()
+		defer tx.Rollback(c.Request.Context())
 
 		userProfileQuery, userProfileArgs, err := squirrel.Insert("user_profile").
-			Columns("user_id", "biography").Values(id, profile.Biography).
-			Suffix("RETURNING user_id, biography, picture").
+			Columns("user_id", "biography").
+			Values(id, profile.Biography).
 			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
-		}
-
-		profile, err = pkg.ScanClientProfile(tx.QueryRow(c.Request.Context(), userProfileQuery, userProfileArgs...))
-		if pkg.HandleErr(c, err) {
+		} else if _, err = tx.Exec(c.Request.Context(), userProfileQuery, userProfileArgs...); pkg.HandleErr(c, err) {
 			return
 		}
 
 		clientProfileQuery, clientProfileArgs, err := squirrel.Insert("client_profile").
-			Columns("client_id").
-			Values(id).
-			PlaceholderFormat(squirrel.Dollar).
-			ToSql()
+			Columns("client_id").Values(id).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		} else if _, err = tx.Exec(c.Request.Context(), clientProfileQuery, clientProfileArgs...); pkg.HandleErr(c, err) {
 			return
 		} else if err = tx.Commit(c.Request.Context()); pkg.HandleErr(c, err) {
+			return
+		}
+
+		query, args, err := squirrel.Select("u.user_id", "u.biography", "u.picture").
+			From("user_profile u").Join("client_profile cp ON u.user_id = cp.client_id").
+			Where(squirrel.Eq{"u.user_id": id}).PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		profile, err = pkg.ScanClientProfile(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -677,29 +703,45 @@ func DeleteClientProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
+		ctx := c.Request.Context()
+		tx, err := conn.Begin(ctx)
+		if pkg.HandleErr(c, err) {
+			return
+		}
+		defer tx.Rollback(ctx)
+
 		var fileName string
-		_ = conn.QueryRow(c.Request.Context(),
-			"SELECT COALESCE(picture, '') FROM user_profile WHERE user_id = $1", id).Scan(&fileName)
+		_ = tx.QueryRow(ctx, "SELECT COALESCE(picture, '') FROM user_profile WHERE user_id = $1", id).Scan(&fileName)
 		if fileName != "" && fileName != "default_picture.png" {
 			_ = os.Remove(filepath.Join("uploads", fileName))
 		}
 
-		query, args, err := squirrel.Delete("user_profile").
-			Where(squirrel.Eq{"user_id": id}).
-			PlaceholderFormat(squirrel.Dollar).
-			ToSql()
+		delSpecialist, argsSpec, err := squirrel.Delete("client_profile").
+			Where(squirrel.Eq{"client_id": id}).PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+		_, err = tx.Exec(ctx, delSpecialist, argsSpec...)
 		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		result, err := conn.Exec(c.Request.Context(), query, args...)
+		query, args, err := squirrel.Delete("user_profile").
+			Where(squirrel.Eq{"user_id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		result, err := tx.Exec(ctx, query, args...)
 		if pkg.HandleErr(c, err) {
 			return
 		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Client profile not found"))
 			return
+		} else if err = tx.Commit(ctx); pkg.HandleErr(c, err) {
+			return
 		}
-
 		c.Status(http.StatusNoContent)
 	}
 }

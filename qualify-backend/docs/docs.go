@@ -90,9 +90,21 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "number",
+                        "type": "integer",
+                        "description": "Quantidade máxima de avaliações totais",
+                        "name": "max_total_reviews",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "description": "Avaliação média mínima",
-                        "name": "min_mean_rating",
+                        "name": "min_rating",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Avaliação média máxima",
+                        "name": "max_rating",
                         "in": "query"
                     },
                     {
@@ -105,6 +117,18 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Direção: ASC ou DESC",
                         "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
                         "in": "query"
                     }
                 ],
@@ -186,6 +210,18 @@ const docTemplate = `{
                         "description": "Direção: ASC ou DESC",
                         "name": "order",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -193,6 +229,12 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/pkg.ProposalLettersResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
                     "500": {
@@ -275,6 +317,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/pkg.ReviewsResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -352,6 +400,18 @@ const docTemplate = `{
                         "description": "Direção: ASC ou DESC",
                         "name": "order",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -359,6 +419,12 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/pkg.ServicesResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
                     "500": {
@@ -808,15 +874,36 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "name",
+                            "year",
+                            "institution"
+                        ],
                         "type": "string",
                         "description": "Campo para ordenar: name,year,institution",
                         "name": "sort_by",
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "ASC",
+                            "DESC"
+                        ],
                         "type": "string",
                         "description": "Direção: ASC ou DESC",
                         "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
                         "in": "query"
                     }
                 ],
@@ -1182,6 +1269,42 @@ const docTemplate = `{
                         "description": "Orçamento máximo",
                         "name": "max_proposed_budget",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "name",
+                            "country_name",
+                            "country_state",
+                            "city",
+                            "proposed_budget",
+                            "time_created"
+                        ],
+                        "type": "string",
+                        "description": "Campo para ordenar: name,country_name,country_state,city,proposed_budget,time_created",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "ASC",
+                            "DESC"
+                        ],
+                        "type": "string",
+                        "description": "Direção: ASC ou DESC",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1189,12 +1312,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/pkg.ClientsResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
                     "500": {
@@ -1268,6 +1385,18 @@ const docTemplate = `{
                         "description": "Direção: ASC ou DESC",
                         "name": "order",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1275,6 +1404,12 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/pkg.ProposalLettersResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
                     "500": {
@@ -1357,6 +1492,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/pkg.ReviewsResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -1434,6 +1575,18 @@ const docTemplate = `{
                         "description": "Direção: ASC ou DESC",
                         "name": "order",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1441,6 +1594,12 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/pkg.ServicesResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
                     "500": {
@@ -1513,6 +1672,18 @@ const docTemplate = `{
                         "description": "Direção: ASC ou DESC",
                         "name": "order",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1571,8 +1742,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
-                    "409": {
-                        "description": "Conflict",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -1812,11 +1983,6 @@ const docTemplate = `{
         },
         "/register": {
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
                 "description": "Registra e cria um novo usuário",
                 "consumes": [
                     "application/json"
@@ -1848,6 +2014,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -1996,54 +2168,6 @@ const docTemplate = `{
             }
         },
         "/reviews/{id}": {
-            "get": {
-                "description": "Retorna uma avaliação pelo ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Avaliações"
-                ],
-                "summary": "Obter avaliação",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID da avaliação",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ReviewResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    }
-                }
-            },
             "put": {
                 "security": [
                     {
@@ -2280,6 +2404,18 @@ const docTemplate = `{
                         "description": "Direção: ASC ou DESC",
                         "name": "order",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2287,61 +2423,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/pkg.ServicesResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Cria um novo serviço associado a uma proposta",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Serviços"
-                ],
-                "summary": "Criar serviço",
-                "parameters": [
-                    {
-                        "description": "Objeto serviço",
-                        "name": "service",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/pkg.Service"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ServiceResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
                     "500": {
@@ -3203,7 +3284,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/pkg.Analyst"
+                            "$ref": "#/definitions/pkg.AnalystCreateRequest"
                         }
                     }
                 ],
@@ -3216,6 +3297,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -3378,6 +3465,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -3743,6 +3836,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
                     "409": {
                         "description": "Conflict",
                         "schema": {
@@ -3883,12 +3982,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Objeto skill (envie apenas ` + "`" + `name` + "`" + `)",
+                        "description": "Objeto skill",
                         "name": "skill",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/pkg.Skill"
+                            "$ref": "#/definitions/pkg.SkillCreateRequest"
                         }
                     }
                 ],
@@ -4188,12 +4287,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "{\\",
-                        "name": "proposed_budget",
+                        "description": "Objeto cliente",
+                        "name": "client",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/pkg.ClientCreateRequest"
                         }
                     }
                 ],
@@ -4206,6 +4305,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -4496,6 +4601,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
                     "409": {
                         "description": "Conflict",
                         "schema": {
@@ -4720,6 +4831,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
                     "409": {
                         "description": "Conflict",
                         "schema": {
@@ -4832,6 +4949,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -4884,6 +5007,14 @@ const docTemplate = `{
                 },
                 "total_reviews": {
                     "type": "integer"
+                }
+            }
+        },
+        "pkg.AnalystCreateRequest": {
+            "type": "object",
+            "properties": {
+                "hourly_rate": {
+                    "type": "number"
                 }
             }
         },
@@ -5064,6 +5195,14 @@ const docTemplate = `{
                 },
                 "timezone": {
                     "type": "string"
+                }
+            }
+        },
+        "pkg.ClientCreateRequest": {
+            "type": "object",
+            "properties": {
+                "proposed_budget": {
+                    "type": "number"
                 }
             }
         },
@@ -5422,6 +5561,14 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "pkg.SkillCreateRequest": {
+            "type": "object",
+            "properties": {
                 "name": {
                     "type": "string"
                 }
