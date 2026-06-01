@@ -9,14 +9,15 @@ export function SearchAnalyst() {
 
   return (
     <div>
-      <SearchForm
-        formResponse={formResponse}
-        setFormResponse={setFormResponse}
-      />
-      <SearchResult
-        formResponse={formResponse}
-        setFormResponse={setFormResponse}
-      />
+      <div className="p-4 border rounded-md mb-4 max-w-2/10">
+        <SearchForm
+          formResponse={formResponse}
+          setFormResponse={setFormResponse}
+        />
+      </div>
+      <div>
+        <SearchResult formResponse={formResponse} />
+      </div>
     </div>
   );
 }

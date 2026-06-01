@@ -73,12 +73,17 @@ export interface ListAnalystsParams {
   name?: string;
   email?: string;
   country?: string;
+  country_code?: string;
   country_state?: string;
   city?: string;
+  time_zone?: string;
   min_hourly_rate?: number;
   max_hourly_rate?: number;
   min_total_reviews?: number;
-  min_mean_rating?: number;
+  max_total_reviews?: number;
+  min_rating?: number;
+  max_rating?: number;
+  skills?: string;
   sort_by?: string;
   order?: "ASC" | "DESC";
 }

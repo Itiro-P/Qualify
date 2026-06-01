@@ -4,16 +4,32 @@ import { Alert } from "@/components/ui";
 import { Loading } from "@/components/ui/Loading";
 import { Analyst } from "@/types/services/analyst";
 import { analystService } from "@/libs/services/analystService";
-import { skillService } from "@/libs/services/skillService";
 import { IFormResponse } from "@/types/customer/formResponse";
-import { Dispatch, SetStateAction, useState } from "react";
+import { useState } from "react";
+
+function AnalystCard({ analyst }: { analyst: Analyst }) {
+  return (
+    <div className="border p-4 rounded-md mb-4">
+      <h3 className="text-lg font-semibold">{analyst.name}</h3>
+      <p>Email: {analyst.email}</p>
+      <p>Telefone: {analyst.phone}</p>
+      <p>
+        Localização: {analyst.city}, {analyst.country_name}
+      </p>
+      <p>Fuso horário: {analyst.timezone}</p>
+      <p>Valor por hora: ${analyst.hourly_rate}</p>
+      <p>
+        Avaliação média: {analyst.mean_rating} ({analyst.total_reviews}{" "}
+        avaliações)
+      </p>
+    </div>
+  );
+}
 
 export function SearchResult({
   formResponse,
-  setFormResponse,
 }: {
   formResponse: IFormResponse | null;
-  setFormResponse: Dispatch<SetStateAction<IFormResponse | null>>;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -26,27 +42,6 @@ export function SearchResult({
     setError("");
     setAnalysts([]);
 
-    async function haveSkill(
-      Analyst: Analyst,
-      skills: string[],
-    ): Promise<boolean> {
-      const analystSkillsId = await analystService.listSkills(Analyst.id);
-      const analystSkills: string[] = [];
-
-      for (const skill of analystSkillsId ?? []) {
-        try {
-          const resp = await skillService.getById(skill.skill_id);
-
-          if (resp?.name) {
-            analystSkills.push(resp.name);
-          }
-        } catch {
-          continue;
-        }
-      }
-      return skills.every((skill) => analystSkills.includes(skill));
-    }
-
     // Pegar os analistas recomendados com base na resposta do formulário
     const analystOnDataBase = await analystService
       .list({
@@ -55,7 +50,8 @@ export function SearchResult({
         city: formResponse.localization.city,
         min_hourly_rate: formResponse.min_hourly_rate,
         max_hourly_rate: formResponse.max_hourly_rate,
-        min_mean_rating: formResponse.rating,
+        min_rating: formResponse.rating,
+        skills: formResponse.skills ? formResponse.skills.join(",") : undefined,
       })
       .then(
         (resp) => {
@@ -66,13 +62,7 @@ export function SearchResult({
         },
       );
 
-    if (analystOnDataBase) {
-      analystOnDataBase.forEach(async (analyst) => {
-        if (await haveSkill(analyst, formResponse.skills)) {
-          setAnalysts((prev) => [...prev, analyst]);
-        }
-      });
-    }
+    setAnalysts(analystOnDataBase || []);
 
     setLoading(false);
   });
@@ -80,7 +70,15 @@ export function SearchResult({
   return (
     <div>
       {error && <Alert variant="error">{error}</Alert>}
-      {loading ? <Loading /> : <div></div>}
+      {loading ? (
+        <Loading />
+      ) : (
+        <div className="flex flex-row justify-start flex-wrap">
+          {analysts.map((analyst) => (
+            <AnalystCard key={analyst.id} analyst={analyst} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
