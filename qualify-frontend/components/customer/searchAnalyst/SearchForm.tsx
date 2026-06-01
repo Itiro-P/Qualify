@@ -1,6 +1,8 @@
+"use client";
+
 import { FormButton, FormInput } from "@/components/ui";
 import { IFormResponse } from "@/types/customer/formResponse";
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, useEffect } from "react";
 
 function removeSkill(
   setFormResponse: Dispatch<SetStateAction<IFormResponse | null>>,
@@ -40,9 +42,34 @@ export function SearchForm({
   formResponse: IFormResponse | null;
   setFormResponse: Dispatch<SetStateAction<IFormResponse | null>>;
 }) {
+  useEffect(() => {
+    if (!formResponse) {
+      setFormResponse({
+        min_hourly_rate: 0,
+        max_hourly_rate: 0,
+        rating: 0,
+        skills: [],
+        localization: {
+          country: "",
+          state: "",
+          city: "",
+        },
+      });
+    }
+
+    if (formResponse) {
+      if (formResponse.min_hourly_rate > formResponse?.max_hourly_rate) {
+        setFormResponse({
+          ...formResponse,
+          max_hourly_rate: formResponse.min_hourly_rate,
+        });
+      }
+    }
+  }, [formResponse]);
   return (
     <form>
       <h3>Rating</h3>
+
       <FormInput
         label="Rating mínimo"
         onChange={(e) =>
@@ -59,7 +86,9 @@ export function SearchForm({
           })
         }
       />
+
       <h3>Habilidades</h3>
+
       <FormInput
         label="Habilidades"
         onChange={(e) =>
@@ -93,12 +122,11 @@ export function SearchForm({
       </div>
 
       <div></div>
+
       <h3>Preço por hora</h3>
+
       <FormInput
         label="Preço mínimo por hora"
-        type="range"
-        min="0"
-        max="5000"
         value={formResponse?.min_hourly_rate || 0}
         onChange={(e) =>
           setFormResponse({
@@ -114,11 +142,9 @@ export function SearchForm({
           })
         }
       />
+
       <FormInput
         label="Preço máximo por hora"
-        type="range"
-        min="0"
-        max="5000"
         value={formResponse?.max_hourly_rate || 0}
         onChange={(e) =>
           setFormResponse({
@@ -134,7 +160,9 @@ export function SearchForm({
           })
         }
       />
+
       <h3>Localização</h3>
+
       <FormInput
         label="País"
         value={formResponse?.localization?.country || ""}
@@ -157,6 +185,7 @@ export function SearchForm({
           })
         }
       />
+
       <FormInput
         label="Estado"
         value={formResponse?.localization?.state || ""}
@@ -179,6 +208,7 @@ export function SearchForm({
           })
         }
       />
+
       <FormInput
         label="Cidade"
         value={formResponse?.localization?.city || ""}
