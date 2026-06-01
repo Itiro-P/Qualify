@@ -109,6 +109,12 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "Nomes de habilidades (ex: c++,java,TypeScript)",
+                        "name": "skills",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "Campo para ordenar: name,country_name,country_state,city,timezone,hourly_rate,total_reviews,mean_rating,time_created",
                         "name": "sort_by",
                         "in": "query"

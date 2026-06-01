@@ -80,6 +80,7 @@ type AnalystFilter struct {
 	RatingFilter
 	UserFilter
 	SortOptions
+	Skills          string   `form:"skills"`
 	MinHourlyRate   *float64 `form:"min_hourly_rate"`
 	MaxHourlyRate   *float64 `form:"max_hourly_rate"`
 	MinTotalReviews *int     `form:"min_total_reviews"`
