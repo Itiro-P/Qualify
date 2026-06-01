@@ -1,17 +1,20 @@
 package handlers
 
 import (
-	"fmt"
 	"main/internal/database/services"
 	"main/pkg"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/n-r-w/squirrel"
 )
+
+const clientSelect = `u.id, u.name, u.email, u.phone, u.time_created, 
+	u.country_code, u.country_name, u.country_state, u.city, u.timezone, 
+	c.proposed_budget`
+
+const clientJoin = `"user" u JOIN client c ON c.id = u.id`
 
 // GetClients godoc
 // @Summary Listar clientes
@@ -28,128 +31,36 @@ import (
 // @Param timezone query string false "Fuso horário"
 // @Param min_proposed_budget query number false "Orçamento mínimo"
 // @Param max_proposed_budget query number false "Orçamento máximo"
+// @Param sort_by query string false "Campo para ordenar: name,country_name,country_state,city,proposed_budget,time_created" enums(name,country_name,country_state,city,proposed_budget,time_created)
+// @Param order query string false "Direção: ASC ou DESC" enums(ASC,DESC)
+// @Param page query int false "Página"
+// @Param page_size query int false "Tamanho da página"
 // @Success 200 {object} pkg.ClientsResponse
-// @Failure 400 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Router /clients [get]
 func GetClients(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		query := `
-			SELECT u.id, u.name, u.email, u.phone, u.time_created,
-			       u.country_code, u.country_name, u.country_state, u.city, u.timezone,
-			       c.proposed_budget
-			FROM "user" u
-			JOIN client c ON c.id = u.id
-			WHERE 1=1`
-
-		args := []interface{}{}
-		argCounter := 1
-
-		if name := c.Query("name"); name != "" {
-			query += fmt.Sprintf(" AND u.name ILIKE $%d", argCounter)
-			args = append(args, "%"+name+"%")
-			argCounter++
+		builder := squirrel.Select(clientSelect).From(clientJoin).PlaceholderFormat(squirrel.Dollar)
+		var filters pkg.ClientFilter
+		err := c.ShouldBindQuery(&filters)
+		if pkg.HandleErr(c, err) {
+			return
 		}
+		filters.Normalize()
 
-		if email := c.Query("email"); email != "" {
-			query += fmt.Sprintf(" AND u.email ILIKE $%d", argCounter)
-			args = append(args, "%"+email+"%")
-			argCounter++
-		}
-
-		if country := c.Query("country"); country != "" {
-			query += fmt.Sprintf(" AND u.country_name ILIKE $%d", argCounter)
-			args = append(args, "%"+country+"%")
-			argCounter++
-		}
-
-		if countryCode := c.Query("country_code"); countryCode != "" {
-			query += fmt.Sprintf(" AND u.country_code ILIKE $%d", argCounter)
-			args = append(args, "%"+countryCode+"%")
-			argCounter++
-		}
-
-		if countryState := c.Query("country_state"); countryState != "" {
-			query += fmt.Sprintf(" AND u.country_state ILIKE $%d", argCounter)
-			args = append(args, "%"+countryState+"%")
-			argCounter++
-		}
-
-		if city := c.Query("city"); city != "" {
-			query += fmt.Sprintf(" AND u.city ILIKE $%d", argCounter)
-			args = append(args, "%"+city+"%")
-			argCounter++
-		}
-
-		if timezone := c.Query("timezone"); timezone != "" {
-			query += fmt.Sprintf(" AND u.timezone ILIKE $%d", argCounter)
-			args = append(args, "%"+timezone+"%")
-			argCounter++
-		}
-
-		if minBudget := c.Query("min_proposed_budget"); minBudget != "" {
-			if minBudgetVal, err := strconv.ParseFloat(minBudget, 64); err == nil {
-				query += fmt.Sprintf(" AND c.proposed_budget >= $%d", argCounter)
-				args = append(args, minBudgetVal)
-				argCounter++
-			}
-		}
-
-		if maxBudget := c.Query("max_proposed_budget"); maxBudget != "" {
-			if maxBudgetVal, err := strconv.ParseFloat(maxBudget, 64); err == nil {
-				query += fmt.Sprintf(" AND c.proposed_budget <= $%d", argCounter)
-				args = append(args, maxBudgetVal)
-				argCounter++
-			}
-		}
-
-		allowedSortFields := map[string]bool{
-			"name": true, "country_name": true, "city": true,
-			"proposed_budget": true, "time_created": true,
-		}
-		if sortBy := c.Query("sort_by"); sortBy != "" {
-			if allowedSortFields[sortBy] {
-				order := c.DefaultQuery("order", "ASC")
-				if order == "ASC" || order == "DESC" {
-					query += fmt.Sprintf(" ORDER BY %s %s", sortBy, order)
-				}
-			}
-		} else {
-			query += " ORDER BY u.time_created DESC"
+		query, args, err := pkg.BuildFilterClient(pkg.BuildFilterUser(builder, filters.UserFilter), filters).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
 		}
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 		defer rows.Close()
 
-		var clients []pkg.Client
-		for rows.Next() {
-			var client pkg.Client
-			err := rows.Scan(
-				&client.Id,
-				&client.Name,
-				&client.Email,
-				&client.Phone,
-				&client.Time_created,
-				&client.Country_code,
-				&client.Country_name,
-				&client.Country_state,
-				&client.City,
-				&client.Timezone,
-				&client.Proposed_budget,
-			)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
-				return
-			}
-			clients = append(clients, client)
-		}
-
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		clients, err := pkg.ScanRows(c, rows, pkg.ScanClient)
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -174,38 +85,20 @@ func GetClients(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/client [get]
 func GetClient(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		clientID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
-		var client pkg.Client
-		err = conn.QueryRow(c.Request.Context(), `
-			SELECT u.id, u.name, u.email, u.phone, u.time_created, 
-			       u.country_code, u.country_name, u.country_state, u.city, u.timezone,
-			       c.proposed_budget
-			FROM "user" u
-			JOIN client c ON c.id = u.id
-			WHERE u.id = $1`, clientID).Scan(
-			&client.Id,
-			&client.Name,
-			&client.Email,
-			&client.Phone,
-			&client.Time_created,
-			&client.Country_code,
-			&client.Country_name,
-			&client.Country_state,
-			&client.City,
-			&client.Timezone,
-			&client.Proposed_budget,
-		)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+
+		query, args, err := squirrel.Select(clientSelect).
+			From(clientJoin).Where(squirrel.Eq{"u.id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		client, err := pkg.ScanClient(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -220,39 +113,41 @@ func GetClient(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do usuário"
-// @Param proposed_budget body object true "{\"proposed_budget\": number}"
+// @Param client body pkg.ClientCreateRequest true "Objeto cliente"
 // @Success 201 {object} pkg.ClientResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/client [post]
 func CreateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userIDParam := c.Param("id")
-		userID, err := strconv.Atoi(userIDParam)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		var request struct {
-			Proposed_budget float64 `json:"proposed_budget"`
-		}
-		if err := c.BindJSON(&request); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		// Checando se o cliente já existe
+		var clientExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM client WHERE id = $1)`, id).Scan(&clientExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if clientExists {
+			c.JSON(http.StatusConflict, pkg.Internal(c.FullPath(), "Client already exists"))
 			return
 		}
 
-		client, err := services.AssignClientRole(c.Request.Context(), conn, userID, request.Proposed_budget)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		var request pkg.ClientCreateRequest
+		if err := c.BindJSON(&request); pkg.HandleErr(c, err) {
 			return
 		}
 
+		client, err := services.AssignClientRole(c.Request.Context(), conn, id, request.Proposed_budget)
+		if pkg.HandleErr(c, err) {
+			return
+		}
 		c.JSON(http.StatusCreated, pkg.ClientResponse{Client: *client})
 	}
 }
@@ -273,19 +168,16 @@ func CreateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/client [put]
 func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		clientID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
-			return
-		}
-		var client pkg.Client
-		if err := c.BindJSON(&client); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		// Validando parâmetros obrigatórios
+		var client pkg.Client
+		if err := c.BindJSON(&client); pkg.HandleErr(c, err) {
+			return
+		}
+
 		if client.Name == "" {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty name"))
 			return
@@ -295,78 +187,57 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 		if len(client.Country_code) != 2 {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty country code"))
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Country code must be exactly 2 characters"))
 			return
 		}
 
-		// Make update atomic across user + client tables
 		tx, err := conn.Begin(c.Request.Context())
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
-		// ensure rollback on error
-		committed := false
-		defer func() {
-			if !committed {
-				_ = tx.Rollback(c.Request.Context())
-			}
-		}()
+		defer tx.Rollback(c.Request.Context())
 
-		_, err = tx.Exec(c.Request.Context(),
-			`UPDATE "user" SET name = $1, email = $2, phone = $3, country_code = $4, 
-			 country_name = $5, country_state = $6, city = $7, timezone = $8
-			 WHERE id = $9`,
-			client.Name, client.Email, client.Phone, client.Country_code, client.Country_name, client.Country_state,
-			client.City, client.Timezone, clientID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		userQuery, userArgs, err := squirrel.Update(`"user"`).
+			SetMap(map[string]any{
+				"name":          client.Name,
+				"email":         client.Email,
+				"phone":         client.Phone,
+				"country_code":  client.Country_code,
+				"country_name":  client.Country_name,
+				"country_state": client.Country_state,
+				"city":          client.City,
+				"timezone":      client.Timezone,
+			}).Where(squirrel.Eq{"id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
 			return
-		}
-
-		_, err = tx.Exec(c.Request.Context(),
-			`UPDATE client SET proposed_budget = $1
-			 WHERE id = $2`,
-			client.Proposed_budget, clientID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		} else if _, err = tx.Exec(c.Request.Context(), userQuery, userArgs...); pkg.HandleErr(c, err) {
 			return
 		}
 
-		// Fetch the updated client within transaction
-		err = tx.QueryRow(c.Request.Context(), `
-			SELECT u.id, u.name, u.email, u.phone, u.time_created, 
-				   u.country_code, u.country_name, u.country_state, u.city, u.timezone,
-				   c.proposed_budget
-			FROM "user" u
-			JOIN client c ON c.id = u.id
-			WHERE u.id = $1`, clientID).Scan(
-			&client.Id,
-			&client.Name,
-			&client.Email,
-			&client.Phone,
-			&client.Time_created,
-			&client.Country_code,
-			&client.Country_name,
-			&client.Country_state,
-			&client.City,
-			&client.Timezone,
-			&client.Proposed_budget,
-		)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		clientQuery, clientArgs, err := squirrel.Update("client").
+			Set("proposed_budget", client.Proposed_budget).
+			Where(squirrel.Eq{"id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		} else if _, err = tx.Exec(c.Request.Context(), clientQuery, clientArgs...); pkg.HandleErr(c, err) {
 			return
 		}
 
-		if err = tx.Commit(c.Request.Context()); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		selectQuery, selectArgs, err := squirrel.Select(clientSelect).
+			From(clientJoin).Where(squirrel.Eq{"u.id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
 			return
 		}
-		committed = true
+
+		client, err = pkg.ScanClient(tx.QueryRow(c.Request.Context(), selectQuery, selectArgs...))
+		if pkg.HandleErr(c, err) {
+			return
+		} else if err = tx.Commit(c.Request.Context()); pkg.HandleErr(c, err) {
+			return
+		}
 
 		c.JSON(http.StatusOK, pkg.ClientResponse{Client: client})
 	}
@@ -387,20 +258,22 @@ func UpdateClient(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/client [delete]
 func DeleteClient(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		clientID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		result, err := conn.Exec(c.Request.Context(), `DELETE FROM client WHERE id = $1`, clientID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		query, args, err := squirrel.Delete("client").
+			Where(squirrel.Eq{"id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		if result.RowsAffected() == 0 {
+		result, err := conn.Exec(c.Request.Context(), query, args...)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Client not found"))
 			return
 		}
@@ -425,140 +298,61 @@ func DeleteClient(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/client [patch]
 func UpdateClientPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		clientID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		var req pkg.ClientUpdateRequest
-		if err := c.BindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&req); pkg.HandleErr(c, err) {
 			return
 		}
 
-		userSet := []string{}
-		userArgs := []interface{}{}
-		i := 1
-		if req.Name != nil {
-			userSet = append(userSet, fmt.Sprintf("name = $%d", i))
-			userArgs = append(userArgs, *req.Name)
-			i++
-		}
-		if req.Email != nil {
-			userSet = append(userSet, fmt.Sprintf("email = $%d", i))
-			userArgs = append(userArgs, *req.Email)
-			i++
-		}
-		if req.Phone != nil {
-			userSet = append(userSet, fmt.Sprintf("phone = $%d", i))
-			userArgs = append(userArgs, *req.Phone)
-			i++
-		}
-		if req.Country_code != nil {
-			userSet = append(userSet, fmt.Sprintf("country_code = $%d", i))
-			userArgs = append(userArgs, *req.Country_code)
-			i++
-		}
-		if req.Country_name != nil {
-			userSet = append(userSet, fmt.Sprintf("country_name = $%d", i))
-			userArgs = append(userArgs, *req.Country_name)
-			i++
-		}
-		if req.Country_state != nil {
-			userSet = append(userSet, fmt.Sprintf("country_state = $%d", i))
-			userArgs = append(userArgs, *req.Country_state)
-			i++
-		}
-		if req.City != nil {
-			userSet = append(userSet, fmt.Sprintf("city = $%d", i))
-			userArgs = append(userArgs, *req.City)
-			i++
-		}
-		if req.Timezone != nil {
-			userSet = append(userSet, fmt.Sprintf("timezone = $%d", i))
-			userArgs = append(userArgs, *req.Timezone)
-			i++
-		}
-
-		clientSet := []string{}
-		clientArgs := []interface{}{}
-		if req.Proposed_budget != nil {
-			clientSet = append(clientSet, fmt.Sprintf("proposed_budget = $%d", i))
-			clientArgs = append(clientArgs, *req.Proposed_budget)
-			i++
-		}
-
-		if len(userSet) == 0 && len(clientSet) == 0 {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		userFields, clientFields := pkg.BuildUpdateClient(req)
+		if len(userFields) <= 0 && len(clientFields) <= 0 {
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "No valid fields were given"))
 			return
 		}
 
 		tx, err := conn.Begin(c.Request.Context())
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
-		defer func() {
-			if err != nil {
-				_ = tx.Rollback(c.Request.Context())
-			}
-		}()
+		defer tx.Rollback(c.Request.Context())
 
-		if len(userSet) > 0 {
-			userArgs = append(userArgs, clientID)
-			userQuery := fmt.Sprintf(`UPDATE "user" SET %s WHERE id = $%d`, strings.Join(userSet, ", "), len(userArgs))
-			if _, err := tx.Exec(c.Request.Context(), userQuery, userArgs...); err != nil {
-				_ = tx.Rollback(c.Request.Context())
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if len(userFields) > 0 {
+			query, args, err := squirrel.Update(`"user"`).
+				SetMap(userFields).Where(squirrel.Eq{"id": id}).
+				PlaceholderFormat(squirrel.Dollar).ToSql()
+			if pkg.HandleErr(c, err) {
+				return
+			} else if _, err = tx.Exec(c.Request.Context(), query, args...); pkg.HandleErr(c, err) {
 				return
 			}
 		}
 
-		if len(clientSet) > 0 {
-			clientArgs = append(userArgs, clientArgs...)
-			clientArgs = append(clientArgs, clientID)
-			clientQuery := fmt.Sprintf(`UPDATE client SET %s WHERE id = $%d`, strings.Join(clientSet, ", "), len(clientArgs))
-			if _, err := tx.Exec(c.Request.Context(), clientQuery, clientArgs...); err != nil {
-				_ = tx.Rollback(c.Request.Context())
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if len(clientFields) > 0 {
+			query, args, err := squirrel.Update("client").
+				SetMap(clientFields).Where(squirrel.Eq{"id": id}).
+				PlaceholderFormat(squirrel.Dollar).ToSql()
+			if pkg.HandleErr(c, err) {
+				return
+			} else if _, err = tx.Exec(c.Request.Context(), query, args...); pkg.HandleErr(c, err) {
 				return
 			}
 		}
 
-		var client pkg.Client
-		err = tx.QueryRow(c.Request.Context(), `
-			SELECT u.id, u.name, u.email, u.phone, u.time_created, 
-				   u.country_code, u.country_name, u.country_state, u.city, u.timezone,
-				   c.proposed_budget
-			FROM "user" u
-			JOIN client c ON c.id = u.id
-			WHERE u.id = $1`, clientID).Scan(
-			&client.Id,
-			&client.Name,
-			&client.Email,
-			&client.Phone,
-			&client.Time_created,
-			&client.Country_code,
-			&client.Country_name,
-			&client.Country_state,
-			&client.City,
-			&client.Timezone,
-			&client.Proposed_budget,
-		)
-		if err != nil {
-			_ = tx.Rollback(c.Request.Context())
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		selectQuery, selectArgs, err := squirrel.Select(clientSelect).
+			From(clientJoin).Where(squirrel.Eq{"u.id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		if err = tx.Commit(c.Request.Context()); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		client, err := pkg.ScanClient(tx.QueryRow(c.Request.Context(), selectQuery, selectArgs...))
+		if pkg.HandleErr(c, err) {
+			return
+		} else if err = tx.Commit(c.Request.Context()); pkg.HandleErr(c, err) {
 			return
 		}
 

@@ -1,7 +1,7 @@
 package pkg
 
 type Certification struct {
-	Id          int    `json:"id"`
+	Id          int    `json:"id,omitempty"`
 	Name        string `json:"name"`
 	Year        int    `json:"year"`
 	Description string `json:"description"`

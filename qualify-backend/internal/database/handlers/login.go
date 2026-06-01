@@ -29,147 +29,85 @@ func Login(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var credentials pkg.UserLogin
 
-		// Validate input binding
 		if err := c.ShouldBindJSON(&credentials); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error":   "invalid_input",
-				"message": "Email and password are required",
-				"code":    "MISSING_CREDENTIALS",
-			})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Email and password are required"))
 			return
 		}
 
-		// Validate email format
 		credentials.Email = utils.SanitizeEmail(credentials.Email)
 		if err := utils.ValidateEmail(credentials.Email); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error":   "invalid_email",
-				"message": err.Error(),
-				"code":    "INVALID_EMAIL_FORMAT",
-			})
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		// Fetch user from database
 		var user pkg.User
 		var storedHash string
 		var accountLocked bool
 		var failedLoginAttempts int
 
 		err := conn.QueryRow(c.Request.Context(),
-			`SELECT id, name, email, password_hash, account_locked, failed_login_attempts 
+			`SELECT id, name, email, password_hash, account_locked, failed_login_attempts
 			 FROM "user" WHERE email = $1`,
 			credentials.Email).Scan(&user.Id, &user.Name, &user.Email, &storedHash, &accountLocked, &failedLoginAttempts)
 
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusUnauthorized, gin.H{
-					"error":   "invalid_credentials",
-					"message": "Invalid email or password",
-					"code":    "AUTHENTICATION_FAILED",
-				})
+				c.JSON(http.StatusUnauthorized, pkg.Unauthorized(c.FullPath(), "Invalid email or password"))
 				return
 			}
-
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error":   "database_error",
-				"message": "An error occurred while processing your request",
-				"code":    "INTERNAL_ERROR",
-			})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
 			return
 		}
 
-		// Check if account is locked
 		if accountLocked {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error":   "account_locked",
-				"message": "Account is locked due to too many failed login attempts. Please contact support.",
-				"code":    "ACCOUNT_LOCKED",
-			})
+			c.JSON(http.StatusUnauthorized, pkg.Unauthorized(c.FullPath(), "Account is locked due to too many failed login attempts. Please contact support."))
 			return
 		}
 
-		// Validate password
-		err = utils.ValidatePassword(credentials.Password, storedHash)
-		if err != nil {
-			// Increment failed login attempts
+		if err = utils.ValidatePassword(credentials.Password, storedHash); err != nil {
 			failedLoginAttempts++
-			maxAttempts := 5
 
-			if failedLoginAttempts >= maxAttempts {
-				// Lock account
-				updateErr := conn.QueryRow(c.Request.Context(),
+			if failedLoginAttempts >= 5 {
+				conn.Exec(c.Request.Context(),
 					`UPDATE "user" SET account_locked = true, failed_login_attempts = $1 WHERE id = $2`,
-					failedLoginAttempts, user.Id).Scan()
-				if updateErr != nil && updateErr != pgx.ErrNoRows {
-					// Log error but don't fail the login attempt response
-				}
-
-				c.JSON(http.StatusUnauthorized, gin.H{
-					"error":   "account_locked",
-					"message": "Account locked due to too many failed attempts",
-					"code":    "ACCOUNT_LOCKED_MAX_ATTEMPTS",
-				})
+					failedLoginAttempts, user.Id)
+				c.JSON(http.StatusUnauthorized, pkg.Unauthorized(c.FullPath(), "Account locked due to too many failed attempts"))
 				return
 			}
 
-			// Update failed attempts
-			conn.Exec(c.Request.Context(), `UPDATE "user" SET failed_login_attempts = $1 WHERE id = $2`, failedLoginAttempts, user.Id)
-
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error":   "invalid_credentials",
-				"message": "Invalid email or password",
-				"code":    "AUTHENTICATION_FAILED",
-			})
+			conn.Exec(c.Request.Context(),
+				`UPDATE "user" SET failed_login_attempts = $1 WHERE id = $2`,
+				failedLoginAttempts, user.Id)
+			c.JSON(http.StatusUnauthorized, pkg.Unauthorized(c.FullPath(), "Invalid email or password"))
 			return
 		}
 
-		// Reset failed login attempts on successful login
-		conn.QueryRow(c.Request.Context(),
+		conn.Exec(c.Request.Context(),
 			`UPDATE "user" SET failed_login_attempts = 0, last_login_at = NOW() WHERE id = $1`,
-			user.Id).Scan()
+			user.Id)
 
-		// Generate tokens
 		accessToken, accessExpiresAt, err := jwtManager.GenerateAccessToken(&user)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error":   "token_generation_failed",
-				"message": "Failed to generate access token",
-				"code":    "TOKEN_ERROR",
-			})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Failed to generate access token"))
 			return
 		}
 
 		refreshToken, refreshExpiresAt, err := jwtManager.GenerateRefreshToken()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error":   "token_generation_failed",
-				"message": "Failed to generate refresh token",
-				"code":    "TOKEN_ERROR",
-			})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Failed to generate refresh token"))
 			return
 		}
 
-		// Hash and store refresh token
 		tokenHash := utils.HashToken(refreshToken)
-		clientIP := c.ClientIP()
-		userAgent := c.Request.Header.Get("User-Agent")
-
 		_, err = conn.Exec(c.Request.Context(),
 			`INSERT INTO refresh_token (user_id, token_hash, expires_at, ip_address, user_agent)
 			 VALUES ($1, $2, $3, $4, $5)`,
-			user.Id, tokenHash, refreshExpiresAt, clientIP, userAgent)
-
+			user.Id, tokenHash, refreshExpiresAt, c.ClientIP(), c.Request.Header.Get("User-Agent"))
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error":   "token_storage_failed",
-				"message": "Failed to store refresh token",
-				"code":    "TOKEN_ERROR",
-			})
+			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), "Failed to store refresh token"))
 			return
 		}
 
-		// Return login response
 		c.JSON(http.StatusOK, pkg.LoginResponse{
 			AccessToken:  accessToken,
 			RefreshToken: refreshToken,

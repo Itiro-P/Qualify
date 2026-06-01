@@ -21,14 +21,13 @@ func CreateUser(ctx context.Context, conn *pgxpool.Pool, user *pkg.User) error {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = tx.Rollback(ctx)
-	}()
+
+	defer tx.Rollback(ctx)
 
 	// Adicionamos password_hash na lista de colunas e no VALUES ($9)
 	query := `
         INSERT INTO "user" (
-            name, email, phone, country_code, country_name, 
+            name, email, phone, country_code, country_name,
             country_state, city, timezone, password_hash
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -65,12 +64,12 @@ func CreateUser(ctx context.Context, conn *pgxpool.Pool, user *pkg.User) error {
 // @Failure 500 {object} pkg.ErrorResponse
 func AssignAnalystRole(ctx context.Context, conn *pgxpool.Pool, userID int, hourlyRate float64) (*pkg.Analyst, error) {
 	tx, err := conn.Begin(ctx)
+
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		_ = tx.Rollback(ctx)
-	}()
+
+	defer tx.Rollback(ctx)
 
 	var analyst pkg.Analyst
 	if err := tx.QueryRow(ctx,
@@ -81,28 +80,13 @@ func AssignAnalystRole(ctx context.Context, conn *pgxpool.Pool, userID int, hour
 		return nil, err
 	}
 
-	if err := tx.QueryRow(ctx,
+	analyst, err = pkg.ScanAnalyst(tx.QueryRow(ctx,
 		`SELECT u.id, u.name, u.email, u.phone, u.time_created,
 		       u.country_code, u.country_name, u.country_state, u.city, u.timezone,
 		       a.hourly_rate, a.total_reviews, a.mean_rating
-		FROM "user" u
-		JOIN analyst a ON a.id = u.id
-		WHERE u.id = $1`,
-		userID).Scan(
-		&analyst.Id,
-		&analyst.Name,
-		&analyst.Email,
-		&analyst.Phone,
-		&analyst.Time_created,
-		&analyst.Country_code,
-		&analyst.Country_name,
-		&analyst.Country_state,
-		&analyst.City,
-		&analyst.Timezone,
-		&analyst.Hourly_rate,
-		&analyst.Total_reviews,
-		&analyst.Mean_rating,
-	); err != nil {
+		FROM "user" u JOIN analyst a ON a.id = u.id WHERE u.id = $1`, userID))
+
+	if err != nil {
 		return nil, err
 	}
 
@@ -125,12 +109,12 @@ func AssignAnalystRole(ctx context.Context, conn *pgxpool.Pool, userID int, hour
 // @Failure 500 {object} pkg.ErrorResponse
 func AssignClientRole(ctx context.Context, conn *pgxpool.Pool, userID int, proposedBudget float64) (*pkg.Client, error) {
 	tx, err := conn.Begin(ctx)
+
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		_ = tx.Rollback(ctx)
-	}()
+
+	defer tx.Rollback(ctx)
 
 	var client pkg.Client
 	if err := tx.QueryRow(ctx,
@@ -141,26 +125,13 @@ func AssignClientRole(ctx context.Context, conn *pgxpool.Pool, userID int, propo
 		return nil, err
 	}
 
-	if err := tx.QueryRow(ctx,
+	client, err = pkg.ScanClient(tx.QueryRow(ctx,
 		`SELECT u.id, u.name, u.email, u.phone, u.time_created,
-		       u.country_code, u.country_name, u.country_state, u.city, u.timezone,
-		       c.proposed_budget
-		FROM "user" u
-		JOIN client c ON c.id = u.id
-		WHERE u.id = $1`,
-		userID).Scan(
-		&client.Id,
-		&client.Name,
-		&client.Email,
-		&client.Phone,
-		&client.Time_created,
-		&client.Country_code,
-		&client.Country_name,
-		&client.Country_state,
-		&client.City,
-		&client.Timezone,
-		&client.Proposed_budget,
-	); err != nil {
+		    u.country_code, u.country_name, u.country_state, u.city, u.timezone,
+		    c.proposed_budget
+		FROM "user" u JOIN client c ON c.id = u.id WHERE u.id = $1`, userID))
+
+	if err != nil {
 		return nil, err
 	}
 
