@@ -5,7 +5,9 @@ interface Location {
 }
 
 export interface IFormResponse {
-  value: number;
+  min_hourly_rate: number;
+  max_hourly_rate: number;
+  rating: number;
   skills: string[];
   localization: Location;
 }
