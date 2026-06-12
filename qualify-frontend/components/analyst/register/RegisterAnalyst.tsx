@@ -92,14 +92,9 @@ export function RegisterAnalyst({ userSession }: { userSession: User }) {
         setError("Deu erro ao criar a skill. Tente novamente.");
         return -1; // retorna -1 para indicar falha
       }
-      const result = await analystService.addSkill(userSession.id, {
+      await analystService.addSkill(userSession.id, {
         skill_name: createdSkill.name,
       }); // adiciona skill no analista
-
-      if (!result) {
-        setError("Deu erro ao adicionar a skill. Tente novamente.");
-        return -1; // retorna -1 para indicar falha
-      }
     }
     return 0;
   }

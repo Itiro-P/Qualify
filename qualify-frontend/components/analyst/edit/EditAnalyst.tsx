@@ -147,14 +147,10 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
       ); // pega skills que foram removidas pelo analista
 
       for (const skill of removedSkills) {
-        const result = await analystService.removeSkill(
+          await analystService.removeSkill(
           analyst.id,
           skill.skill_id,
         ); // remove a skill do analista
-        if (!result) {
-          setError("Deu erro ao remover a skill do analista. Tente novamente.");
-          return -1; // retorna -1 para indicar falha
-        }
       } // remove as skills do analista
     }
 
