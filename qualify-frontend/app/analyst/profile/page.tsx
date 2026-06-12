@@ -20,6 +20,7 @@ function ProfileContent() {
   const searchParams = useSearchParams();
   const profileId = searchParams.get("id")?.trim() ?? "";
   const [analyst, setAnalyst] = useState<Analyst | null>(null);
+  const [picture, setPicture] = useState<string>("");
 
   useEffect(() => {
     async function fetchAnalyst() {
@@ -46,6 +47,8 @@ function ProfileContent() {
         router.push("/analyst/register");
       } else {
         setAnalyst(analyst);
+        const profileResp = await analystService.getProfile(analyst.id);
+        setPicture(profileResp?.picture ?? "");
       }
     }
 
@@ -55,7 +58,7 @@ function ProfileContent() {
   return analyst != null ? (
     <div>
       <div className="flex justify-between ml-3 mt-10">
-        <ImageProfile />
+        <ImageProfile user={analyst.name} imageURL={picture} />
         <Informations
           name={analyst.name}
           city={analyst.city}
