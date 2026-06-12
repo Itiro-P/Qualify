@@ -80,7 +80,7 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
     console.log("Reviews:", reviewCardsVector);
     console.log("Skills:", skillsCardsVector);
     console.log("Certifications:", certificationsCardsVector);
-  }, [analyst.id]);
+  }, []);
 
   return (
     <div>
