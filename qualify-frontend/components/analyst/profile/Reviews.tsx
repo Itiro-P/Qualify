@@ -34,7 +34,11 @@ function Card({ rating, comment, time_created }: Review) {
   );
 }
 
-export function Reviews({ reviewCardsVector }: { reviewCardsVector: Review[] }) {
+export function Reviews({
+  reviewCardsVector,
+}: {
+  reviewCardsVector: Review[];
+}) {
   return (
     <div id="review" className="flex flex-col p-4 mb-6">
       <div className="flex">
@@ -43,7 +47,7 @@ export function Reviews({ reviewCardsVector }: { reviewCardsVector: Review[] }) 
       </div>
       <div className="px-2 py-1 m-1">
         {reviewCardsVector.map((reviews) => (
-          <Card key={reviews.comment} {...reviews} />
+          <Card key={reviews.id} {...reviews} />
         ))}
       </div>
     </div>

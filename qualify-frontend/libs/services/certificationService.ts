@@ -30,7 +30,7 @@ export const certificationService = {
     );
   },
 
-  create(data: Omit<Certification, "id">): Promise<Certification | null> {
+  create(data: Certification): Promise<Certification | null> {
     return api.post<CertificationResponse>("/certifications", data).then(
       (resp) => {
         return resp.certification;

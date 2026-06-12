@@ -14,6 +14,8 @@ import type {
   AnalystCertification,
   AnalystSkill,
 } from "@/types/services/analyst";
+import { Service } from "@/types/services/service";
+import { Review } from "@/types/services/review";
 
 function buildQuery(params?: Record<string, unknown>): string {
   if (!params) return "";
@@ -134,20 +136,53 @@ export const analystService = {
   },
 
   // Certifications
-  listCertifications(
-    userId: number,
-  ): Promise<{ certifications: Certification[]; count: number }> {
-    return api.get(`/users/${userId}/analyst/certifications`);
+  listCertifications(userId: number): Promise<Certification[] | null> {
+    return api
+      .get<{
+        certifications: Certification[];
+        count: number;
+      }>(`/users/${userId}/analyst/certifications`)
+      .then(
+        (resp) => {
+          if (resp.count === 0) {
+            return [];
+          }
+
+          return resp.certifications;
+        },
+        () => {
+          return null;
+        },
+      );
   },
 
-  addCertification(
+  addPostCertification(
     userId: number,
-    data: { certification_id: number },
+    certification: Certification,
   ): Promise<AnalystCertification | null> {
     return api
       .post<AnalystCertificationResponse>(
         `/users/${userId}/analyst/certifications`,
-        data,
+        certification,
+      )
+      .then(
+        (resp) => {
+          return resp.analyst_certification;
+        },
+        () => {
+          return null;
+        },
+      );
+  },
+
+  addCertification(
+    userId: number,
+    certificationId: number,
+  ): Promise<AnalystCertification | null> {
+    return api
+      .post<AnalystCertificationResponse>(
+        `/users/${userId}/analyst/certifications/${certificationId}`,
+        {},
       )
       .then(
         (resp) => {
@@ -185,12 +220,28 @@ export const analystService = {
       );
   },
 
-  addSkill(
+  addPostSkill(
     userId: number,
-    data: { skill_id: number },
+    data: { skill_name: string },
   ): Promise<AnalystSkill | null> {
     return api
       .post<AnalystSkillResponse>(`/users/${userId}/analyst/skills`, data)
+      .then(
+        (resp) => {
+          return resp.analyst_skill;
+        },
+        () => {
+          return null;
+        },
+      );
+  },
+
+  addSkill(userId: number, skillId: number): Promise<AnalystSkill | null> {
+    return api
+      .post<AnalystSkillResponse>(
+        `/users/${userId}/analyst/skills/${skillId}`,
+        {},
+      )
       .then(
         (resp) => {
           return resp.analyst_skill;
@@ -206,5 +257,41 @@ export const analystService = {
       .delete(`/users/${userId}/analyst/skills?skill_id=${skillId}`)
       .then(() => true)
       .catch(() => false);
+  },
+
+  //Services
+  listServices(userId: number): Promise<Service[] | null> {
+    return api
+      .get<{
+        services: Service[];
+        count: number;
+      }>(`/analyst/${userId}/services`)
+      .then(
+        (resp) => {
+          return resp.services;
+        },
+        () => {
+          return null;
+        },
+      );
+  },
+
+  //Reviews
+  listReviews(userId: number): Promise<Review[] | null> {
+    return api
+      .get<{
+        reviews: Review[];
+        page?: number;
+        page_size?: number;
+        count: number;
+      }>(`/analyst/${userId}/reviews`)
+      .then(
+        (resp) => {
+          return resp.reviews;
+        },
+        () => {
+          return null;
+        },
+      );
   },
 };
