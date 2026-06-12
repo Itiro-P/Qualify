@@ -339,7 +339,7 @@ func DeleteService(conn *pgxpool.Pool) gin.HandlerFunc {
 }
 
 // GetClientServices de um cliente godoc
-// @Summary Listar serviços
+// @Summary Listar serviços do cliente
 // @Description Retorna lista de serviços relacionados a um cliente com filtros
 // @Tags Serviços
 // @Accept json
