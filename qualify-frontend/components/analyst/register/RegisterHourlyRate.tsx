@@ -34,10 +34,6 @@ function handleSubmit(
 
   const validationErrors = validate(hourlyRateAnalyst);
   setErrors(validationErrors);
-
-  if (!validationErrors) {
-    console.log("Dados enviados:", hourlyRateAnalyst);
-  }
 }
 
 export function RegisterHourlyRate({

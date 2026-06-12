@@ -1,6 +1,8 @@
 import { api } from "@/libs/api";
 import type {
   User,
+  UserProfile,
+  UserProfileResponse,
   HTTPUserResponse,
   HTTPLoginResponse,
   HTTPPasswordChangeResponse,
@@ -48,8 +50,8 @@ export const userService = {
 
   refreshToken(token: string): Promise<HTTPLoginResponse | null> {
     return api.post<HTTPLoginResponse>(
-      `/auth/refresh?token=${encodeURIComponent(token)}`,
-      {},
+      `/auth/refresh`,
+      { refresh_token: token },
     ).then(
       (res) => res,
       () => null,
@@ -68,8 +70,8 @@ export const userService = {
 
   resetPasswordConfirm(data: PasswordResetConfirmRequest): Promise<HTTPPasswordResetResponse | null> {
     return api.post<HTTPPasswordResetResponse>(
-      `/auth/reset-password/confirm?token=${encodeURIComponent(data.token)}&new_password=${encodeURIComponent(data.new_password)}`,
-      {},
+      `/auth/reset-password/confirm`,
+      data,
     ).then(
       (res) => res,
       () => null,
@@ -108,6 +110,44 @@ export const userService = {
     return api.delete(`/users/${id}`).then(
       () => true,
       () => false,
+    );
+  },
+
+  // Profile
+  getProfile(userId: number): Promise<UserProfile | null> {
+    return api.get<UserProfileResponse>(`/users/${userId}/profile`).then(
+      (res) => res.user_profile,
+      () => null,
+    );
+  },
+
+  createProfile(userId: number, data: UserProfile): Promise<UserProfile | null> {
+    return api.post<UserProfileResponse>(`/users/${userId}/profile`, data).then(
+      (res) => res.user_profile,
+      () => null,
+    );
+  },
+
+  updateProfile(userId: number, data: UserProfile): Promise<UserProfile | null> {
+    return api.put<UserProfileResponse>(`/users/${userId}/profile`, data).then(
+      (res) => res.user_profile,
+      () => null,
+    );
+  },
+
+  deleteProfile(userId: number): Promise<boolean> {
+    return api.delete(`/users/${userId}/profile`).then(
+      () => true,
+      () => false,
+    );
+  },
+
+  uploadProfilePicture(userId: number, file: File): Promise<UserProfile | null> {
+    const form = new FormData();
+    form.append("picture", file);
+    return api.post<UserProfileResponse>(`/users/${userId}/profile/picture`, form).then(
+      (res) => res.user_profile,
+      () => null,
     );
   },
 };

@@ -33,9 +33,11 @@ export default function Edit() {
   }, [router]);
 
   return (
-    <div>
+    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
       <Header />
-      {analyst != null ? <ListReviews analyst={analyst} /> : <Loading />}
+      <main className="flex-1">
+        {analyst != null ? <ListReviews analyst={analyst} /> : <Loading />}
+      </main>
       <Footer />
     </div>
   );

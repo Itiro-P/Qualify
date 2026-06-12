@@ -38,8 +38,6 @@ function handleSubmit(
   setErrors(validationErrors);
 
   if (!validationErrors) {
-    console.log("Dados salvados:", skill.name);
-
     setAnalystSkills((prev) => [...prev, { id: -1, name: skill.name }]);
 
     setskill({ id: -1, name: "" });

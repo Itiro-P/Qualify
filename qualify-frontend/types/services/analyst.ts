@@ -39,34 +39,12 @@ export interface AnalystUpdateRequest {
 
 export interface AnalystProfile {
   user_id?: number;
+  picture?: string;
   biography: string;
 }
 
 export interface AnalystProfileResponse {
   analyst_profile: AnalystProfile;
-}
-
-export interface AnalystCertification {
-  analyst_id: number;
-  certification_id: number;
-}
-
-export interface AnalystCertificationResponse {
-  analyst_certification: AnalystCertification;
-}
-
-export interface AnalystSkill {
-  analyst_id: number;
-  skill_id: number;
-}
-
-export interface AnalystSkillResponse {
-  analyst_skill: AnalystSkill;
-}
-
-export interface AnalystSkillsResponse {
-  analyst_skills: AnalystSkill[];
-  count: number;
 }
 
 export interface ListAnalystsParams {

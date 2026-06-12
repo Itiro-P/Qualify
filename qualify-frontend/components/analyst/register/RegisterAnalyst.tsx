@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Certification } from "@/types/services/certification";
 import { Skill } from "@/types/services/skill";
 import { User } from "@/types/services";
@@ -17,6 +18,7 @@ import {
 import { FormButton, FormPanel, Alert } from "@/components/ui";
 
 export function RegisterAnalyst({ userSession }: { userSession: User }) {
+  const router = useRouter();
   const [certificationsAnalyst, setCertificationsAnalyst] = useState<
     Certification[]
   >([]);
@@ -103,7 +105,8 @@ export function RegisterAnalyst({ userSession }: { userSession: User }) {
     setSuccess("");
     if (!userSession.id) {
       setError("Usuário não autenticado.");
-      return -1;
+      setLoading(false);
+      return;
     }
 
     // 1. Promover usuário a analista
@@ -127,6 +130,8 @@ export function RegisterAnalyst({ userSession }: { userSession: User }) {
     }
 
     setSuccess("Cadastro de analista realizado com sucesso!");
+    setLoading(false);
+    router.push("/analyst/profile");
   }
 
   return (

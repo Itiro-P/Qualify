@@ -2,256 +2,163 @@
 
 import { FormButton, FormInput } from "@/components/ui";
 import { IFormResponse } from "@/types/customer/formResponse";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { X } from "lucide-react";
+import { Dispatch, SetStateAction, useState } from "react";
 
-function handleChange(
-  e: React.ChangeEvent<HTMLInputElement>,
-  setForm: Dispatch<SetStateAction<string>>,
-) {
-  const { value } = e.target;
-
-  setForm(value);
-}
-
-function removeSkill(
-  setFormResponse: Dispatch<SetStateAction<IFormResponse | null>>,
-  skill: string,
-) {
-  setFormResponse((prev) =>
-    prev
-      ? { ...prev, skills: prev.skills.filter((item) => item !== skill) }
-      : null,
-  );
-}
-
-function SkillsSaves({
+function SkillTag({
   skill,
-  setFormResponse,
+  onRemove,
 }: {
   skill: string;
-  setFormResponse: Dispatch<SetStateAction<IFormResponse | null>>;
+  onRemove: (skill: string) => void;
 }) {
   return (
-    <FormButton
-      variant="outline"
-      fullWidth={false}
-      onClick={() => removeSkill(setFormResponse, skill)}
-      className="m-1 py-2! px-4! text-sm"
+    <button
       type="button"
+      onClick={() => onRemove(skill)}
+      className="inline-flex items-center gap-1 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-medium text-accent hover:bg-accent/20 transition-colors cursor-pointer"
     >
-      {skill} X
-    </FormButton>
+      {skill}
+      <X className="w-3 h-3" />
+    </button>
   );
 }
 
 export function SearchForm({
   formResponse,
   setFormResponse,
+  onSearch,
 }: {
-  formResponse: IFormResponse | null;
-  setFormResponse: Dispatch<SetStateAction<IFormResponse | null>>;
+  formResponse: IFormResponse;
+  setFormResponse: Dispatch<SetStateAction<IFormResponse>>;
+  onSearch: () => void;
 }) {
   const [skill, setSkill] = useState<string>("");
-  useEffect(() => {
-    if (!formResponse) {
-      setFormResponse({
-        min_hourly_rate: 0,
-        max_hourly_rate: 0,
-        rating: 0,
-        skills: [],
-        localization: {
-          country: "",
-          state: "",
-          city: "",
-        },
-      });
-    }
-  }, []);
+
+  function update(patch: Partial<IFormResponse>) {
+    setFormResponse((prev) => ({ ...prev, ...patch }));
+  }
+
+  function updateLocation(patch: Partial<IFormResponse["localization"]>) {
+    setFormResponse((prev) => ({
+      ...prev,
+      localization: { ...prev.localization, ...patch },
+    }));
+  }
+
+  function addSkill() {
+    const value = skill.trim();
+    if (!value) return;
+    setFormResponse((prev) =>
+      prev.skills.includes(value)
+        ? prev
+        : { ...prev, skills: [...prev.skills, value] },
+    );
+    setSkill("");
+  }
+
+  function removeSkill(target: string) {
+    setFormResponse((prev) => ({
+      ...prev,
+      skills: prev.skills.filter((item) => item !== target),
+    }));
+  }
+
   return (
-    <form>
-      <h3>Rating</h3>
-
-      <FormInput
-        label="Rating mínimo"
-        value={formResponse?.rating || 0}
-        onChange={(e) =>
-          setFormResponse({
-            min_hourly_rate: formResponse?.min_hourly_rate || 0,
-            max_hourly_rate: formResponse?.max_hourly_rate || 0,
-            rating: Number(e.target.value),
-            skills: formResponse?.skills || [],
-            localization: formResponse?.localization || {
-              country: "",
-              state: "",
-              city: "",
-            },
-          })
-        }
-      />
-
-      <h3>Habilidades</h3>
-
-      <FormInput
-        label="Habilidades"
-        value={skill}
-        onChange={(e) => handleChange(e, setSkill)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            setFormResponse((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    skills: prev.skills.includes(skill)
-                      ? prev.skills
-                      : [...prev.skills, skill],
-                  }
-                : null,
-            );
-            setSkill("");
-          }
-        }}
-      />
-
-      {formResponse?.skills.length ? (
-        <p className="m-2 text-sm text-neutral-slate">Habilidades salvas:</p>
-      ) : null}
-      <div className="flex flex-row justify-start flex-wrap">
-        {formResponse?.skills.map((skill) => (
-          <SkillsSaves
-            key={skill}
-            skill={skill}
-            setFormResponse={setFormResponse}
-          />
-        ))}
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSearch();
+      }}
+      className="glass-panel rounded-2xl p-6 flex flex-col gap-6 lg:sticky lg:top-24"
+    >
+      <div>
+        <h3 className="text-sm font-semibold text-white mb-3">Competências</h3>
+        <FormInput
+          label="Adicionar competência"
+          placeholder="Ex.: Java, Selenium..."
+          value={skill}
+          onChange={(e) => setSkill(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addSkill();
+            }
+          }}
+          hint="Pressione Enter para adicionar"
+        />
+        {formResponse.skills.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {formResponse.skills.map((s) => (
+              <SkillTag key={s} skill={s} onRemove={removeSkill} />
+            ))}
+          </div>
+        )}
       </div>
 
-      <div></div>
+      <div>
+        <h3 className="text-sm font-semibold text-white mb-3">
+          Avaliação mínima
+        </h3>
+        <FormInput
+          label="Nota (0 a 5)"
+          type="number"
+          min={0}
+          max={5}
+          step={0.5}
+          value={formResponse.rating || 0}
+          onChange={(e) => update({ rating: Number(e.target.value) })}
+        />
+      </div>
 
-      <h3>Preço por hora</h3>
-
-      <FormInput
-        label="Preço mínimo por hora"
-        value={formResponse?.min_hourly_rate || 0}
-        onChange={(e) =>
-          setFormResponse({
-            min_hourly_rate: Number(e.target.value),
-            max_hourly_rate: formResponse?.max_hourly_rate || 0,
-            rating: formResponse?.rating || 0,
-            skills: formResponse?.skills || [],
-            localization: formResponse?.localization || {
-              country: "",
-              state: "",
-              city: "",
-            },
-          })
-        }
-      />
-
-      <FormInput
-        label="Preço máximo por hora"
-        value={formResponse?.max_hourly_rate || 0}
-        onChange={(e) =>
-          setFormResponse({
-            min_hourly_rate: formResponse?.min_hourly_rate || 0,
-            max_hourly_rate: Number(e.target.value),
-            rating: formResponse?.rating || 0,
-            skills: formResponse?.skills || [],
-            localization: formResponse?.localization || {
-              country: "",
-              state: "",
-              city: "",
-            },
-          })
-        }
-      />
-
-      <h3>Localização</h3>
-
-      <FormInput
-        label="País"
-        value={formResponse?.localization?.country || ""}
-        onChange={(e) =>
-          setFormResponse({
-            min_hourly_rate: formResponse?.min_hourly_rate || 0,
-            max_hourly_rate: formResponse?.max_hourly_rate || 0,
-            rating: formResponse?.rating || 0,
-            skills: formResponse?.skills || [],
-            localization: formResponse?.localization
-              ? {
-                  ...formResponse.localization,
-                  country: e.target.value,
-                }
-              : {
-                  country: e.target.value,
-                  state: "",
-                  city: "",
-                },
-          })
-        }
-      />
-
-      <FormInput
-        label="Estado"
-        value={formResponse?.localization?.state || ""}
-        onChange={(e) => {
-          setFormResponse({
-            min_hourly_rate: formResponse?.min_hourly_rate || 0,
-            max_hourly_rate: formResponse?.max_hourly_rate || 0,
-            rating: formResponse?.rating || 0,
-            skills: formResponse?.skills || [],
-            localization: formResponse?.localization
-              ? {
-                  ...formResponse.localization,
-                  state: e.target.value,
-                }
-              : {
-                  country: "",
-                  state: e.target.value,
-                  city: "",
-                },
-          });
-          if (formResponse) {
-            if (formResponse.min_hourly_rate > formResponse?.max_hourly_rate) {
-              setFormResponse({
-                ...formResponse,
-                max_hourly_rate: formResponse.min_hourly_rate,
-              });
+      <div>
+        <h3 className="text-sm font-semibold text-white mb-3">
+          Preço por hora
+        </h3>
+        <div className="flex flex-col gap-3">
+          <FormInput
+            label="Mínimo"
+            type="number"
+            min={0}
+            value={formResponse.min_hourly_rate || 0}
+            onChange={(e) =>
+              update({ min_hourly_rate: Number(e.target.value) })
             }
-          }
-        }}
-      />
-
-      <FormInput
-        label="Cidade"
-        value={formResponse?.localization?.city || ""}
-        onChange={(e) => {
-          setFormResponse({
-            min_hourly_rate: formResponse?.min_hourly_rate || 0,
-            max_hourly_rate: formResponse?.max_hourly_rate || 0,
-            rating: formResponse?.rating || 0,
-            skills: formResponse?.skills || [],
-            localization: formResponse?.localization
-              ? {
-                  ...formResponse.localization,
-                  city: e.target.value,
-                }
-              : {
-                  country: "",
-                  state: "",
-                  city: e.target.value,
-                },
-          });
-          if (formResponse) {
-            if (formResponse.min_hourly_rate > formResponse?.max_hourly_rate) {
-              setFormResponse({
-                ...formResponse,
-                max_hourly_rate: formResponse.min_hourly_rate,
-              });
+          />
+          <FormInput
+            label="Máximo"
+            type="number"
+            min={0}
+            value={formResponse.max_hourly_rate || 0}
+            onChange={(e) =>
+              update({ max_hourly_rate: Number(e.target.value) })
             }
-          }
-        }}
-      />
+          />
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-sm font-semibold text-white mb-3">Localização</h3>
+        <div className="flex flex-col gap-3">
+          <FormInput
+            label="País"
+            value={formResponse.localization.country}
+            onChange={(e) => updateLocation({ country: e.target.value })}
+          />
+          <FormInput
+            label="Estado"
+            value={formResponse.localization.state}
+            onChange={(e) => updateLocation({ state: e.target.value })}
+          />
+          <FormInput
+            label="Cidade"
+            value={formResponse.localization.city}
+            onChange={(e) => updateLocation({ city: e.target.value })}
+          />
+        </div>
+      </div>
+
+      <FormButton type="submit">Buscar analistas</FormButton>
     </form>
   );
 }

@@ -1,19 +1,19 @@
 import { api } from "@/libs/api";
-import { Certification } from "@/types/services/certification";
+import type {
+  Certification,
+  CertificationResponse,
+  CertificationsResponse,
+} from "@/types/services/certification";
 import type {
   AnalystResponse,
   AnalystsResponse,
   AnalystUpdateRequest,
   AnalystProfile,
   AnalystProfileResponse,
-  AnalystCertificationResponse,
-  AnalystSkillResponse,
-  AnalystSkillsResponse,
   ListAnalystsParams,
   Analyst,
-  AnalystCertification,
-  AnalystSkill,
 } from "@/types/services/analyst";
+import type { Skill, SkillResponse, SkillsResponse } from "@/types/services/skill";
 import { Service } from "@/types/services/service";
 import { Review } from "@/types/services/review";
 
@@ -138,10 +138,7 @@ export const analystService = {
   // Certifications
   listCertifications(userId: number): Promise<Certification[] | null> {
     return api
-      .get<{
-        certifications: Certification[];
-        count: number;
-      }>(`/users/${userId}/analyst/certifications`)
+      .get<CertificationsResponse>(`/users/${userId}/analyst/certifications`)
       .then(
         (resp) => {
           if (resp.count === 0) {
@@ -159,15 +156,15 @@ export const analystService = {
   addPostCertification(
     userId: number,
     certification: Certification,
-  ): Promise<AnalystCertification | null> {
+  ): Promise<Certification | null> {
     return api
-      .post<AnalystCertificationResponse>(
+      .post<CertificationResponse>(
         `/users/${userId}/analyst/certifications`,
         certification,
       )
       .then(
         (resp) => {
-          return resp.analyst_certification;
+          return resp.certification;
         },
         () => {
           return null;
@@ -178,15 +175,15 @@ export const analystService = {
   addCertification(
     userId: number,
     certificationId: number,
-  ): Promise<AnalystCertification | null> {
+  ): Promise<Certification | null> {
     return api
-      .post<AnalystCertificationResponse>(
+      .post<CertificationResponse>(
         `/users/${userId}/analyst/certifications/${certificationId}`,
         {},
       )
       .then(
         (resp) => {
-          return resp.analyst_certification;
+          return resp.certification;
         },
         () => {
           return null;
@@ -207,12 +204,12 @@ export const analystService = {
   },
 
   // Skills
-  listSkills(userId: number): Promise<AnalystSkill[] | null> {
+  listSkills(userId: number): Promise<Skill[] | null> {
     return api
-      .get<AnalystSkillsResponse>(`/users/${userId}/analyst/skills`)
+      .get<SkillsResponse>(`/users/${userId}/analyst/skills`)
       .then(
         (resp) => {
-          return resp.analyst_skills;
+          return resp.skills;
         },
         () => {
           return null;
@@ -223,12 +220,12 @@ export const analystService = {
   addPostSkill(
     userId: number,
     data: { skill_name: string },
-  ): Promise<AnalystSkill | null> {
+  ): Promise<Skill | null> {
     return api
-      .post<AnalystSkillResponse>(`/users/${userId}/analyst/skills`, data)
+      .post<SkillResponse>(`/users/${userId}/analyst/skills`, data)
       .then(
         (resp) => {
-          return resp.analyst_skill;
+          return resp.skill;
         },
         () => {
           return null;
@@ -236,15 +233,15 @@ export const analystService = {
       );
   },
 
-  addSkill(userId: number, skillId: number): Promise<AnalystSkill | null> {
+  addSkill(userId: number, skillId: number): Promise<Skill | null> {
     return api
-      .post<AnalystSkillResponse>(
+      .post<SkillResponse>(
         `/users/${userId}/analyst/skills/${skillId}`,
         {},
       )
       .then(
         (resp) => {
-          return resp.analyst_skill;
+          return resp.skill;
         },
         () => {
           return null;
@@ -265,7 +262,7 @@ export const analystService = {
       .get<{
         services: Service[];
         count: number;
-      }>(`/analyst/${userId}/services`)
+      }>(`/users/${userId}/analyst/services`)
       .then(
         (resp) => {
           return resp.services;
@@ -284,7 +281,7 @@ export const analystService = {
         page?: number;
         page_size?: number;
         count: number;
-      }>(`/analyst/${userId}/reviews`)
+      }>(`/users/${userId}/analyst/reviews`)
       .then(
         (resp) => {
           return resp.reviews;

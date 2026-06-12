@@ -11,6 +11,16 @@ export interface User {
   time_created: string;
 }
 
+export interface UserProfile {
+  user_id?: number;
+  picture?: string;
+  biography: string;
+}
+
+export interface UserProfileResponse {
+  user_profile: UserProfile;
+}
+
 export interface HTTPUserResponse {
   user: User;
 }
