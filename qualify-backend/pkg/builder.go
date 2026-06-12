@@ -1,6 +1,9 @@
 package pkg
 
 import (
+	"strings"
+
+	"github.com/lib/pq"
 	"github.com/n-r-w/squirrel"
 )
 
@@ -42,6 +45,25 @@ func BuildFilterAnalyst(builder squirrel.SelectBuilder, filters AnalystFilter) s
 	filters.Normalize()
 	toReturn := BuildFilterUser(builder, filters.UserFilter)
 
+	if filters.Skills != "" {
+		var skills = strings.Split(filters.Skills, ",")
+		var trimmed []string
+		for i := range skills {
+			trimmed = append(trimmed, PutPercent(strings.TrimSpace(skills[i])))
+		}
+		toReturn = toReturn.Where(
+			`a.id IN (
+            SELECT ask.analyst_id
+            FROM analyst_skill ask
+            JOIN skill s ON s.id = ask.skill_id
+            WHERE s.name ILIKE ANY(?)
+            GROUP BY ask.analyst_id
+            HAVING COUNT(DISTINCT s.id) = ?)`,
+			pq.Array(trimmed),
+			len(trimmed),
+		)
+	}
+
 	if filters.MinHourlyRate != nil {
 		toReturn = toReturn.Where(squirrel.GtOrEq{"a.hourly_rate": *filters.MinHourlyRate})
 	}
@@ -71,7 +93,7 @@ func BuildFilterAnalyst(builder squirrel.SelectBuilder, filters AnalystFilter) s
 	if orderClause != "" {
 		toReturn = toReturn.OrderBy(orderClause)
 	} else {
-		toReturn = toReturn.OrderBy("time_created DESC")
+		toReturn = toReturn.OrderBy("u.time_created DESC")
 	}
 
 	toReturn = toReturn.Limit(uint64(filters.PageSize)).Offset(uint64(filters.Offset()))
@@ -83,11 +105,11 @@ func BuildFilterClient(builder squirrel.SelectBuilder, filters ClientFilter) squ
 	toReturn := BuildFilterUser(builder, filters.UserFilter)
 
 	if filters.MinProposedBudget != nil {
-		toReturn = toReturn.Where(squirrel.GtOrEq{"c.proposed_budget": filters.MinProposedBudget})
+		toReturn = toReturn.Where(squirrel.GtOrEq{"c.proposed_budget": *filters.MinProposedBudget})
 	}
 
 	if filters.MaxProposedBudget != nil {
-		toReturn = toReturn.Where(squirrel.LtOrEq{"c.proposed_budget": filters.MaxProposedBudget})
+		toReturn = toReturn.Where(squirrel.LtOrEq{"c.proposed_budget": *filters.MaxProposedBudget})
 	}
 
 	orderClause := filters.SortOptions.ValidateSort(ClientSortFields)
@@ -95,7 +117,7 @@ func BuildFilterClient(builder squirrel.SelectBuilder, filters ClientFilter) squ
 	if orderClause != "" {
 		toReturn = toReturn.OrderBy(orderClause)
 	} else {
-		toReturn = toReturn.OrderBy("time_created DESC")
+		toReturn = toReturn.OrderBy("u.time_created DESC")
 	}
 
 	toReturn = toReturn.Limit(uint64(filters.PageSize)).Offset(uint64(filters.Offset()))

@@ -35,6 +35,7 @@ const analystJoin = `"user" u JOIN analyst a ON a.id = u.id`
 // @Param max_total_reviews query int false "Quantidade máxima de avaliações totais"
 // @Param min_rating query int false "Avaliação média mínima"
 // @Param max_rating query int false "Avaliação média máxima"
+// @Param skills   query   string   false   "Nomes de habilidades (ex: c++,java,TypeScript)"
 // @Param sort_by query string false "Campo para ordenar: name,country_name,country_state,city,timezone,hourly_rate,total_reviews,mean_rating,time_created"
 // @Param order query string false "Direção: ASC ou DESC"
 // @Param page query int false "Página"

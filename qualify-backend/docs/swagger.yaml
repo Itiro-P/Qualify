@@ -596,6 +596,10 @@ paths:
         in: query
         name: max_rating
         type: integer
+      - description: 'Nomes de habilidades (ex: c++,java,TypeScript)'
+        in: query
+        name: skills
+        type: string
       - description: 'Campo para ordenar: name,country_name,country_state,city,timezone,hourly_rate,total_reviews,mean_rating,time_created'
         in: query
         name: sort_by
