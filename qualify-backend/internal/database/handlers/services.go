@@ -1,16 +1,70 @@
 package handlers
 
 import (
-	"fmt"
 	"main/pkg"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/n-r-w/squirrel"
 )
+
+const serviceSelect = "id, title, content, proposal_letter_id, hourly_rate, status, time_created"
+const serviceSelectQualified = "s.id, s.title, s.content, s.proposal_letter_id, s.hourly_rate, s.status, s.time_created"
+
+func applyServiceFilters(builder squirrel.SelectBuilder, filters pkg.ServiceFilter) squirrel.SelectBuilder {
+	if filters.Status != "" {
+		builder = builder.Where(squirrel.ILike{"s.status": pkg.PutPercent(filters.Status)})
+	}
+	if filters.ProposalId != nil {
+		builder = builder.Where(squirrel.Eq{"s.proposal_letter_id": *filters.ProposalId})
+	}
+	if filters.Title != "" {
+		builder = builder.Where(squirrel.ILike{"s.title": pkg.PutPercent(filters.Title)})
+	}
+	if filters.Content != "" {
+		builder = builder.Where(squirrel.ILike{"s.content": pkg.PutPercent(filters.Content)})
+	}
+	if filters.MinHourlyRate != nil {
+		builder = builder.Where(squirrel.GtOrEq{"s.hourly_rate": *filters.MinHourlyRate})
+	}
+	if filters.MaxHourlyRate != nil {
+		builder = builder.Where(squirrel.LtOrEq{"s.hourly_rate": *filters.MaxHourlyRate})
+	}
+	if order := filters.ValidateSort(pkg.ServiceSortFields); order != "" {
+		builder = builder.OrderBy("s." + order)
+	} else {
+		builder = builder.OrderBy("s.time_created DESC")
+	}
+	return builder.Limit(uint64(filters.PageSize)).Offset(uint64(filters.Offset()))
+}
+
+func serviceBuilder(filters pkg.ServiceFilter) squirrel.SelectBuilder {
+	return applyServiceFilters(
+		squirrel.Select(serviceSelectQualified).From("service s").PlaceholderFormat(squirrel.Dollar),
+		filters,
+	)
+}
+
+func scanServices(c *gin.Context, conn *pgxpool.Pool, builder squirrel.SelectBuilder) {
+	query, args, err := builder.ToSql()
+	if pkg.HandleErr(c, err) {
+		return
+	}
+
+	rows, err := conn.Query(c.Request.Context(), query, args...)
+	if pkg.HandleErr(c, err) {
+		return
+	}
+	defer rows.Close()
+
+	services, err := pkg.ScanRows(c, rows, pkg.ScanService)
+	if pkg.HandleErr(c, err) {
+		return
+	}
+
+	c.JSON(http.StatusOK, pkg.ServicesResponse{Services: services, Count: len(services)})
+}
 
 // GetServices godoc
 // @Summary Listar serviços
@@ -26,93 +80,21 @@ import (
 // @Param max_hourly_rate query number false "Valor máximo por hora"
 // @Param sort_by query string false "Campo para ordenar: title,hourly_rate,status,time_created"
 // @Param order query string false "Direção: ASC ou DESC"
+// @Param page query int false "Página"
+// @Param page_size query int false "Tamanho da página"
 // @Success 200 {object} pkg.ServicesResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Router /services [get]
 func GetServices(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		query := `SELECT id, title, content, proposal_letter_id, hourly_rate, status, time_created
-		          FROM service WHERE 1=1`
-		args := []interface{}{}
-		argCounter := 1
-
-		if status := c.Query("status"); status != "" {
-			query += fmt.Sprintf(" AND status = $%d", argCounter)
-			args = append(args, status)
-			argCounter++
-		}
-		if proposalID := c.Query("proposal_letter_id"); proposalID != "" {
-			if proposalIDVal, err := strconv.Atoi(proposalID); err == nil {
-				query += fmt.Sprintf(" AND proposal_letter_id = $%d", argCounter)
-				args = append(args, proposalIDVal)
-				argCounter++
-			}
-		}
-
-		if title := c.Query("title"); title != "" {
-			query += fmt.Sprintf(" AND title ILIKE $%d", argCounter)
-			args = append(args, "%"+title+"%")
-			argCounter++
-		}
-
-		if content := c.Query("content"); content != "" {
-			query += fmt.Sprintf(" AND content ILIKE $%d", argCounter)
-			args = append(args, "%"+content+"%")
-			argCounter++
-		}
-
-		if minRate := c.Query("min_hourly_rate"); minRate != "" {
-			if minRateVal, err := strconv.ParseFloat(minRate, 64); err == nil {
-				query += fmt.Sprintf(" AND hourly_rate >= $%d", argCounter)
-				args = append(args, minRateVal)
-				argCounter++
-			}
-		}
-
-		if maxRate := c.Query("max_hourly_rate"); maxRate != "" {
-			if maxRateVal, err := strconv.ParseFloat(maxRate, 64); err == nil {
-				query += fmt.Sprintf(" AND hourly_rate <= $%d", argCounter)
-				args = append(args, maxRateVal)
-				argCounter++
-			}
-		}
-
-		allowedSortFields := map[string]bool{
-			"title": true, "hourly_rate": true, "status": true, "time_created": true,
-		}
-		if sortBy := c.Query("sort_by"); sortBy != "" {
-			if allowedSortFields[sortBy] {
-				order := c.DefaultQuery("order", "ASC")
-				if order == "ASC" || order == "DESC" {
-					query += fmt.Sprintf(" ORDER BY %s %s", sortBy, order)
-				}
-			}
-		} else {
-			query += " ORDER BY time_created DESC"
-		}
-
-		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		var filters pkg.ServiceFilter
+		err := c.ShouldBindQuery(&filters)
+		if pkg.HandleErr(c, err) {
 			return
 		}
-		defer rows.Close()
+		filters.Normalize()
 
-		var services []pkg.Service
-		for rows.Next() {
-			var s pkg.Service
-			if err := rows.Scan(&s.Id, &s.Title, &s.Content, &s.Proposal_letter_id,
-				&s.Hourly_rate, &s.Status, &s.Time_created); err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
-				return
-			}
-			services = append(services, s)
-		}
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
-			return
-		}
-		c.JSON(http.StatusOK, pkg.ServicesResponse{Services: services, Count: len(services)})
+		scanServices(c, conn, serviceBuilder(filters))
 	}
 }
 
@@ -130,29 +112,24 @@ func GetServices(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /services/{id} [get]
 func GetService(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		serviceID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		var s pkg.Service
-		err = conn.QueryRow(c.Request.Context(),
-			`SELECT id, title, content, proposal_letter_id, hourly_rate, status, time_created
-			 FROM service WHERE id = $1`, serviceID,
-		).Scan(&s.Id, &s.Title, &s.Content, &s.Proposal_letter_id,
-			&s.Hourly_rate, &s.Status, &s.Time_created)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		query, args, err := squirrel.Select(serviceSelectQualified).
+			From("service s").Where(squirrel.Eq{"s.id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		c.JSON(http.StatusOK, pkg.ServiceResponse{Service: s})
+		service, err := pkg.ScanService(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		c.JSON(http.StatusOK, pkg.ServiceResponse{Service: service})
 	}
 }
 
@@ -165,26 +142,27 @@ func GetService(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param service body pkg.Service true "Objeto serviço"
 // @Success 201 {object} pkg.ServiceResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /services [post]
 func CreateService(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var service pkg.Service
-		if err := c.BindJSON(&service); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&service); pkg.HandleErr(c, err) {
 			return
 		}
 
-		err := conn.QueryRow(c.Request.Context(),
-			`INSERT INTO service (proposal_letter_id, title, content, hourly_rate, status)
-			 VALUES ($1, $2, $3, $4, $5)
-			 RETURNING id, time_created`,
-			service.Proposal_letter_id, service.Title, service.Content, service.Hourly_rate, service.Status).
-			Scan(&service.Id, &service.Time_created)
+		query, args, err := squirrel.Insert("service").
+			Columns("proposal_letter_id", "title", "content", "hourly_rate", "status").
+			Values(service.Proposal_letter_id, service.Title, service.Content, service.Hourly_rate, service.Status).
+			Suffix("RETURNING " + serviceSelect).PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
 
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		service, err = pkg.ScanService(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -208,20 +186,16 @@ func CreateService(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /services/{id} [put]
 func UpdateService(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		serviceID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		var service pkg.Service
-		if err := c.BindJSON(&service); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&service); pkg.HandleErr(c, err) {
 			return
 		}
 
-		// Validando parâmetros obrigatórios
 		if service.Title == "" {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty title"))
 			return
@@ -231,19 +205,22 @@ func UpdateService(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		err = conn.QueryRow(c.Request.Context(),
-			`UPDATE service SET proposal_letter_id = $1, title = $2, content = $3, hourly_rate = $4, status = $5
-			 WHERE id = $6
-			 RETURNING id, proposal_letter_id, title, content, hourly_rate, status, time_created`,
-			service.Proposal_letter_id, service.Title, service.Content, service.Hourly_rate, service.Status, serviceID).
-			Scan(&service.Id, &service.Proposal_letter_id, &service.Title, &service.Content, &service.Hourly_rate, &service.Status, &service.Time_created)
+		query, args, err := squirrel.Update("service").
+			SetMap(map[string]any{
+				"proposal_letter_id": service.Proposal_letter_id,
+				"title":              service.Title,
+				"content":            service.Content,
+				"hourly_rate":        service.Hourly_rate,
+				"status":             service.Status}).
+			Where(squirrel.Eq{"id": id}).
+			Suffix("RETURNING " + serviceSelect).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		service, err = pkg.ScanService(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -267,73 +244,58 @@ func UpdateService(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /services/{id} [patch]
 func UpdateServicePartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		serviceID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		var service pkg.ServiceUpdateRequest
-		if err := c.BindJSON(&service); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		var req pkg.ServiceUpdateRequest
+		if err := c.BindJSON(&req); pkg.HandleErr(c, err) {
 			return
 		}
 
-		set := []string{}
-		args := []interface{}{}
-		i := 1
+		builder := squirrel.Update("service").PlaceholderFormat(squirrel.Dollar)
+		hasFields := false
 
-		if service.Content != nil {
-			set = append(set, fmt.Sprintf("content = $%d", i))
-			args = append(args, *service.Content)
-			i++
+		if req.Title != nil {
+			builder = builder.Set("title", *req.Title)
+			hasFields = true
 		}
-		if service.Hourly_rate != nil {
-			if *service.Hourly_rate < 0 {
+		if req.Content != nil {
+			builder = builder.Set("content", *req.Content)
+			hasFields = true
+		}
+		if req.Hourly_rate != nil {
+			if *req.Hourly_rate < 0 {
 				c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received invalid hourly rate. Must be positive"))
 				return
 			}
-			set = append(set, fmt.Sprintf("hourly_rate = $%d", i))
-			args = append(args, *service.Hourly_rate)
-			i++
+			builder = builder.Set("hourly_rate", *req.Hourly_rate)
+			hasFields = true
 		}
-		if service.Status != nil {
-			set = append(set, fmt.Sprintf("status = $%d", i))
-			args = append(args, *service.Status)
-			i++
-		}
-		if service.Title != nil {
-			set = append(set, fmt.Sprintf("title = $%d", i))
-			args = append(args, *service.Title)
-			i++
+		if req.Status != nil {
+			builder = builder.Set("status", *req.Status)
+			hasFields = true
 		}
 
-		if len(set) == 0 {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Invalid arguments"))
+		if !hasFields {
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "No valid fields were given"))
 			return
 		}
 
-		args = append(args, serviceID)
-
-		query := fmt.Sprintf("UPDATE service SET %s WHERE id = $%d RETURNING id, proposal_letter_id, title, content, hourly_rate, status, time_created",
-			strings.Join(set, ", "), i)
-
-		var updatedService pkg.Service
-		err = conn.QueryRow(c.Request.Context(), query, args...).Scan(&updatedService.Id, &updatedService.Proposal_letter_id,
-			&updatedService.Title, &updatedService.Content, &updatedService.Hourly_rate,
-			&updatedService.Status, &updatedService.Time_created)
-
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		query, args, err := builder.
+			Where(squirrel.Eq{"id": id}).
+			Suffix("RETURNING " + serviceSelect).ToSql()
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		c.JSON(http.StatusOK, pkg.ServiceResponse{Service: updatedService})
+		service, err := pkg.ScanService(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		c.JSON(http.StatusOK, pkg.ServiceResponse{Service: service})
 	}
 }
 
@@ -352,21 +314,22 @@ func UpdateServicePartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /services/{id} [delete]
 func DeleteService(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		serviceID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		result, err := conn.Exec(c.Request.Context(),
-			`DELETE FROM service WHERE id = $1`, serviceID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		query, args, err := squirrel.Delete("service").
+			Where(squirrel.Eq{"id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		if result.RowsAffected() == 0 {
+		result, err := conn.Exec(c.Request.Context(), query, args...)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Service not found"))
 			return
 		}
@@ -376,7 +339,7 @@ func DeleteService(conn *pgxpool.Pool) gin.HandlerFunc {
 }
 
 // GetClientServices de um cliente godoc
-// @Summary Listar serviços
+// @Summary Listar serviços do cliente
 // @Description Retorna lista de serviços relacionados a um cliente com filtros
 // @Tags Serviços
 // @Accept json
@@ -390,98 +353,45 @@ func DeleteService(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param max_hourly_rate query number false "Valor máximo por hora"
 // @Param sort_by query string false "Campo para ordenar: title,hourly_rate,status,time_created"
 // @Param order query string false "Direção: ASC ou DESC"
+// @Param page query int false "Página"
+// @Param page_size query int false "Tamanho da página"
 // @Success 200 {object} pkg.ServicesResponse
+// @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
-// @Router /clients/{id}/services [get]
+// @Router /users/{id}/client/services [get]
 func GetClientServices(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		clientID, err := strconv.Atoi(c.Param("id"))
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		query := `SELECT s.id, s.title, s.content, s.proposal_letter_id, s.hourly_rate, s.status, s.time_created
-          FROM service s
-          JOIN proposal_letter p ON s.proposal_letter_id = p.id
-          JOIN client c ON p.client_id = c.id
-          WHERE c.user_id = $1`
-		args := []interface{}{clientID}
-		argCounter := 2
-
-		if status := c.Query("status"); status != "" {
-			query += fmt.Sprintf(" AND s.status = $%d", argCounter)
-			args = append(args, status)
-			argCounter++
-		}
-		if proposalID := c.Query("proposal_letter_id"); proposalID != "" {
-			if proposalIDVal, err := strconv.Atoi(proposalID); err == nil {
-				query += fmt.Sprintf(" AND s.proposal_letter_id = $%d", argCounter)
-				args = append(args, proposalIDVal)
-				argCounter++
-			}
-		}
-		if title := c.Query("title"); title != "" {
-			query += fmt.Sprintf(" AND s.title ILIKE $%d", argCounter)
-			args = append(args, "%"+title+"%")
-			argCounter++
-		}
-		if content := c.Query("content"); content != "" {
-			query += fmt.Sprintf(" AND s.content ILIKE $%d", argCounter)
-			args = append(args, "%"+content+"%")
-			argCounter++
-		}
-		if minRate := c.Query("min_hourly_rate"); minRate != "" {
-			if minRateVal, err := strconv.ParseFloat(minRate, 64); err == nil {
-				query += fmt.Sprintf(" AND s.hourly_rate >= $%d", argCounter)
-				args = append(args, minRateVal)
-				argCounter++
-			}
-		}
-		if maxRate := c.Query("max_hourly_rate"); maxRate != "" {
-			if maxRateVal, err := strconv.ParseFloat(maxRate, 64); err == nil {
-				query += fmt.Sprintf(" AND s.hourly_rate <= $%d", argCounter)
-				args = append(args, maxRateVal)
-				argCounter++
-			}
-		}
-
-		allowedSortFields := map[string]bool{
-			"title": true, "hourly_rate": true, "status": true, "time_created": true,
-		}
-		if sortBy := c.Query("sort_by"); sortBy != "" {
-			if allowedSortFields[sortBy] {
-				order := c.DefaultQuery("order", "ASC")
-				if order == "ASC" || order == "DESC" {
-					query += fmt.Sprintf(" ORDER BY s.%s %s", sortBy, order)
-				}
-			}
-		} else {
-			query += " ORDER BY s.time_created DESC"
-		}
-
-		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		// Checando se o cliente já existe
+		var clientExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM client WHERE id = $1)`, id).Scan(&clientExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if !clientExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Client does not exists"))
 			return
 		}
-		defer rows.Close()
 
-		var services []pkg.Service
-		for rows.Next() {
-			var s pkg.Service
-			if err := rows.Scan(&s.Id, &s.Title, &s.Content, &s.Proposal_letter_id,
-				&s.Hourly_rate, &s.Status, &s.Time_created); err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
-				return
-			}
-			services = append(services, s)
-		}
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		var filters pkg.ServiceFilter
+		err = c.ShouldBindQuery(&filters)
+		if pkg.HandleErr(c, err) {
 			return
 		}
-		c.JSON(http.StatusOK, pkg.ServicesResponse{Services: services, Count: len(services)})
+		filters.Normalize()
+
+		builder := applyServiceFilters(
+			squirrel.Select(serviceSelectQualified).
+				From("service s").
+				Join("proposal_letter p ON s.proposal_letter_id = p.id").
+				Join("client cl ON p.client_id = cl.id").
+				Where(squirrel.Eq{"cl.id": id}).
+				PlaceholderFormat(squirrel.Dollar), filters)
+		scanServices(c, conn, builder)
 	}
 }
 
@@ -500,97 +410,44 @@ func GetClientServices(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param max_hourly_rate query number false "Valor máximo por hora"
 // @Param sort_by query string false "Campo para ordenar: title,hourly_rate,status,time_created"
 // @Param order query string false "Direção: ASC ou DESC"
+// @Param page query int false "Página"
+// @Param page_size query int false "Tamanho da página"
 // @Success 200 {object} pkg.ServicesResponse
+// @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
-// @Router /analysts/{id}/services [get]
+// @Router /users/{id}/analyst/services [get]
 func GetAnalystServices(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		analystID, err := strconv.Atoi(c.Param("id"))
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		query := `SELECT s.id, s.title, s.content, s.proposal_letter_id, s.hourly_rate, s.status, s.time_created
-          FROM service s
-          JOIN proposal_letter p ON s.proposal_letter_id = p.id
-          JOIN analyst a ON p.analyst_id = a.id
-          WHERE a.user_id = $1`
-		args := []interface{}{analystID}
-		argCounter := 2
-
-		if status := c.Query("status"); status != "" {
-			query += fmt.Sprintf(" AND s.status = $%d", argCounter)
-			args = append(args, status)
-			argCounter++
-		}
-		if proposalID := c.Query("proposal_letter_id"); proposalID != "" {
-			if proposalIDVal, err := strconv.Atoi(proposalID); err == nil {
-				query += fmt.Sprintf(" AND s.proposal_letter_id = $%d", argCounter)
-				args = append(args, proposalIDVal)
-				argCounter++
-			}
-		}
-		if title := c.Query("title"); title != "" {
-			query += fmt.Sprintf(" AND s.title ILIKE $%d", argCounter)
-			args = append(args, "%"+title+"%")
-			argCounter++
-		}
-		if content := c.Query("content"); content != "" {
-			query += fmt.Sprintf(" AND s.content ILIKE $%d", argCounter)
-			args = append(args, "%"+content+"%")
-			argCounter++
-		}
-		if minRate := c.Query("min_hourly_rate"); minRate != "" {
-			if minRateVal, err := strconv.ParseFloat(minRate, 64); err == nil {
-				query += fmt.Sprintf(" AND s.hourly_rate >= $%d", argCounter)
-				args = append(args, minRateVal)
-				argCounter++
-			}
-		}
-		if maxRate := c.Query("max_hourly_rate"); maxRate != "" {
-			if maxRateVal, err := strconv.ParseFloat(maxRate, 64); err == nil {
-				query += fmt.Sprintf(" AND s.hourly_rate <= $%d", argCounter)
-				args = append(args, maxRateVal)
-				argCounter++
-			}
-		}
-
-		allowedSortFields := map[string]bool{
-			"title": true, "hourly_rate": true, "status": true, "time_created": true,
-		}
-		if sortBy := c.Query("sort_by"); sortBy != "" {
-			if allowedSortFields[sortBy] {
-				order := c.DefaultQuery("order", "ASC")
-				if order == "ASC" || order == "DESC" {
-					query += fmt.Sprintf(" ORDER BY s.%s %s", sortBy, order)
-				}
-			}
-		} else {
-			query += " ORDER BY s.time_created DESC"
-		}
-
-		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		var analystExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, id).Scan(&analystExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if !analystExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst does not exists"))
 			return
 		}
-		defer rows.Close()
 
-		var services []pkg.Service
-		for rows.Next() {
-			var s pkg.Service
-			if err := rows.Scan(&s.Id, &s.Title, &s.Content, &s.Proposal_letter_id,
-				&s.Hourly_rate, &s.Status, &s.Time_created); err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
-				return
-			}
-			services = append(services, s)
-		}
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		var filters pkg.ServiceFilter
+		err = c.ShouldBindQuery(&filters)
+		if pkg.HandleErr(c, err) {
 			return
 		}
-		c.JSON(http.StatusOK, pkg.ServicesResponse{Services: services, Count: len(services)})
+		filters.Normalize()
+
+		builder := applyServiceFilters(
+			squirrel.Select(serviceSelectQualified).
+				From("service s").
+				Join("proposal_letter p ON s.proposal_letter_id = p.id").
+				Join("analyst a ON p.analyst_id = a.id").
+				Where(squirrel.Eq{"a.id": id}).
+				PlaceholderFormat(squirrel.Dollar), filters)
+
+		scanServices(c, conn, builder)
 	}
 }

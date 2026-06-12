@@ -23,7 +23,7 @@ func registerAndLogin(t *testing.T, router *gin.Engine, user pkg.UserRegister) (
 	router.ServeHTTP(w, req)
 	require.Equal(t, http.StatusCreated, w.Code, "falhou ao registrar usuário")
 
-	var regResp pkg.UserResponse // Ajuste para o seu struct de resposta de registro
+	var regResp pkg.UserResponse
 	json.Unmarshal(w.Body.Bytes(), &regResp)
 	userID := regResp.User.Id
 

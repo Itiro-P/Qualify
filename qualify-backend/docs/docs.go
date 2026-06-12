@@ -90,9 +90,27 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "number",
+                        "type": "integer",
+                        "description": "Quantidade máxima de avaliações totais",
+                        "name": "max_total_reviews",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "description": "Avaliação média mínima",
-                        "name": "min_mean_rating",
+                        "name": "min_rating",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Avaliação média máxima",
+                        "name": "max_rating",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Nomes de habilidades (ex: c++,java,TypeScript)",
+                        "name": "skills",
                         "in": "query"
                     },
                     {
@@ -105,154 +123,6 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Direção: ASC ou DESC",
                         "name": "order",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.AnalystsResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/analysts/{id}/proposals": {
-            "get": {
-                "description": "Retorna lista de cartas de proposta (proposals) relacionadas a um analista específico",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Propostas"
-                ],
-                "summary": "Listar propostas de analista",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID do analista",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "ID do cliente",
-                        "name": "client_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Título parcial",
-                        "name": "title",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Conteúdo parcial",
-                        "name": "content",
-                        "in": "query"
-                    },
-                    {
-                        "type": "number",
-                        "description": "Valor mínimo por hora proposto",
-                        "name": "min_proposed_hourly_rate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "number",
-                        "description": "Valor máximo por hora proposto",
-                        "name": "max_proposed_hourly_rate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Campo para ordenar: title,proposed_hourly_rate,time_created",
-                        "name": "sort_by",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Direção: ASC ou DESC",
-                        "name": "order",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ProposalLettersResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/analysts/{id}/reviews": {
-            "get": {
-                "description": "Retorna avaliações relacionadas a um analista com filtros e paginação",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Avaliações"
-                ],
-                "summary": "Listar avaliações de um analista",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID do analista",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "ID do cliente",
-                        "name": "client_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "ID do serviço",
-                        "name": "service_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Avaliação exata",
-                        "name": "rating",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Avaliação mínima",
-                        "name": "min_rating",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Avaliação máxima",
-                        "name": "max_rating",
                         "in": "query"
                     },
                     {
@@ -272,93 +142,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.ReviewsResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/analysts/{id}/services": {
-            "get": {
-                "description": "Retorna lista de serviços relacionados a um analista com filtros",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Serviços"
-                ],
-                "summary": "Listar serviços de um analista",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID do analista",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Status do serviço",
-                        "name": "status",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "ID da proposta",
-                        "name": "proposal_letter_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Título parcial",
-                        "name": "title",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Conteúdo parcial",
-                        "name": "content",
-                        "in": "query"
-                    },
-                    {
-                        "type": "number",
-                        "description": "Valor mínimo por hora",
-                        "name": "min_hourly_rate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "number",
-                        "description": "Valor máximo por hora",
-                        "name": "max_hourly_rate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Campo para ordenar: title,hourly_rate,status,time_created",
-                        "name": "sort_by",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Direção: ASC ou DESC",
-                        "name": "order",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ServicesResponse"
+                            "$ref": "#/definitions/pkg.AnalystsResponse"
                         }
                     },
                     "500": {
@@ -808,15 +592,36 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "name",
+                            "year",
+                            "institution"
+                        ],
                         "type": "string",
                         "description": "Campo para ordenar: name,year,institution",
                         "name": "sort_by",
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "ASC",
+                            "DESC"
+                        ],
                         "type": "string",
                         "description": "Direção: ASC ou DESC",
                         "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
                         "in": "query"
                     }
                 ],
@@ -872,6 +677,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -1176,159 +987,29 @@ const docTemplate = `{
                         "description": "Orçamento máximo",
                         "name": "max_proposed_budget",
                         "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ClientsResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/clients/{id}/proposals": {
-            "get": {
-                "description": "Retorna lista de cartas de proposta (proposals) relacionadas a um cliente específico",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Propostas"
-                ],
-                "summary": "Listar propostas de cliente",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID do cliente",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "ID do analista",
-                        "name": "analyst_id",
-                        "in": "query"
-                    },
-                    {
+                        "enum": [
+                            "name",
+                            "country_name",
+                            "country_state",
+                            "city",
+                            "proposed_budget",
+                            "time_created"
+                        ],
                         "type": "string",
-                        "description": "Título parcial",
-                        "name": "title",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Conteúdo parcial",
-                        "name": "content",
-                        "in": "query"
-                    },
-                    {
-                        "type": "number",
-                        "description": "Valor mínimo por hora proposto",
-                        "name": "min_proposed_hourly_rate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "number",
-                        "description": "Valor máximo por hora proposto",
-                        "name": "max_proposed_hourly_rate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Campo para ordenar: title,proposed_hourly_rate,time_created",
+                        "description": "Campo para ordenar: name,country_name,country_state,city,proposed_budget,time_created",
                         "name": "sort_by",
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "ASC",
+                            "DESC"
+                        ],
                         "type": "string",
                         "description": "Direção: ASC ou DESC",
                         "name": "order",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ProposalLettersResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/clients/{id}/reviews": {
-            "get": {
-                "description": "Retorna avaliações relacionadas a um cliente com filtros e paginação",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Avaliações"
-                ],
-                "summary": "Listar avaliações de um cliente",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID do cliente",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "ID do analista",
-                        "name": "analyst_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "ID do serviço",
-                        "name": "service_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Avaliação exata",
-                        "name": "rating",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Avaliação mínima",
-                        "name": "min_rating",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Avaliação máxima",
-                        "name": "max_rating",
                         "in": "query"
                     },
                     {
@@ -1348,93 +1029,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.ReviewsResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/clients/{id}/services": {
-            "get": {
-                "description": "Retorna lista de serviços relacionados a um cliente com filtros",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Serviços"
-                ],
-                "summary": "Listar serviços",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID do cliente",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Status do serviço",
-                        "name": "status",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "ID da proposta",
-                        "name": "proposal_letter_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Título parcial",
-                        "name": "title",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Conteúdo parcial",
-                        "name": "content",
-                        "in": "query"
-                    },
-                    {
-                        "type": "number",
-                        "description": "Valor mínimo por hora",
-                        "name": "min_hourly_rate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "number",
-                        "description": "Valor máximo por hora",
-                        "name": "max_hourly_rate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Campo para ordenar: title,hourly_rate,status,time_created",
-                        "name": "sort_by",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Direção: ASC ou DESC",
-                        "name": "order",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ServicesResponse"
+                            "$ref": "#/definitions/pkg.ClientsResponse"
                         }
                     },
                     "500": {
@@ -1507,6 +1102,18 @@ const docTemplate = `{
                         "description": "Direção: ASC ou DESC",
                         "name": "order",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1561,6 +1168,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -1800,12 +1413,7 @@ const docTemplate = `{
         },
         "/register": {
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Registra e cria um novo usuário",
+                "description": "Registra e cria um novo usuário com um cadastro de cliente já feito",
                 "consumes": [
                     "application/json"
                 ],
@@ -1815,7 +1423,7 @@ const docTemplate = `{
                 "tags": [
                     "Usuários"
                 ],
-                "summary": "Criar usuário",
+                "summary": "Criar usuário e cliente",
                 "parameters": [
                     {
                         "description": "Objeto do usuário",
@@ -1836,6 +1444,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -1964,6 +1578,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -2262,6 +1882,18 @@ const docTemplate = `{
                         "description": "Direção: ASC ou DESC",
                         "name": "order",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2316,6 +1948,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -2632,6 +2270,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -3173,7 +2817,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/pkg.Analyst"
+                            "$ref": "#/definitions/pkg.AnalystCreateRequest"
                         }
                     }
                 ],
@@ -3186,6 +2830,18 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -3331,6 +2987,69 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Nome parcial",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Instituição parcial",
+                        "name": "institution",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Ano",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Ano inicial",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Ano final",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "name",
+                            "year",
+                            "institution"
+                        ],
+                        "type": "string",
+                        "description": "Campo para ordenar: name,year,institution",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "ASC",
+                            "DESC"
+                        ],
+                        "type": "string",
+                        "description": "Direção: ASC ou DESC",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -3342,6 +3061,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -3360,7 +3085,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Associa uma certificação a um analista",
+                "description": "Cria uma certificação (se não existir) e a associa a um analista",
                 "consumes": [
                     "application/json"
                 ],
@@ -3370,22 +3095,22 @@ const docTemplate = `{
                 "tags": [
                     "Certificações"
                 ],
-                "summary": "Associar certificação ao analista",
+                "summary": "Criar certificação e associar ao analista",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID do usuário (analista)",
+                        "description": "ID do analista",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Objeto associação",
+                        "description": "Objeto certificação",
                         "name": "certification",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/pkg.AnalystCertification"
+                            "$ref": "#/definitions/pkg.Certification"
                         }
                     }
                 ],
@@ -3393,11 +3118,23 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AnalystCertificationResponse"
+                            "$ref": "#/definitions/pkg.CertificationResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -3455,6 +3192,74 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}/analyst/certifications/{cert_id}": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Associa uma certificação já existente a um analista pelo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Certificações"
+                ],
+                "summary": "Associar certificação existente ao analista",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do analista",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID da certificação",
+                        "name": "cert_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.CertificationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -3627,6 +3432,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -3686,6 +3503,294 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/{id}/analyst/proposals": {
+            "get": {
+                "description": "Retorna lista de cartas de proposta (proposals) relacionadas a um analista específico",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Propostas"
+                ],
+                "summary": "Listar propostas de analista",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do analista",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID do cliente",
+                        "name": "client_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Título parcial",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Conteúdo parcial",
+                        "name": "content",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor mínimo por hora proposto",
+                        "name": "min_proposed_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor máximo por hora proposto",
+                        "name": "max_proposed_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Campo para ordenar: title,proposed_hourly_rate,time_created",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Direção: ASC ou DESC",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ProposalLettersResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}/analyst/reviews": {
+            "get": {
+                "description": "Retorna avaliações relacionadas a um analista com filtros e paginação",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Avaliações"
+                ],
+                "summary": "Listar avaliações de um analista",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do analista",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID do cliente",
+                        "name": "client_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID do serviço",
+                        "name": "service_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Avaliação exata",
+                        "name": "rating",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Avaliação mínima",
+                        "name": "min_rating",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Avaliação máxima",
+                        "name": "max_rating",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ReviewsResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}/analyst/services": {
+            "get": {
+                "description": "Retorna lista de serviços relacionados a um analista com filtros",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Serviços"
+                ],
+                "summary": "Listar serviços de um analista",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do analista",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Status do serviço",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID da proposta",
+                        "name": "proposal_letter_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Título parcial",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Conteúdo parcial",
+                        "name": "content",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor mínimo por hora",
+                        "name": "min_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor máximo por hora",
+                        "name": "max_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Campo para ordenar: title,hourly_rate,status,time_created",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Direção: ASC ou DESC",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ServicesResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/users/{id}/analyst/skills": {
             "get": {
                 "description": "Retorna as habilidades de um analista pelo ID",
@@ -3712,7 +3817,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AnalystSkillsResponse"
+                            "$ref": "#/definitions/pkg.SkillsResponse"
                         }
                     },
                     "400": {
@@ -3741,7 +3846,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Cria uma nova habilidade para um analista pelo ID e ID da habilidade",
+                "description": "Cria uma skill (se não existir) e a associa a um analista",
                 "consumes": [
                     "application/json"
                 ],
@@ -3751,7 +3856,7 @@ const docTemplate = `{
                 "tags": [
                     "Habilidades"
                 ],
-                "summary": "Criar habilidade para o analista",
+                "summary": "Adicionar skill ao analista",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3761,12 +3866,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Objeto associação",
-                        "name": "certification",
+                        "description": "Objeto skill",
+                        "name": "skill",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/pkg.AnalystSkill"
+                            "$ref": "#/definitions/pkg.SkillCreateRequest"
                         }
                     }
                 ],
@@ -3774,7 +3879,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AnalystSkillResponse"
+                            "$ref": "#/definitions/pkg.SkillResponse"
                         }
                     },
                     "400": {
@@ -3785,6 +3890,12 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -3842,6 +3953,74 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}/analyst/skills/{skill_id}": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Associa uma skill já existente a um analista pelo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Habilidades"
+                ],
+                "summary": "Associar skill existente ao analista",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do analista",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID da skill",
+                        "name": "skill_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.SkillResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -3992,12 +4171,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "{\\",
-                        "name": "proposed_budget",
+                        "description": "Objeto cliente",
+                        "name": "client",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/pkg.ClientCreateRequest"
                         }
                     }
                 ],
@@ -4010,6 +4189,18 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
@@ -4294,6 +4485,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -4336,6 +4539,294 @@ const docTemplate = `{
                         "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}/client/proposals": {
+            "get": {
+                "description": "Retorna lista de cartas de proposta (proposals) relacionadas a um cliente específico",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Propostas"
+                ],
+                "summary": "Listar propostas de cliente",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do cliente",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID do analista",
+                        "name": "analyst_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Título parcial",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Conteúdo parcial",
+                        "name": "content",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor mínimo por hora proposto",
+                        "name": "min_proposed_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor máximo por hora proposto",
+                        "name": "max_proposed_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Campo para ordenar: title,proposed_hourly_rate,time_created",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Direção: ASC ou DESC",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ProposalLettersResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}/client/reviews": {
+            "get": {
+                "description": "Retorna avaliações relacionadas a um cliente com filtros e paginação",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Avaliações"
+                ],
+                "summary": "Listar avaliações de um cliente",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do cliente",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID do analista",
+                        "name": "analyst_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID do serviço",
+                        "name": "service_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Avaliação exata",
+                        "name": "rating",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Avaliação mínima",
+                        "name": "min_rating",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Avaliação máxima",
+                        "name": "max_rating",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ReviewsResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}/client/services": {
+            "get": {
+                "description": "Retorna lista de serviços relacionados a um cliente com filtros",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Serviços"
+                ],
+                "summary": "Listar serviços do cliente",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do cliente",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Status do serviço",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID da proposta",
+                        "name": "proposal_letter_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Título parcial",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Conteúdo parcial",
+                        "name": "content",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor mínimo por hora",
+                        "name": "min_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor máximo por hora",
+                        "name": "max_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Campo para ordenar: title,hourly_rate,status,time_created",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Direção: ASC ou DESC",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ServicesResponse"
                         }
                     },
                     "404": {
@@ -4512,6 +5003,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -4547,14 +5050,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
+                    "204": {
+                        "description": "Deleção com sucesso"
                     },
                     "400": {
                         "description": "Bad Request",
@@ -4624,6 +5121,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -4679,22 +5182,11 @@ const docTemplate = `{
                 }
             }
         },
-        "pkg.AnalystCertification": {
+        "pkg.AnalystCreateRequest": {
             "type": "object",
             "properties": {
-                "analyst_id": {
-                    "type": "integer"
-                },
-                "certification_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "pkg.AnalystCertificationResponse": {
-            "type": "object",
-            "properties": {
-                "analyst_certification": {
-                    "$ref": "#/definitions/pkg.AnalystCertification"
+                "hourly_rate": {
+                    "type": "number"
                 }
             }
         },
@@ -4725,39 +5217,6 @@ const docTemplate = `{
             "properties": {
                 "analyst": {
                     "$ref": "#/definitions/pkg.Analyst"
-                }
-            }
-        },
-        "pkg.AnalystSkill": {
-            "type": "object",
-            "properties": {
-                "analyst_id": {
-                    "type": "integer"
-                },
-                "skill_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "pkg.AnalystSkillResponse": {
-            "type": "object",
-            "properties": {
-                "analyst_skill": {
-                    "$ref": "#/definitions/pkg.AnalystSkill"
-                }
-            }
-        },
-        "pkg.AnalystSkillsResponse": {
-            "type": "object",
-            "properties": {
-                "analyst_skills": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/pkg.AnalystSkill"
-                    }
-                },
-                "count": {
-                    "type": "integer"
                 }
             }
         },
@@ -4908,6 +5367,14 @@ const docTemplate = `{
                 },
                 "timezone": {
                     "type": "string"
+                }
+            }
+        },
+        "pkg.ClientCreateRequest": {
+            "type": "object",
+            "properties": {
+                "proposed_budget": {
+                    "type": "number"
                 }
             }
         },
@@ -5266,6 +5733,14 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "pkg.SkillCreateRequest": {
+            "type": "object",
+            "properties": {
                 "name": {
                     "type": "string"
                 }

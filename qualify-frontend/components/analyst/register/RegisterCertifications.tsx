@@ -110,7 +110,6 @@ function handleSubmit(
         institution: "",
         year: -1,
       });
-      console.log("Dados salvados:", certification);
     }
   }
 }

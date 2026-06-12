@@ -1,18 +1,20 @@
 package handlers
 
 import (
-	"fmt"
+	"errors"
 	"main/internal/database/services"
 	"main/pkg"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/n-r-w/squirrel"
 	"golang.org/x/crypto/bcrypt"
 )
+
+const userSelect = `id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone`
+const userFrom = `"user"`
 
 // GetUser godoc
 // @Summary Obter usuário
@@ -28,25 +30,20 @@ import (
 // @Router /users/{id} [get]
 func GetUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
-		var user pkg.User
-		err = conn.QueryRow(c.Request.Context(),
-			`SELECT id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone 
-             FROM "user" WHERE id = $1`, userID).Scan(
-			&user.Id, &user.Name, &user.Email, &user.Phone, &user.Time_created,
-			&user.Country_code, &user.Country_name, &user.Country_state, &user.City, &user.Timezone,
-		)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+
+		query, args, err := squirrel.Select(userSelect).
+			From(userFrom).Where(squirrel.Eq{"id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		user, err := pkg.ScanUser(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -80,19 +77,15 @@ func GetCurrentUser(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		var user pkg.User
-		err := conn.QueryRow(c.Request.Context(),
-			`SELECT id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone 
-             FROM "user" WHERE id = $1`, userID).Scan(
-			&user.Id, &user.Name, &user.Email, &user.Phone, &user.Time_created,
-			&user.Country_code, &user.Country_name, &user.Country_state, &user.City, &user.Timezone,
-		)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		query, args, err := squirrel.Select(userSelect).
+			From(userFrom).Where(squirrel.Eq{"id": userID}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		user, err := pkg.ScanUser(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -101,16 +94,16 @@ func GetCurrentUser(conn *pgxpool.Pool) gin.HandlerFunc {
 }
 
 // CreateUser godoc
-// @Summary Criar usuário
-// @Description Registra e cria um novo usuário
+// @Summary Criar usuário e cliente
+// @Description Registra e cria um novo usuário com um cadastro de cliente já feito
 // @Tags Usuários
 // @Accept json
 // @Produce json
 // @Param user body pkg.UserRegister true "Objeto do usuário"
 // @Success 201 {object} pkg.UserResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
-// @Security     BearerAuth
 // @Router /register [post]
 func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -121,12 +114,10 @@ func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(reg.Password), bcrypt.DefaultCost)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		// 2. Mapear do registro para a struct de banco de dados
 		user := pkg.User{
 			Name:          reg.Name,
 			Email:         reg.Email,
@@ -138,17 +129,27 @@ func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 			City:          reg.City,
 			Timezone:      reg.Timezone,
 		}
-		err = services.CreateUser(c.Request.Context(), conn, &user)
-		if err != nil {
-			if strings.Contains(err.Error(), "unique constraint") {
-				c.JSON(http.StatusConflict, gin.H{"error": "Este e-mail já está cadastrado"})
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+
+		if err = services.CreateUser(c.Request.Context(), conn, &user); pkg.HandleErr(c, err) {
 			return
 		}
 
-		// Retorna o usuário criado (sem o hash da senha graças ao tag `json:"-"`)
+		// Checando se o cliente já existe
+		var clientExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM client WHERE id = $1)`, user.Id).Scan(&clientExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if clientExists {
+			c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Client already exists"))
+			return
+		}
+
+		_, err = services.AssignClientRole(c.Request.Context(), conn, user.Id, 0)
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
 		c.JSON(http.StatusCreated, pkg.UserResponse{User: user})
 	}
 }
@@ -169,34 +170,40 @@ func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id} [put]
 func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
+
 		var user pkg.User
-		if err := c.BindJSON(&user); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&user); pkg.HandleErr(c, err) {
 			return
 		}
 
-		err = conn.QueryRow(c.Request.Context(),
-			`UPDATE "user" SET name = $1, email = $2, phone = $3, country_code = $4, 
-             country_name = $5, country_state = $6, city = $7, timezone = $8
-             WHERE id = $9
-             RETURNING id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone`,
-			user.Name, user.Email, user.Phone, user.Country_code, user.Country_name,
-			user.Country_state, user.City, user.Timezone, userID).
-			Scan(&user.Id, &user.Name, &user.Email, &user.Phone, &user.Time_created,
-				&user.Country_code, &user.Country_name, &user.Country_state, &user.City, &user.Timezone)
+		query, args, err := squirrel.Update(userFrom).
+			SetMap(map[string]any{
+				"name":          user.Name,
+				"email":         user.Email,
+				"phone":         user.Phone,
+				"country_code":  user.Country_code,
+				"country_name":  user.Country_name,
+				"country_state": user.Country_state,
+				"city":          user.City,
+				"timezone":      user.Timezone,
+			}).
+			Where(squirrel.Eq{"id": id}).
+			Suffix("RETURNING " + userSelect).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		user, err = pkg.ScanUser(conn.QueryRow(c.Request.Context(), query, args...))
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "User not found"))
+			return
+		}
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -220,65 +227,68 @@ func UpdateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id} [patch]
 func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		var req pkg.UserUpdateRequest
-		if err := c.BindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&req); pkg.HandleErr(c, err) {
 			return
 		}
 
-		set := []string{}
-		args := []interface{}{}
-		i := 1
+		builder := squirrel.Update(userFrom).PlaceholderFormat(squirrel.Dollar)
+		hasFields := false
 
-		// Helper para montar a query dinâmica
-		addToSet := func(field string, val interface{}) {
-			if val != nil {
-				set = append(set, fmt.Sprintf("%s = $%d", field, i))
-				args = append(args, val)
-				i++
-			}
+		if req.Name != nil {
+			builder = builder.Set("name", *req.Name)
+			hasFields = true
+		}
+		if req.Email != nil {
+			builder = builder.Set("email", *req.Email)
+			hasFields = true
+		}
+		if req.Phone != nil {
+			builder = builder.Set("phone", *req.Phone)
+			hasFields = true
+		}
+		if req.Country_code != nil {
+			builder = builder.Set("country_code", *req.Country_code)
+			hasFields = true
+		}
+		if req.Country_name != nil {
+			builder = builder.Set("country_name", *req.Country_name)
+			hasFields = true
+		}
+		if req.Country_state != nil {
+			builder = builder.Set("country_state", *req.Country_state)
+			hasFields = true
+		}
+		if req.City != nil {
+			builder = builder.Set("city", *req.City)
+			hasFields = true
+		}
+		if req.Timezone != nil {
+			builder = builder.Set("timezone", *req.Timezone)
+			hasFields = true
 		}
 
-		addToSet("name", req.Name)
-		addToSet("email", req.Email)
-		addToSet("phone", req.Phone)
-		addToSet("country_code", req.Country_code)
-		addToSet("country_name", req.Country_name)
-		addToSet("country_state", req.Country_state)
-		addToSet("city", req.City)
-		addToSet("timezone", req.Timezone)
-
-		if len(set) == 0 {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Invalid arguments"))
+		if !hasFields {
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "No valid fields were given"))
 			return
 		}
 
-		args = append(args, userID)
-		query := fmt.Sprintf(
-			`UPDATE "user" SET %s WHERE id = $%d 
-             RETURNING id, name, email, phone, time_created, country_code, country_name, country_state, city, timezone`,
-			strings.Join(set, ", "), i,
-		)
+		query, args, err := builder.Where(squirrel.Eq{"id": id}).Suffix("RETURNING " + userSelect).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
 
-		var user pkg.User
-		err = conn.QueryRow(c.Request.Context(), query, args...).Scan(
-			&user.Id, &user.Name, &user.Email, &user.Phone, &user.Time_created,
-			&user.Country_code, &user.Country_name, &user.Country_state, &user.City, &user.Timezone,
-		)
-
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		user, err := pkg.ScanUser(conn.QueryRow(c.Request.Context(), query, args...))
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "User not found"))
+			return
+		}
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -301,20 +311,22 @@ func UpdateUserPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id} [delete]
 func DeleteUser(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		userID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		result, err := conn.Exec(c.Request.Context(), `DELETE FROM "user" WHERE id = $1`, userID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		query, args, err := squirrel.Delete(userFrom).
+			Where(squirrel.Eq{"id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		if result.RowsAffected() == 0 {
+		result, err := conn.Exec(c.Request.Context(), query, args...)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "User not found"))
 			return
 		}

@@ -1,16 +1,78 @@
 package handlers
 
 import (
-	"fmt"
 	"main/pkg"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/n-r-w/squirrel"
 )
+
+const reviewSelect = "id, analyst_id, client_id, service_id, rating, comment, time_created"
+const reviewSelectQualified = "r.id, r.analyst_id, r.client_id, r.service_id, r.rating, r.comment, r.time_created"
+
+func applyReviewFilters(builder squirrel.SelectBuilder, filters pkg.ReviewFilter) squirrel.SelectBuilder {
+	if filters.AnalystId != nil {
+		builder = builder.Where(squirrel.Eq{"r.analyst_id": *filters.AnalystId})
+	}
+	if filters.ClientId != nil {
+		builder = builder.Where(squirrel.Eq{"r.client_id": *filters.ClientId})
+	}
+	if filters.ServiceId != nil {
+		builder = builder.Where(squirrel.Eq{"r.service_id": *filters.ServiceId})
+	}
+	if filters.Rating != nil {
+		builder = builder.Where(squirrel.Eq{"r.rating": *filters.Rating})
+	}
+	if filters.MinRating != nil {
+		builder = builder.Where(squirrel.GtOrEq{"r.rating": *filters.MinRating})
+	}
+	if filters.MaxRating != nil {
+		builder = builder.Where(squirrel.LtOrEq{"r.rating": *filters.MaxRating})
+	}
+	if filters.Comment != "" {
+		builder = builder.Where(squirrel.ILike{"r.comment": pkg.PutPercent(filters.Comment)})
+	}
+	if order := filters.ValidateSort(pkg.ReviewSortFields); order != "" {
+		builder = builder.OrderBy("r." + order)
+	} else {
+		builder = builder.OrderBy("r.time_created DESC")
+	}
+	return builder.Limit(uint64(filters.PageSize)).Offset(uint64(filters.Offset()))
+}
+
+func reviewBuilder(filters pkg.ReviewFilter) squirrel.SelectBuilder {
+	return applyReviewFilters(
+		squirrel.Select(reviewSelectQualified).From("review r").PlaceholderFormat(squirrel.Dollar),
+		filters,
+	)
+}
+
+func scanReviews(c *gin.Context, conn *pgxpool.Pool, builder squirrel.SelectBuilder, filters pkg.ReviewFilter) {
+	query, args, err := builder.ToSql()
+	if pkg.HandleErr(c, err) {
+		return
+	}
+
+	rows, err := conn.Query(c.Request.Context(), query, args...)
+	if pkg.HandleErr(c, err) {
+		return
+	}
+	defer rows.Close()
+
+	reviews, err := pkg.ScanRows(c, rows, pkg.ScanReview)
+	if pkg.HandleErr(c, err) {
+		return
+	}
+
+	c.JSON(http.StatusOK, pkg.ReviewsResponse{
+		Reviews:   reviews,
+		Count:     len(reviews),
+		Page:      filters.Page,
+		Page_size: filters.PageSize,
+	})
+}
 
 // GetReviews godoc
 // @Summary Listar avaliações
@@ -31,165 +93,14 @@ import (
 // @Router /reviews [get]
 func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Build query with filters
-		query := `SELECT id, analyst_id, client_id, service_id, rating, comment, time_created 
-                  FROM review WHERE 1=1`
-
-		args := []interface{}{}
-		argCounter := 1
-
-		// Filter by analyst_id
-		if analystID := c.Query("analyst_id"); analystID != "" {
-			if analystIDVal, err := strconv.Atoi(analystID); err == nil {
-				query += fmt.Sprintf(" AND analyst_id = $%d", argCounter)
-				args = append(args, analystIDVal)
-				argCounter++
-			}
-		}
-
-		// Filter by client_id
-		if clientID := c.Query("client_id"); clientID != "" {
-			if clientIDVal, err := strconv.Atoi(clientID); err == nil {
-				query += fmt.Sprintf(" AND client_id = $%d", argCounter)
-				args = append(args, clientIDVal)
-				argCounter++
-			}
-		}
-
-		// Filter by service_id
-		if serviceID := c.Query("service_id"); serviceID != "" {
-			if serviceIDVal, err := strconv.Atoi(serviceID); err == nil {
-				query += fmt.Sprintf(" AND service_id = $%d", argCounter)
-				args = append(args, serviceIDVal)
-				argCounter++
-			}
-		}
-
-		// Rating filter (exact match)
-		if rating := c.Query("rating"); rating != "" {
-			if ratingVal, err := strconv.Atoi(rating); err == nil && ratingVal >= 1 && ratingVal <= 5 {
-				query += fmt.Sprintf(" AND rating = $%d", argCounter)
-				args = append(args, ratingVal)
-				argCounter++
-			}
-		}
-
-		// Rating range filter
-		if minRating := c.Query("min_rating"); minRating != "" {
-			if minRatingVal, err := strconv.Atoi(minRating); err == nil {
-				query += fmt.Sprintf(" AND rating >= $%d", argCounter)
-				args = append(args, minRatingVal)
-				argCounter++
-			}
-		}
-
-		if maxRating := c.Query("max_rating"); maxRating != "" {
-			if maxRatingVal, err := strconv.Atoi(maxRating); err == nil {
-				query += fmt.Sprintf(" AND rating <= $%d", argCounter)
-				args = append(args, maxRatingVal)
-				argCounter++
-			}
-		}
-
-		// Comment filter (partial match)
-		if comment := c.Query("comment"); comment != "" {
-			query += fmt.Sprintf(" AND comment ILIKE $%d", argCounter)
-			args = append(args, "%"+comment+"%")
-			argCounter++
-		}
-
-		// Date range filters
-		if fromDate := c.Query("from_date"); fromDate != "" {
-			query += fmt.Sprintf(" AND time_created >= $%d", argCounter)
-			args = append(args, fromDate)
-			argCounter++
-		}
-
-		if toDate := c.Query("to_date"); toDate != "" {
-			query += fmt.Sprintf(" AND time_created <= $%d", argCounter)
-			args = append(args, toDate)
-			argCounter++
-		}
-
-		// Optional: Add sorting
-		if sortBy := c.Query("sort_by"); sortBy != "" {
-			// Validando sortBy para evitar SQL injection - apenas campos permitidos
-			allowedSortFields := map[string]bool{
-				"id": true, "analyst_id": true, "client_id": true, "service_id": true,
-				"rating": true, "time_created": true,
-			}
-			if allowedSortFields[sortBy] {
-				order := c.DefaultQuery("order", "DESC") // Default DESC for reviews (newest first)
-				if order == "ASC" || order == "DESC" {
-					query += fmt.Sprintf(" ORDER BY %s %s", sortBy, order)
-				}
-			}
-		} else {
-			// Default sorting by newest first
-			query += " ORDER BY time_created DESC"
-		}
-
-		// Pagination
-		page := 1
-		if p := c.Query("page"); p != "" {
-			if pVal, err := strconv.Atoi(p); err == nil && pVal > 0 {
-				page = pVal
-			}
-		}
-
-		pageSize := 20 // Default page size for reviews
-		if ps := c.Query("page_size"); ps != "" {
-			if psVal, err := strconv.Atoi(ps); err == nil && psVal > 0 && psVal <= 100 {
-				pageSize = psVal
-			}
-		}
-
-		offset := (page - 1) * pageSize
-		query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argCounter, argCounter+1)
-		args = append(args, pageSize, offset)
-
-		// Execute query
-		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		var filters pkg.ReviewFilter
+		err := c.ShouldBindQuery(&filters)
+		if pkg.HandleErr(c, err) {
 			return
 		}
-		defer rows.Close()
+		filters.Normalize()
 
-		var reviews []pkg.Review
-
-		// Iterate through results
-		for rows.Next() {
-			var review pkg.Review
-			err := rows.Scan(
-				&review.Id,
-				&review.Analyst_id,
-				&review.Client_id,
-				&review.Service_id,
-				&review.Rating,
-				&review.Comment,
-				&review.Time_created,
-			)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
-				return
-			}
-			reviews = append(reviews, review)
-		}
-
-		// Check for errors from iterating over rows
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
-			return
-		}
-
-		// Return results
-		c.JSON(http.StatusOK, pkg.ReviewsResponse{
-			Reviews:   reviews,
-			Count:     len(reviews),
-			Page:      page,
-			Page_size: pageSize,
-		})
+		scanReviews(c, conn, reviewBuilder(filters), filters)
 	}
 }
 
@@ -207,20 +118,20 @@ func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /reviews/{id} [get]
 func GetReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		reviewID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
-		var review pkg.Review
-		err = conn.QueryRow(c.Request.Context(), "SELECT id, analyst_id, client_id, service_id, rating, comment, time_created FROM review WHERE id = $1", reviewID).Scan(&review.Id, &review.Analyst_id, &review.Client_id, &review.Service_id, &review.Rating, &review.Comment, &review.Time_created)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+
+		query, args, err := squirrel.Select(reviewSelectQualified).
+			From("review r").Where(squirrel.Eq{"r.id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		review, err := pkg.ScanReview(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -237,32 +148,33 @@ func GetReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param review body pkg.Review true "Objeto avaliação"
 // @Success 201 {object} pkg.ReviewResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /reviews [post]
 func CreateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var review pkg.Review
-		if err := c.BindJSON(&review); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&review); pkg.HandleErr(c, err) {
 			return
 		}
 
-		// Validando que a avaliação esteja entre 1-5
 		if review.Rating < 1 || review.Rating > 5 {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Rating should be between 1 and 5"))
 			return
 		}
 
-		err := conn.QueryRow(c.Request.Context(),
-			`INSERT INTO review (analyst_id, client_id, service_id, rating, comment)
-			 VALUES ($1, $2, $3, $4, $5)
-			 RETURNING id, time_created`,
-			review.Analyst_id, review.Client_id, review.Service_id, review.Rating, review.Comment).
-			Scan(&review.Id, &review.Time_created)
+		query, args, err := squirrel.Insert("review").
+			Columns("analyst_id", "client_id", "service_id", "rating", "comment").
+			Values(review.Analyst_id, review.Client_id, review.Service_id, review.Rating, review.Comment).
+			Suffix("RETURNING " + reviewSelect).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
 
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		review, err = pkg.ScanReview(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -286,37 +198,47 @@ func CreateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /reviews/{id} [put]
 func UpdateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		reviewID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
-			return
-		}
-		var review pkg.Review
-		if err := c.BindJSON(&review); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		// Validando que a avaliação esteja entre 1-5
+		var reviewExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM review WHERE id = $1)`, id).Scan(&reviewExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if !reviewExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Review does not exists"))
+			return
+		}
+
+		var review pkg.Review
+		if err := c.BindJSON(&review); pkg.HandleErr(c, err) {
+			return
+		}
+
 		if review.Rating < 1 || review.Rating > 5 {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Rating should be between 1 and 5"))
 			return
 		}
 
-		err = conn.QueryRow(c.Request.Context(),
-			`UPDATE review SET analyst_id = $1, client_id = $2, service_id = $3, rating = $4, comment = $5
-			 WHERE id = $6
-			 RETURNING id, analyst_id, client_id, service_id, rating, comment, time_created`,
-			review.Analyst_id, review.Client_id, review.Service_id, review.Rating, review.Comment, reviewID).
-			Scan(&review.Id, &review.Analyst_id, &review.Client_id, &review.Service_id, &review.Rating, &review.Comment, &review.Time_created)
+		query, args, err := squirrel.Update("review").
+			SetMap(map[string]any{
+				"analyst_id": review.Analyst_id,
+				"client_id":  review.Client_id,
+				"service_id": review.Service_id,
+				"rating":     review.Rating,
+				"comment":    review.Comment}).
+			Where(squirrel.Eq{"id": id}).
+			Suffix("RETURNING " + reviewSelect).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		review, err = pkg.ScanReview(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -340,60 +262,60 @@ func UpdateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /reviews/{id} [patch]
 func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		reviewID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
-			return
-		}
-		var review pkg.ReviewUpdateRequest
-		if err := c.BindJSON(&review); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		set := []string{}
-		args := []interface{}{}
-		i := 1
-
-		if review.Comment != nil {
-			set = append(set, fmt.Sprintf("comment = $%d", i))
-			args = append(args, *review.Comment)
-			i++
+		var reviewExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM review WHERE id = $1)`, id).Scan(&reviewExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if !reviewExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Review does not exists"))
+			return
 		}
-		if review.Rating != nil {
-			if *review.Rating < 1 || *review.Rating > 5 {
+
+		var req pkg.ReviewUpdateRequest
+		if err := c.BindJSON(&req); pkg.HandleErr(c, err) {
+			return
+		}
+
+		builder := squirrel.Update("review").PlaceholderFormat(squirrel.Dollar)
+		hasFields := false
+
+		if req.Comment != nil {
+			builder = builder.Set("comment", *req.Comment)
+			hasFields = true
+		}
+		if req.Rating != nil {
+			if *req.Rating < 1 || *req.Rating > 5 {
 				c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Rating should be between 1 and 5"))
 				return
 			}
-			set = append(set, fmt.Sprintf("rating = $%d", i))
-			args = append(args, *review.Rating)
-			i++
+			builder = builder.Set("rating", *req.Rating)
+			hasFields = true
 		}
 
-		if len(set) == 0 {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Invalid arguments"))
+		if !hasFields {
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "No valid fields were given"))
 			return
 		}
 
-		args = append(args, reviewID)
-
-		query := fmt.Sprintf("UPDATE review SET %s WHERE id = $%d RETURNING id, analyst_id, client_id, service_id, rating, comment, time_created",
-			strings.Join(set, ", "), i)
-
-		var updatedReview pkg.Review
-		err = conn.QueryRow(c.Request.Context(), query, args...).Scan(&updatedReview.Id, &updatedReview.Analyst_id, &updatedReview.Client_id, &updatedReview.Service_id, &updatedReview.Rating, &updatedReview.Comment, &updatedReview.Time_created)
-
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		query, args, err := builder.
+			Where(squirrel.Eq{"id": id}).
+			Suffix("RETURNING " + reviewSelect).ToSql()
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		c.JSON(http.StatusOK, pkg.ReviewResponse{Review: updatedReview})
+		review, err := pkg.ScanReview(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		c.JSON(http.StatusOK, pkg.ReviewResponse{Review: review})
 	}
 }
 
@@ -412,20 +334,22 @@ func UpdateReviewPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /reviews/{id} [delete]
 func DeleteReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		reviewID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		result, err := conn.Exec(c.Request.Context(), `DELETE FROM review WHERE id = $1`, reviewID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		query, args, err := squirrel.Delete("review").
+			Where(squirrel.Eq{"id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		if result.RowsAffected() == 0 {
+		result, err := conn.Exec(c.Request.Context(), query, args...)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Review not found"))
 			return
 		}
@@ -449,129 +373,42 @@ func DeleteReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param page query int false "Página"
 // @Param page_size query int false "Tamanho da página"
 // @Success 200 {object} pkg.ReviewsResponse
+// @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
-// @Router /clients/{id}/reviews [get]
+// @Router /users/{id}/client/reviews [get]
 func GetClientReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		clientID, err := strconv.Atoi(c.Param("id"))
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		query := `SELECT r.id, r.analyst_id, r.client_id, r.service_id, r.rating, r.comment, r.time_created
-		          FROM review r
-		          JOIN client c ON r.client_id = c.id
-		          WHERE c.user_id = $1`
-		args := []interface{}{clientID}
-		argCounter := 2
-
-		if analystID := c.Query("analyst_id"); analystID != "" {
-			if analystIDVal, err := strconv.Atoi(analystID); err == nil {
-				query += fmt.Sprintf(" AND r.analyst_id = $%d", argCounter)
-				args = append(args, analystIDVal)
-				argCounter++
-			}
-		}
-		if serviceID := c.Query("service_id"); serviceID != "" {
-			if serviceIDVal, err := strconv.Atoi(serviceID); err == nil {
-				query += fmt.Sprintf(" AND r.service_id = $%d", argCounter)
-				args = append(args, serviceIDVal)
-				argCounter++
-			}
-		}
-		if rating := c.Query("rating"); rating != "" {
-			if ratingVal, err := strconv.Atoi(rating); err == nil && ratingVal >= 1 && ratingVal <= 5 {
-				query += fmt.Sprintf(" AND r.rating = $%d", argCounter)
-				args = append(args, ratingVal)
-				argCounter++
-			}
-		}
-		if minRating := c.Query("min_rating"); minRating != "" {
-			if minRatingVal, err := strconv.Atoi(minRating); err == nil {
-				query += fmt.Sprintf(" AND r.rating >= $%d", argCounter)
-				args = append(args, minRatingVal)
-				argCounter++
-			}
-		}
-		if maxRating := c.Query("max_rating"); maxRating != "" {
-			if maxRatingVal, err := strconv.Atoi(maxRating); err == nil {
-				query += fmt.Sprintf(" AND r.rating <= $%d", argCounter)
-				args = append(args, maxRatingVal)
-				argCounter++
-			}
-		}
-		if comment := c.Query("comment"); comment != "" {
-			query += fmt.Sprintf(" AND r.comment ILIKE $%d", argCounter)
-			args = append(args, "%"+comment+"%")
-			argCounter++
-		}
-		if fromDate := c.Query("from_date"); fromDate != "" {
-			query += fmt.Sprintf(" AND r.time_created >= $%d", argCounter)
-			args = append(args, fromDate)
-			argCounter++
-		}
-		if toDate := c.Query("to_date"); toDate != "" {
-			query += fmt.Sprintf(" AND r.time_created <= $%d", argCounter)
-			args = append(args, toDate)
-			argCounter++
-		}
-
-		allowedSortFields := map[string]bool{
-			"id": true, "analyst_id": true, "client_id": true, "service_id": true,
-			"rating": true, "time_created": true,
-		}
-		if sortBy := c.Query("sort_by"); sortBy != "" {
-			if allowedSortFields[sortBy] {
-				order := c.DefaultQuery("order", "DESC")
-				if order == "ASC" || order == "DESC" {
-					query += fmt.Sprintf(" ORDER BY r.%s %s", sortBy, order)
-				}
-			}
-		} else {
-			query += " ORDER BY r.time_created DESC"
-		}
-
-		page := 1
-		if p := c.Query("page"); p != "" {
-			if pVal, err := strconv.Atoi(p); err == nil && pVal > 0 {
-				page = pVal
-			}
-		}
-		pageSize := 20
-		if ps := c.Query("page_size"); ps != "" {
-			if psVal, err := strconv.Atoi(ps); err == nil && psVal > 0 && psVal <= 100 {
-				pageSize = psVal
-			}
-		}
-
-		offset := (page - 1) * pageSize
-		query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argCounter, argCounter+1)
-		args = append(args, pageSize, offset)
-
-		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		// Checando se o cliente já existe
+		var clientExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM client WHERE id = $1)`, id).Scan(&clientExists)
+		if pkg.HandleErr(c, err) {
 			return
-		}
-		defer rows.Close()
-
-		var reviews []pkg.Review
-		for rows.Next() {
-			var review pkg.Review
-			if err := rows.Scan(&review.Id, &review.Analyst_id, &review.Client_id, &review.Service_id,
-				&review.Rating, &review.Comment, &review.Time_created); err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
-				return
-			}
-			reviews = append(reviews, review)
-		}
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		} else if !clientExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Client does not exists"))
 			return
 		}
 
-		c.JSON(http.StatusOK, pkg.ReviewsResponse{Reviews: reviews, Count: len(reviews), Page: page, Page_size: pageSize})
+		var filters pkg.ReviewFilter
+		err = c.ShouldBindQuery(&filters)
+		if pkg.HandleErr(c, err) {
+			return
+		}
+		filters.Normalize()
+
+		builder := applyReviewFilters(
+			squirrel.Select(reviewSelectQualified).
+				From("review r").
+				Join("client cl ON r.client_id = cl.id").
+				Where(squirrel.Eq{"cl.id": id}).
+				PlaceholderFormat(squirrel.Dollar), filters)
+
+		scanReviews(c, conn, builder, filters)
 	}
 }
 
@@ -590,128 +427,41 @@ func GetClientReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param page query int false "Página"
 // @Param page_size query int false "Tamanho da página"
 // @Success 200 {object} pkg.ReviewsResponse
+// @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
-// @Router /analysts/{id}/reviews [get]
+// @Router /users/{id}/analyst/reviews [get]
 func GetAnalystReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		analystID, err := strconv.Atoi(c.Param("id"))
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		query := `SELECT r.id, r.analyst_id, r.client_id, r.service_id, r.rating, r.comment, r.time_created
-		          FROM review r
-		          JOIN analyst a ON r.analyst_id = a.id
-		          WHERE a.user_id = $1`
-		args := []interface{}{analystID}
-		argCounter := 2
-
-		if clientID := c.Query("client_id"); clientID != "" {
-			if clientIDVal, err := strconv.Atoi(clientID); err == nil {
-				query += fmt.Sprintf(" AND r.client_id = $%d", argCounter)
-				args = append(args, clientIDVal)
-				argCounter++
-			}
-		}
-		if serviceID := c.Query("service_id"); serviceID != "" {
-			if serviceIDVal, err := strconv.Atoi(serviceID); err == nil {
-				query += fmt.Sprintf(" AND r.service_id = $%d", argCounter)
-				args = append(args, serviceIDVal)
-				argCounter++
-			}
-		}
-		if rating := c.Query("rating"); rating != "" {
-			if ratingVal, err := strconv.Atoi(rating); err == nil && ratingVal >= 1 && ratingVal <= 5 {
-				query += fmt.Sprintf(" AND r.rating = $%d", argCounter)
-				args = append(args, ratingVal)
-				argCounter++
-			}
-		}
-		if minRating := c.Query("min_rating"); minRating != "" {
-			if minRatingVal, err := strconv.Atoi(minRating); err == nil {
-				query += fmt.Sprintf(" AND r.rating >= $%d", argCounter)
-				args = append(args, minRatingVal)
-				argCounter++
-			}
-		}
-		if maxRating := c.Query("max_rating"); maxRating != "" {
-			if maxRatingVal, err := strconv.Atoi(maxRating); err == nil {
-				query += fmt.Sprintf(" AND r.rating <= $%d", argCounter)
-				args = append(args, maxRatingVal)
-				argCounter++
-			}
-		}
-		if comment := c.Query("comment"); comment != "" {
-			query += fmt.Sprintf(" AND r.comment ILIKE $%d", argCounter)
-			args = append(args, "%"+comment+"%")
-			argCounter++
-		}
-		if fromDate := c.Query("from_date"); fromDate != "" {
-			query += fmt.Sprintf(" AND r.time_created >= $%d", argCounter)
-			args = append(args, fromDate)
-			argCounter++
-		}
-		if toDate := c.Query("to_date"); toDate != "" {
-			query += fmt.Sprintf(" AND r.time_created <= $%d", argCounter)
-			args = append(args, toDate)
-			argCounter++
-		}
-
-		allowedSortFields := map[string]bool{
-			"id": true, "analyst_id": true, "client_id": true, "service_id": true,
-			"rating": true, "time_created": true,
-		}
-		if sortBy := c.Query("sort_by"); sortBy != "" {
-			if allowedSortFields[sortBy] {
-				order := c.DefaultQuery("order", "DESC")
-				if order == "ASC" || order == "DESC" {
-					query += fmt.Sprintf(" ORDER BY r.%s %s", sortBy, order)
-				}
-			}
-		} else {
-			query += " ORDER BY r.time_created DESC"
-		}
-
-		page := 1
-		if p := c.Query("page"); p != "" {
-			if pVal, err := strconv.Atoi(p); err == nil && pVal > 0 {
-				page = pVal
-			}
-		}
-		pageSize := 20
-		if ps := c.Query("page_size"); ps != "" {
-			if psVal, err := strconv.Atoi(ps); err == nil && psVal > 0 && psVal <= 100 {
-				pageSize = psVal
-			}
-		}
-
-		offset := (page - 1) * pageSize
-		query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argCounter, argCounter+1)
-		args = append(args, pageSize, offset)
-
-		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		// Checando se o analista já existe
+		var analystExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, id).Scan(&analystExists)
+		if pkg.HandleErr(c, err) {
 			return
-		}
-		defer rows.Close()
-
-		var reviews []pkg.Review
-		for rows.Next() {
-			var review pkg.Review
-			if err := rows.Scan(&review.Id, &review.Analyst_id, &review.Client_id, &review.Service_id,
-				&review.Rating, &review.Comment, &review.Time_created); err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
-				return
-			}
-			reviews = append(reviews, review)
-		}
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		} else if !analystExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst does not exists"))
 			return
 		}
 
-		c.JSON(http.StatusOK, pkg.ReviewsResponse{Reviews: reviews, Count: len(reviews), Page: page, Page_size: pageSize})
+		var filters pkg.ReviewFilter
+		err = c.ShouldBindQuery(&filters)
+		if pkg.HandleErr(c, err) {
+			return
+		}
+		filters.Normalize()
+
+		builder := applyReviewFilters(
+			squirrel.Select(reviewSelectQualified).
+				From("review r").
+				Join("analyst a ON r.analyst_id = a.id").
+				Where(squirrel.Eq{"a.id": id}).
+				PlaceholderFormat(squirrel.Dollar), filters)
+
+		scanReviews(c, conn, builder, filters)
 	}
 }

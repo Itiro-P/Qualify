@@ -1,17 +1,20 @@
 package handlers
 
 import (
-	"fmt"
 	"main/internal/database/services"
 	"main/pkg"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/n-r-w/squirrel"
 )
+
+const analystSelect = `u.id, u.name, u.email, u.phone, u.time_created,
+	u.country_code, u.country_name, u.country_state, u.city, u.timezone,
+	a.hourly_rate, a.total_reviews, a.mean_rating`
+
+const analystJoin = `"user" u JOIN analyst a ON a.id = u.id`
 
 // GetAnalysts godoc
 // @Summary Listar analistas
@@ -29,157 +32,43 @@ import (
 // @Param min_hourly_rate query number false "Valor mínimo por hora"
 // @Param max_hourly_rate query number false "Valor máximo por hora"
 // @Param min_total_reviews query int false "Quantidade mínima de avaliações totais"
-// @Param min_mean_rating query number false "Avaliação média mínima"
+// @Param max_total_reviews query int false "Quantidade máxima de avaliações totais"
+// @Param min_rating query int false "Avaliação média mínima"
+// @Param max_rating query int false "Avaliação média máxima"
+// @Param skills   query   string   false   "Nomes de habilidades (ex: c++,java,TypeScript)"
 // @Param sort_by query string false "Campo para ordenar: name,country_name,country_state,city,timezone,hourly_rate,total_reviews,mean_rating,time_created"
 // @Param order query string false "Direção: ASC ou DESC"
+// @Param page query int false "Página"
+// @Param page_size query int false "Tamanho da página"
 // @Success 200 {object} pkg.AnalystsResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Router /analysts [get]
 func GetAnalysts(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		query := `
-			SELECT u.id, u.name, u.email, u.phone, u.time_created,
-			       u.country_code, u.country_name, u.country_state, u.city, u.timezone,
-			       a.hourly_rate, a.total_reviews, a.mean_rating
-			FROM "user" u
-			JOIN analyst a ON a.id = u.id
-			WHERE 1=1`
-
-		args := []interface{}{}
-		argCounter := 1
-
-		if name := c.Query("name"); name != "" {
-			query += fmt.Sprintf(" AND u.name ILIKE $%d", argCounter)
-			args = append(args, "%"+name+"%")
-			argCounter++
+		builder := squirrel.Select(analystSelect).From(analystJoin).PlaceholderFormat(squirrel.Dollar)
+		var filters pkg.AnalystFilter
+		err := c.ShouldBindQuery(&filters)
+		if pkg.HandleErr(c, err) {
+			return
 		}
-
-		if email := c.Query("email"); email != "" {
-			query += fmt.Sprintf(" AND u.email ILIKE $%d", argCounter)
-			args = append(args, "%"+email+"%")
-			argCounter++
-		}
-
-		if country := c.Query("country"); country != "" {
-			query += fmt.Sprintf(" AND u.country_name ILIKE $%d", argCounter)
-			args = append(args, "%"+country+"%")
-			argCounter++
-		}
-
-		if countryCode := c.Query("country_code"); countryCode != "" {
-			query += fmt.Sprintf(" AND u.country_code ILIKE $%d", argCounter)
-			args = append(args, "%"+countryCode+"%")
-			argCounter++
-		}
-
-		if countryState := c.Query("country_state"); countryState != "" {
-			query += fmt.Sprintf(" AND u.country_state ILIKE $%d", argCounter)
-			args = append(args, "%"+countryState+"%")
-			argCounter++
-		}
-
-		if city := c.Query("city"); city != "" {
-			query += fmt.Sprintf(" AND u.city ILIKE $%d", argCounter)
-			args = append(args, "%"+city+"%")
-			argCounter++
-		}
-
-		if timezone := c.Query("timezone"); timezone != "" {
-			query += fmt.Sprintf(" AND u.timezone ILIKE $%d", argCounter)
-			args = append(args, "%"+timezone+"%")
-			argCounter++
-		}
-
-		if minRate := c.Query("min_hourly_rate"); minRate != "" {
-			if minRateVal, err := strconv.ParseFloat(minRate, 64); err == nil {
-				query += fmt.Sprintf(" AND a.hourly_rate >= $%d", argCounter)
-				args = append(args, minRateVal)
-				argCounter++
-			}
-		}
-
-		if maxRate := c.Query("max_hourly_rate"); maxRate != "" {
-			if maxRateVal, err := strconv.ParseFloat(maxRate, 64); err == nil {
-				query += fmt.Sprintf(" AND a.hourly_rate <= $%d", argCounter)
-				args = append(args, maxRateVal)
-				argCounter++
-			}
-		}
-
-		if minReviews := c.Query("min_total_reviews"); minReviews != "" {
-			if minReviewsVal, err := strconv.Atoi(minReviews); err == nil {
-				query += fmt.Sprintf(" AND a.total_reviews >= $%d", argCounter)
-				args = append(args, minReviewsVal)
-				argCounter++
-			}
-		}
-
-		if minRating := c.Query("min_mean_rating"); minRating != "" {
-			if minRatingVal, err := strconv.ParseFloat(minRating, 64); err == nil {
-				query += fmt.Sprintf(" AND a.mean_rating >= $%d", argCounter)
-				args = append(args, minRatingVal)
-				argCounter++
-			}
-		}
-
-		allowedSortFields := map[string]bool{
-			"name": true, "country_name": true, "city": true,
-			"hourly_rate": true, "total_reviews": true, "mean_rating": true,
-			"time_created": true,
-		}
-		if sortBy := c.Query("sort_by"); sortBy != "" {
-			if allowedSortFields[sortBy] {
-				order := c.DefaultQuery("order", "ASC")
-				if order == "ASC" || order == "DESC" {
-					query += fmt.Sprintf(" ORDER BY %s %s", sortBy, order)
-				}
-			}
-		} else {
-			query += " ORDER BY u.time_created DESC"
+		query, args, err := pkg.BuildFilterAnalyst(pkg.BuildFilterUser(builder, filters.UserFilter), filters).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
 		}
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
+
 		defer rows.Close()
 
-		var analysts []pkg.Analyst
-
-		for rows.Next() {
-			var analyst pkg.Analyst
-			err := rows.Scan(
-				&analyst.Id,
-				&analyst.Name,
-				&analyst.Email,
-				&analyst.Phone,
-				&analyst.Time_created,
-				&analyst.Country_code,
-				&analyst.Country_name,
-				&analyst.Country_state,
-				&analyst.City,
-				&analyst.Timezone,
-				&analyst.Hourly_rate,
-				&analyst.Total_reviews,
-				&analyst.Mean_rating,
-			)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
-				return
-			}
-			analysts = append(analysts, analyst)
-		}
-
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		analysts, err := pkg.ScanRows(c, rows, pkg.ScanAnalyst)
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		c.JSON(http.StatusOK, pkg.AnalystsResponse{
-			Analysts: analysts,
-			Count:    len(analysts),
-		})
+		c.JSON(http.StatusOK, pkg.AnalystsResponse{Analysts: analysts, Count: len(analysts)})
 	}
 }
 
@@ -197,47 +86,24 @@ func GetAnalysts(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/analyst [get]
 func GetAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		analystID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		var analyst pkg.Analyst
-		err = conn.QueryRow(c.Request.Context(), `
-			SELECT u.id, u.name, u.email, u.phone, u.time_created, 
-			       u.country_code, u.country_name, u.country_state, u.city, u.timezone,
-			       a.hourly_rate, a.total_reviews, a.mean_rating
-			FROM "user" u
-			JOIN analyst a ON a.id = u.id
-			WHERE u.id = $1`, analystID).Scan(
-			&analyst.Id,
-			&analyst.Name,
-			&analyst.Email,
-			&analyst.Phone,
-			&analyst.Time_created,
-			&analyst.Country_code,
-			&analyst.Country_name,
-			&analyst.Country_state,
-			&analyst.City,
-			&analyst.Timezone,
-			&analyst.Hourly_rate,
-			&analyst.Total_reviews,
-			&analyst.Mean_rating,
-		)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		query, args, err := squirrel.Select(analystSelect).
+			From(analystJoin).Where(squirrel.Eq{"u.id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		c.JSON(http.StatusOK, pkg.AnalystResponse{
-			Analyst: analyst,
-		})
+		analyst, err := pkg.ScanAnalyst(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		c.JSON(http.StatusOK, pkg.AnalystResponse{Analyst: analyst})
 	}
 }
 
@@ -257,155 +123,62 @@ func GetAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/analyst [patch]
 func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		analystID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
 		var req pkg.AnalystUpdateRequest
-		if err := c.BindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&req); pkg.HandleErr(c, err) {
 			return
 		}
 
-		userSet := []string{}
-		userArgs := []interface{}{}
-		i := 1
-		if req.Name != nil {
-			userSet = append(userSet, fmt.Sprintf("name = $%d", i))
-			userArgs = append(userArgs, *req.Name)
-			i++
-		}
-		if req.Email != nil {
-			userSet = append(userSet, fmt.Sprintf("email = $%d", i))
-			userArgs = append(userArgs, *req.Email)
-			i++
-		}
-		if req.Phone != nil {
-			userSet = append(userSet, fmt.Sprintf("phone = $%d", i))
-			userArgs = append(userArgs, *req.Phone)
-			i++
-		}
-		if req.Country_code != nil {
-			userSet = append(userSet, fmt.Sprintf("country_code = $%d", i))
-			userArgs = append(userArgs, *req.Country_code)
-			i++
-		}
-		if req.Country_name != nil {
-			userSet = append(userSet, fmt.Sprintf("country_name = $%d", i))
-			userArgs = append(userArgs, *req.Country_name)
-			i++
-		}
-		if req.Country_state != nil {
-			userSet = append(userSet, fmt.Sprintf("country_state = $%d", i))
-			userArgs = append(userArgs, *req.Country_state)
-			i++
-		}
-		if req.City != nil {
-			userSet = append(userSet, fmt.Sprintf("city = $%d", i))
-			userArgs = append(userArgs, *req.City)
-			i++
-		}
-		if req.Timezone != nil {
-			userSet = append(userSet, fmt.Sprintf("timezone = $%d", i))
-			userArgs = append(userArgs, *req.Timezone)
-			i++
-		}
+		userFields, analystFields := pkg.BuildUpdateAnalyst(req)
 
-		analystSet := []string{}
-		analystArgs := []interface{}{}
-		if req.Hourly_rate != nil {
-			analystSet = append(analystSet, fmt.Sprintf("hourly_rate = $%d", i))
-			analystArgs = append(analystArgs, *req.Hourly_rate)
-			i++
-		}
-		if req.Total_reviews != nil {
-			analystSet = append(analystSet, fmt.Sprintf("total_reviews = $%d", i))
-			analystArgs = append(analystArgs, *req.Total_reviews)
-			i++
-		}
-		if req.Mean_rating != nil {
-			analystSet = append(analystSet, fmt.Sprintf("mean_rating = $%d", i))
-			analystArgs = append(analystArgs, *req.Mean_rating)
-			i++
-		}
-
-		if len(userSet) == 0 && len(analystSet) == 0 {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if len(userFields) == 0 && len(analystFields) == 0 {
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "No valid fields were given"))
 			return
 		}
 
 		tx, err := conn.Begin(c.Request.Context())
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
-		defer func() {
-			if err != nil {
-				_ = tx.Rollback(c.Request.Context())
-			}
-		}()
+		defer func() { _ = tx.Rollback(c.Request.Context()) }()
 
-		// Update user if needed
-		if len(userSet) > 0 {
-			userArgs = append(userArgs, analystID)
-			userQuery := fmt.Sprintf(`UPDATE "user" SET %s WHERE id = $%d`, strings.Join(userSet, ", "), len(userArgs))
-			if _, err := tx.Exec(c.Request.Context(), userQuery, userArgs...); err != nil {
-				_ = tx.Rollback(c.Request.Context())
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if len(userFields) > 0 {
+			query, args, err := squirrel.Update(`"user"`).
+				SetMap(userFields).Where(squirrel.Eq{"id": id}).
+				PlaceholderFormat(squirrel.Dollar).ToSql()
+			if pkg.HandleErr(c, err) {
+				return
+			} else if _, err = tx.Exec(c.Request.Context(), query, args...); pkg.HandleErr(c, err) {
 				return
 			}
 		}
 
-		// Update analyst if needed
-		if len(analystSet) > 0 {
-			analystArgs = append(userArgs, analystArgs...)
-			// analystArgs currently has userArgs followed by analystArgs; ensure id param at end
-			analystArgs = append(analystArgs, analystID)
-			analystQuery := fmt.Sprintf(`UPDATE analyst SET %s WHERE id = $%d`, strings.Join(analystSet, ", "), len(analystArgs))
-			if _, err := tx.Exec(c.Request.Context(), analystQuery, analystArgs...); err != nil {
-				_ = tx.Rollback(c.Request.Context())
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if len(analystFields) > 0 {
+			query, args, err := squirrel.Update("analyst").
+				SetMap(analystFields).Where(squirrel.Eq{"id": id}).
+				PlaceholderFormat(squirrel.Dollar).ToSql()
+			if pkg.HandleErr(c, err) {
+				return
+			} else if _, err = tx.Exec(c.Request.Context(), query, args...); pkg.HandleErr(c, err) {
 				return
 			}
 		}
 
-		var analyst pkg.Analyst
-		err = tx.QueryRow(c.Request.Context(), `
-			SELECT u.id, u.name, u.email, u.phone, u.time_created, 
-				   u.country_code, u.country_name, u.country_state, u.city, u.timezone,
-				   a.hourly_rate, a.total_reviews, a.mean_rating
-			FROM "user" u
-			JOIN analyst a ON a.id = u.id
-			WHERE u.id = $1`, analystID).Scan(
-			&analyst.Id,
-			&analyst.Name,
-			&analyst.Email,
-			&analyst.Phone,
-			&analyst.Time_created,
-			&analyst.Country_code,
-			&analyst.Country_name,
-			&analyst.Country_state,
-			&analyst.City,
-			&analyst.Timezone,
-			&analyst.Hourly_rate,
-			&analyst.Total_reviews,
-			&analyst.Mean_rating,
-		)
-		if err != nil {
-			_ = tx.Rollback(c.Request.Context())
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		selectQuery, selectArgs, err := squirrel.Select(analystSelect).
+			From(analystJoin).Where(squirrel.Eq{"u.id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		if err = tx.Commit(c.Request.Context()); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		analyst, err := pkg.ScanAnalyst(tx.QueryRow(c.Request.Context(), selectQuery, selectArgs...))
+		if pkg.HandleErr(c, err) {
+			return
+		} else if err = tx.Commit(c.Request.Context()); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -420,42 +193,42 @@ func UpdateAnalystPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do usuário"
-// @Param analyst body pkg.Analyst true "Objeto analista (envie apenas `hourly_rate`)"
+// @Param analyst body pkg.AnalystCreateRequest true "Objeto analista (envie apenas `hourly_rate`)"
 // @Success 201 {object} pkg.AnalystResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /users/{id}/analyst [post]
 func CreateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userIDParam := c.Param("id")
-		userID, err := strconv.Atoi(userIDParam)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		var request struct {
-			Hourly_rate float64 `json:"hourly_rate"`
-		}
-		if err := c.BindJSON(&request); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		var analystExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, id).Scan(&analystExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if analystExists {
+			c.JSON(http.StatusConflict, pkg.Internal(c.FullPath(), "Analyst already exists"))
 			return
 		}
 
-		analyst, err := services.AssignAnalystRole(c.Request.Context(), conn, userID, request.Hourly_rate)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		var request pkg.AnalystCreateRequest
+		if err := c.BindJSON(&request); pkg.HandleErr(c, err) {
 			return
 		}
 
-		c.JSON(http.StatusCreated, pkg.AnalystResponse{
-			Analyst: *analyst,
-		})
+		analyst, err := services.AssignAnalystRole(c.Request.Context(), conn, id, request.Hourly_rate)
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		c.JSON(http.StatusCreated, pkg.AnalystResponse{Analyst: *analyst})
 	}
 }
 
@@ -475,99 +248,75 @@ func CreateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/analyst [put]
 func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		analystID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
-			return
-		}
-		var analyst pkg.Analyst
-		if err := c.BindJSON(&analyst); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		// Validando parâmetros obrigatórios
+		var analyst pkg.Analyst
+		if err := c.BindJSON(&analyst); pkg.HandleErr(c, err) {
+			return
+		}
+
 		if analyst.Name == "" {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty name"))
 			return
 		}
 		if analyst.Email == "" {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty email"))
 			return
 		}
 		if len(analyst.Country_code) != 2 {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Country code must be exactly 2 characters"))
 			return
 		}
 
-		// Usar transação para garantir atomicidade entre updates nas tabelas
 		tx, err := conn.Begin(c.Request.Context())
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
-		defer func() {
-			if err != nil {
-				_ = tx.Rollback(c.Request.Context())
-			}
-		}()
+		defer tx.Rollback(c.Request.Context())
 
-		_, err = tx.Exec(c.Request.Context(),
-			`UPDATE "user" SET name = $1, email = $2, phone = $3, country_code = $4, 
-			 country_name = $5, country_state = $6, city = $7, timezone = $8
-			 WHERE id = $9`,
-			analyst.Name, analyst.Email, analyst.Phone, analyst.Country_code, analyst.Country_name, analyst.Country_state,
-			analyst.City, analyst.Timezone, analystID)
-		if err != nil {
-			_ = tx.Rollback(c.Request.Context())
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		userQuery, userArgs, err := squirrel.Update(`"user"`).
+			SetMap(map[string]any{
+				"name":          analyst.Name,
+				"email":         analyst.Email,
+				"phone":         analyst.Phone,
+				"country_code":  analyst.Country_code,
+				"country_name":  analyst.Country_name,
+				"country_state": analyst.Country_state,
+				"city":          analyst.City,
+				"timezone":      analyst.Timezone,
+			}).Where(squirrel.Eq{"id": id}).PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
 			return
-		}
-
-		_, err = tx.Exec(c.Request.Context(),
-			`UPDATE analyst SET hourly_rate = $1, total_reviews = $2, mean_rating = $3
-			 WHERE id = $4`,
-			analyst.Hourly_rate, analyst.Total_reviews, analyst.Mean_rating, analystID)
-		if err != nil {
-			_ = tx.Rollback(c.Request.Context())
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		} else if _, err = tx.Exec(c.Request.Context(), userQuery, userArgs...); pkg.HandleErr(c, err) {
 			return
 		}
 
-		err = tx.QueryRow(c.Request.Context(), `
-			SELECT u.id, u.name, u.email, u.phone, u.time_created, 
-				   u.country_code, u.country_name, u.country_state, u.city, u.timezone,
-				   a.hourly_rate, a.total_reviews, a.mean_rating
-			FROM "user" u
-			JOIN analyst a ON a.id = u.id
-			WHERE u.id = $1`, analystID).Scan(
-			&analyst.Id,
-			&analyst.Name,
-			&analyst.Email,
-			&analyst.Phone,
-			&analyst.Time_created,
-			&analyst.Country_code,
-			&analyst.Country_name,
-			&analyst.Country_state,
-			&analyst.City,
-			&analyst.Timezone,
-			&analyst.Hourly_rate,
-			&analyst.Total_reviews,
-			&analyst.Mean_rating,
-		)
-		if err != nil {
-			_ = tx.Rollback(c.Request.Context())
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		analystQuery, analystArgs, err := squirrel.Update("analyst").
+			SetMap(map[string]any{
+				"hourly_rate":   analyst.Hourly_rate,
+				"total_reviews": analyst.Total_reviews,
+				"mean_rating":   analyst.Mean_rating,
+			}).Where(squirrel.Eq{"id": id}).PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		} else if _, err = tx.Exec(c.Request.Context(), analystQuery, analystArgs...); pkg.HandleErr(c, err) {
 			return
 		}
 
-		if err = tx.Commit(c.Request.Context()); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		selectQuery, selectArgs, err := squirrel.Select(analystSelect).
+			From(analystJoin).Where(squirrel.Eq{"u.id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		analyst, err = pkg.ScanAnalyst(tx.QueryRow(c.Request.Context(), selectQuery, selectArgs...))
+		if pkg.HandleErr(c, err) {
+			return
+		} else if err = tx.Commit(c.Request.Context()); pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -590,20 +339,22 @@ func UpdateAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/analyst [delete]
 func DeleteAnalyst(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		analystID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		result, err := conn.Exec(c.Request.Context(), `DELETE FROM analyst WHERE id = $1`, analystID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		query, args, err := squirrel.Delete("analyst").
+			Where(squirrel.Eq{"id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		if result.RowsAffected() == 0 {
+		result, err := conn.Exec(c.Request.Context(), query, args...)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst not found"))
 			return
 		}

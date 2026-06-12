@@ -9,18 +9,33 @@ import {
   Settings,
   ChevronDown,
   ChevronsUp,
+  Clipboard,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { getSessionUser, clearSession } from "@/libs/session";
-import type { User as SessionUser} from "@/types/services/user";
+import { analystService } from "@/libs/services";
+import type { User as SessionUser } from "@/types/services/user";
 
 export function Header() {
+  const router = useRouter();
   const [user, setUser] = useState<SessionUser | null>(null);
+  const [hasAnalyst, setHasAnalyst] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    getSessionUser().then(setUser);
+    getSessionUser().then((sessionUser) => {
+      setUser(sessionUser);
+      if (sessionUser) {
+        analystService
+          .getByUserId(sessionUser.id)
+          .then((analyst) => setHasAnalyst(analyst != null));
+      } else {
+        setHasAnalyst(false);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -40,6 +55,16 @@ export function Header() {
     window.location.href = "/";
   }
 
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const term = searchTerm.trim();
+    router.push(
+      term
+        ? `/customer/searchAnalyst?skill=${encodeURIComponent(term)}`
+        : "/customer/searchAnalyst",
+    );
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-bg-dark/80 backdrop-blur-md px-6 md:px-20 py-4">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -49,35 +74,46 @@ export function Header() {
             <h2 className="text-xl font-bold tracking-tight">Qualify</h2>
           </Link>
           <nav className="hidden lg:flex items-center gap-8">
-            <a
+            <Link
               className="text-sm font-medium hover:text-accent transition-colors"
-              href="#tiers"
+              href="/#tiers"
             >
               Tiers de testes
-            </a>
-            <a
+            </Link>
+            <Link
               className="text-sm font-medium hover:text-accent transition-colors"
-              href="#devices"
+              href="/#devices"
             >
               Dispositivos
-            </a>
-            <a
+            </Link>
+            <Link
               className="text-sm font-medium hover:text-accent transition-colors"
-              href="#guarantee"
+              href="/#guarantee"
             >
               Garantias
-            </a>
+            </Link>
           </nav>
         </div>
         <div className="flex items-center gap-6">
-          <div className="hidden md:flex items-center bg-white/5 rounded px-3 py-1.5 border border-white/10">
-            <Search className="text-neutral-slate w-5 h-5" />
+          <form
+            onSubmit={handleSearch}
+            className="hidden md:flex items-center bg-white/5 rounded px-3 py-1.5 border border-white/10 focus-within:border-accent/50 transition-colors"
+          >
+            <button
+              type="submit"
+              aria-label="Buscar competências"
+              className="text-neutral-slate hover:text-accent transition-colors cursor-pointer"
+            >
+              <Search className="w-5 h-5" />
+            </button>
             <input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-transparent border-none focus:ring-0 focus:outline-none text-sm w-50 placeholder:text-neutral-slate ml-2"
               placeholder="Buscar competências"
               type="text"
             />
-          </div>
+          </form>
 
           {user ? (
             <div className="relative" ref={menuRef}>
@@ -120,13 +156,41 @@ export function Header() {
                     <User className="w-4 h-4" />
                     Perfil
                   </Link>
+                  {!hasAnalyst && (
+                    <Link
+                      href="/analyst/register"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/80 hover:bg-white/5 hover:text-accent transition-colors"
+                    >
+                      <ChevronsUp className="w-4 h-4" />
+                      Cadastrar como analista
+                    </Link>
+                  )}
+                  {hasAnalyst && (
+                    <Link
+                      href="/analyst/edit"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/80 hover:bg-white/5 hover:text-accent transition-colors"
+                    >
+                      <Settings className="w-4 h-4" />
+                      Editar analista
+                    </Link>
+                  )}
                   <Link
-                    href="/analyst/register"
+                    href="/user/listReviews"
                     onClick={() => setMenuOpen(false)}
                     className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/80 hover:bg-white/5 hover:text-accent transition-colors"
                   >
-                    <ChevronsUp className="w-4 h-4" />
-                    Cadastrar como analista
+                    <Terminal className="w-4 h-4" />
+                    Minhas avaliações
+                  </Link>
+                  <Link
+                    href="/user/listService"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/80 hover:bg-white/5 hover:text-accent transition-colors"
+                  >
+                    <Clipboard className="w-4 h-4" />
+                    Meus serviços
                   </Link>
                   <button
                     onClick={handleLogout}

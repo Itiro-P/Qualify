@@ -28,17 +28,10 @@ definitions:
       total_reviews:
         type: integer
     type: object
-  pkg.AnalystCertification:
+  pkg.AnalystCreateRequest:
     properties:
-      analyst_id:
-        type: integer
-      certification_id:
-        type: integer
-    type: object
-  pkg.AnalystCertificationResponse:
-    properties:
-      analyst_certification:
-        $ref: '#/definitions/pkg.AnalystCertification'
+      hourly_rate:
+        type: number
     type: object
   pkg.AnalystProfile:
     properties:
@@ -58,27 +51,6 @@ definitions:
     properties:
       analyst:
         $ref: '#/definitions/pkg.Analyst'
-    type: object
-  pkg.AnalystSkill:
-    properties:
-      analyst_id:
-        type: integer
-      skill_id:
-        type: integer
-    type: object
-  pkg.AnalystSkillResponse:
-    properties:
-      analyst_skill:
-        $ref: '#/definitions/pkg.AnalystSkill'
-    type: object
-  pkg.AnalystSkillsResponse:
-    properties:
-      analyst_skills:
-        items:
-          $ref: '#/definitions/pkg.AnalystSkill'
-        type: array
-      count:
-        type: integer
     type: object
   pkg.AnalystUpdateRequest:
     properties:
@@ -177,6 +149,11 @@ definitions:
         type: string
       timezone:
         type: string
+    type: object
+  pkg.ClientCreateRequest:
+    properties:
+      proposed_budget:
+        type: number
     type: object
   pkg.ClientProfile:
     properties:
@@ -412,6 +389,11 @@ definitions:
       name:
         type: string
     type: object
+  pkg.SkillCreateRequest:
+    properties:
+      name:
+        type: string
+    type: object
   pkg.SkillResponse:
     properties:
       skill:
@@ -602,10 +584,22 @@ paths:
         in: query
         name: min_total_reviews
         type: integer
+      - description: Quantidade máxima de avaliações totais
+        in: query
+        name: max_total_reviews
+        type: integer
       - description: Avaliação média mínima
         in: query
-        name: min_mean_rating
-        type: number
+        name: min_rating
+        type: integer
+      - description: Avaliação média máxima
+        in: query
+        name: max_rating
+        type: integer
+      - description: 'Nomes de habilidades (ex: c++,java,TypeScript)'
+        in: query
+        name: skills
+        type: string
       - description: 'Campo para ordenar: name,country_name,country_state,city,timezone,hourly_rate,total_reviews,mean_rating,time_created'
         in: query
         name: sort_by
@@ -614,105 +608,6 @@ paths:
         in: query
         name: order
         type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/pkg.AnalystsResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-      summary: Listar analistas
-      tags:
-      - Analistas
-  /analysts/{id}/proposals:
-    get:
-      consumes:
-      - application/json
-      description: Retorna lista de cartas de proposta (proposals) relacionadas a
-        um analista específico
-      parameters:
-      - description: ID do analista
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: ID do cliente
-        in: query
-        name: client_id
-        type: integer
-      - description: Título parcial
-        in: query
-        name: title
-        type: string
-      - description: Conteúdo parcial
-        in: query
-        name: content
-        type: string
-      - description: Valor mínimo por hora proposto
-        in: query
-        name: min_proposed_hourly_rate
-        type: number
-      - description: Valor máximo por hora proposto
-        in: query
-        name: max_proposed_hourly_rate
-        type: number
-      - description: 'Campo para ordenar: title,proposed_hourly_rate,time_created'
-        in: query
-        name: sort_by
-        type: string
-      - description: 'Direção: ASC ou DESC'
-        in: query
-        name: order
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/pkg.ProposalLettersResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-      summary: Listar propostas de analista
-      tags:
-      - Propostas
-  /analysts/{id}/reviews:
-    get:
-      consumes:
-      - application/json
-      description: Retorna avaliações relacionadas a um analista com filtros e paginação
-      parameters:
-      - description: ID do analista
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: ID do cliente
-        in: query
-        name: client_id
-        type: integer
-      - description: ID do serviço
-        in: query
-        name: service_id
-        type: integer
-      - description: Avaliação exata
-        in: query
-        name: rating
-        type: integer
-      - description: Avaliação mínima
-        in: query
-        name: min_rating
-        type: integer
-      - description: Avaliação máxima
-        in: query
-        name: max_rating
-        type: integer
       - description: Página
         in: query
         name: page
@@ -727,71 +622,14 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.ReviewsResponse'
+            $ref: '#/definitions/pkg.AnalystsResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
-      summary: Listar avaliações de um analista
+      summary: Listar analistas
       tags:
-      - Avaliações
-  /analysts/{id}/services:
-    get:
-      consumes:
-      - application/json
-      description: Retorna lista de serviços relacionados a um analista com filtros
-      parameters:
-      - description: ID do analista
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Status do serviço
-        in: query
-        name: status
-        type: string
-      - description: ID da proposta
-        in: query
-        name: proposal_letter_id
-        type: integer
-      - description: Título parcial
-        in: query
-        name: title
-        type: string
-      - description: Conteúdo parcial
-        in: query
-        name: content
-        type: string
-      - description: Valor mínimo por hora
-        in: query
-        name: min_hourly_rate
-        type: number
-      - description: Valor máximo por hora
-        in: query
-        name: max_hourly_rate
-        type: number
-      - description: 'Campo para ordenar: title,hourly_rate,status,time_created'
-        in: query
-        name: sort_by
-        type: string
-      - description: 'Direção: ASC ou DESC'
-        in: query
-        name: order
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/pkg.ServicesResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-      summary: Listar serviços de um analista
-      tags:
-      - Serviços
+      - Analistas
   /auth/change-password:
     post:
       consumes:
@@ -1078,13 +916,28 @@ paths:
         name: to_year
         type: integer
       - description: 'Campo para ordenar: name,year,institution'
+        enum:
+        - name
+        - year
+        - institution
         in: query
         name: sort_by
         type: string
       - description: 'Direção: ASC ou DESC'
+        enum:
+        - ASC
+        - DESC
         in: query
         name: order
         type: string
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
@@ -1119,6 +972,10 @@ paths:
             $ref: '#/definitions/pkg.CertificationResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":
@@ -1317,109 +1174,24 @@ paths:
         in: query
         name: max_proposed_budget
         type: number
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/pkg.ClientsResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-      summary: Listar clientes
-      tags:
-      - Clientes
-  /clients/{id}/proposals:
-    get:
-      consumes:
-      - application/json
-      description: Retorna lista de cartas de proposta (proposals) relacionadas a
-        um cliente específico
-      parameters:
-      - description: ID do cliente
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: ID do analista
-        in: query
-        name: analyst_id
-        type: integer
-      - description: Título parcial
-        in: query
-        name: title
-        type: string
-      - description: Conteúdo parcial
-        in: query
-        name: content
-        type: string
-      - description: Valor mínimo por hora proposto
-        in: query
-        name: min_proposed_hourly_rate
-        type: number
-      - description: Valor máximo por hora proposto
-        in: query
-        name: max_proposed_hourly_rate
-        type: number
-      - description: 'Campo para ordenar: title,proposed_hourly_rate,time_created'
+      - description: 'Campo para ordenar: name,country_name,country_state,city,proposed_budget,time_created'
+        enum:
+        - name
+        - country_name
+        - country_state
+        - city
+        - proposed_budget
+        - time_created
         in: query
         name: sort_by
         type: string
       - description: 'Direção: ASC ou DESC'
+        enum:
+        - ASC
+        - DESC
         in: query
         name: order
         type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/pkg.ProposalLettersResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-      summary: Listar propostas de cliente
-      tags:
-      - Propostas
-  /clients/{id}/reviews:
-    get:
-      consumes:
-      - application/json
-      description: Retorna avaliações relacionadas a um cliente com filtros e paginação
-      parameters:
-      - description: ID do cliente
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: ID do analista
-        in: query
-        name: analyst_id
-        type: integer
-      - description: ID do serviço
-        in: query
-        name: service_id
-        type: integer
-      - description: Avaliação exata
-        in: query
-        name: rating
-        type: integer
-      - description: Avaliação mínima
-        in: query
-        name: min_rating
-        type: integer
-      - description: Avaliação máxima
-        in: query
-        name: max_rating
-        type: integer
       - description: Página
         in: query
         name: page
@@ -1434,71 +1206,14 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.ReviewsResponse'
+            $ref: '#/definitions/pkg.ClientsResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
-      summary: Listar avaliações de um cliente
+      summary: Listar clientes
       tags:
-      - Avaliações
-  /clients/{id}/services:
-    get:
-      consumes:
-      - application/json
-      description: Retorna lista de serviços relacionados a um cliente com filtros
-      parameters:
-      - description: ID do cliente
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Status do serviço
-        in: query
-        name: status
-        type: string
-      - description: ID da proposta
-        in: query
-        name: proposal_letter_id
-        type: integer
-      - description: Título parcial
-        in: query
-        name: title
-        type: string
-      - description: Conteúdo parcial
-        in: query
-        name: content
-        type: string
-      - description: Valor mínimo por hora
-        in: query
-        name: min_hourly_rate
-        type: number
-      - description: Valor máximo por hora
-        in: query
-        name: max_hourly_rate
-        type: number
-      - description: 'Campo para ordenar: title,hourly_rate,status,time_created'
-        in: query
-        name: sort_by
-        type: string
-      - description: 'Direção: ASC ou DESC'
-        in: query
-        name: order
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/pkg.ServicesResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-      summary: Listar serviços
-      tags:
-      - Serviços
+      - Clientes
   /proposals:
     get:
       consumes:
@@ -1537,6 +1252,14 @@ paths:
         in: query
         name: order
         type: string
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
@@ -1571,6 +1294,10 @@ paths:
             $ref: '#/definitions/pkg.ProposalLetterResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":
@@ -1731,7 +1458,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Registra e cria um novo usuário
+      description: Registra e cria um novo usuário com um cadastro de cliente já feito
       parameters:
       - description: Objeto do usuário
         in: body
@@ -1750,13 +1477,15 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Criar usuário
+      summary: Criar usuário e cliente
       tags:
       - Usuários
   /reviews:
@@ -1831,6 +1560,10 @@ paths:
             $ref: '#/definitions/pkg.ReviewResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":
@@ -2025,6 +1758,14 @@ paths:
         in: query
         name: order
         type: string
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
@@ -2059,6 +1800,10 @@ paths:
             $ref: '#/definitions/pkg.ServiceResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":
@@ -2263,6 +2008,10 @@ paths:
             $ref: '#/definitions/pkg.SkillResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":
@@ -2644,7 +2393,7 @@ paths:
         name: analyst
         required: true
         schema:
-          $ref: '#/definitions/pkg.Analyst'
+          $ref: '#/definitions/pkg.AnalystCreateRequest'
       produces:
       - application/json
       responses:
@@ -2654,6 +2403,14 @@ paths:
             $ref: '#/definitions/pkg.AnalystResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":
@@ -2753,6 +2510,49 @@ paths:
         name: id
         required: true
         type: integer
+      - description: Nome parcial
+        in: query
+        name: name
+        type: string
+      - description: Instituição parcial
+        in: query
+        name: institution
+        type: string
+      - description: Ano
+        in: query
+        name: year
+        type: integer
+      - description: Ano inicial
+        in: query
+        name: from_year
+        type: integer
+      - description: Ano final
+        in: query
+        name: to_year
+        type: integer
+      - description: 'Campo para ordenar: name,year,institution'
+        enum:
+        - name
+        - year
+        - institution
+        in: query
+        name: sort_by
+        type: string
+      - description: 'Direção: ASC ou DESC'
+        enum:
+        - ASC
+        - DESC
+        in: query
+        name: order
+        type: string
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
@@ -2762,6 +2562,10 @@ paths:
             $ref: '#/definitions/pkg.CertificationsResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":
@@ -2774,28 +2578,36 @@ paths:
     post:
       consumes:
       - application/json
-      description: Associa uma certificação a um analista
+      description: Cria uma certificação (se não existir) e a associa a um analista
       parameters:
-      - description: ID do usuário (analista)
+      - description: ID do analista
         in: path
         name: id
         required: true
         type: integer
-      - description: Objeto associação
+      - description: Objeto certificação
         in: body
         name: certification
         required: true
         schema:
-          $ref: '#/definitions/pkg.AnalystCertification'
+          $ref: '#/definitions/pkg.Certification'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/pkg.AnalystCertificationResponse'
+            $ref: '#/definitions/pkg.CertificationResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":
@@ -2804,7 +2616,51 @@ paths:
             $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Associar certificação ao analista
+      summary: Criar certificação e associar ao analista
+      tags:
+      - Certificações
+  /users/{id}/analyst/certifications/{cert_id}:
+    post:
+      consumes:
+      - application/json
+      description: Associa uma certificação já existente a um analista pelo ID
+      parameters:
+      - description: ID do analista
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID da certificação
+        in: path
+        name: cert_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.CertificationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Associar certificação existente ao analista
       tags:
       - Certificações
   /users/{id}/analyst/profile:
@@ -2899,6 +2755,14 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -2948,6 +2812,198 @@ paths:
       summary: Atualizar perfil do analista
       tags:
       - Perfis
+  /users/{id}/analyst/proposals:
+    get:
+      consumes:
+      - application/json
+      description: Retorna lista de cartas de proposta (proposals) relacionadas a
+        um analista específico
+      parameters:
+      - description: ID do analista
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID do cliente
+        in: query
+        name: client_id
+        type: integer
+      - description: Título parcial
+        in: query
+        name: title
+        type: string
+      - description: Conteúdo parcial
+        in: query
+        name: content
+        type: string
+      - description: Valor mínimo por hora proposto
+        in: query
+        name: min_proposed_hourly_rate
+        type: number
+      - description: Valor máximo por hora proposto
+        in: query
+        name: max_proposed_hourly_rate
+        type: number
+      - description: 'Campo para ordenar: title,proposed_hourly_rate,time_created'
+        in: query
+        name: sort_by
+        type: string
+      - description: 'Direção: ASC ou DESC'
+        in: query
+        name: order
+        type: string
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ProposalLettersResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      summary: Listar propostas de analista
+      tags:
+      - Propostas
+  /users/{id}/analyst/reviews:
+    get:
+      consumes:
+      - application/json
+      description: Retorna avaliações relacionadas a um analista com filtros e paginação
+      parameters:
+      - description: ID do analista
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID do cliente
+        in: query
+        name: client_id
+        type: integer
+      - description: ID do serviço
+        in: query
+        name: service_id
+        type: integer
+      - description: Avaliação exata
+        in: query
+        name: rating
+        type: integer
+      - description: Avaliação mínima
+        in: query
+        name: min_rating
+        type: integer
+      - description: Avaliação máxima
+        in: query
+        name: max_rating
+        type: integer
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ReviewsResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      summary: Listar avaliações de um analista
+      tags:
+      - Avaliações
+  /users/{id}/analyst/services:
+    get:
+      consumes:
+      - application/json
+      description: Retorna lista de serviços relacionados a um analista com filtros
+      parameters:
+      - description: ID do analista
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Status do serviço
+        in: query
+        name: status
+        type: string
+      - description: ID da proposta
+        in: query
+        name: proposal_letter_id
+        type: integer
+      - description: Título parcial
+        in: query
+        name: title
+        type: string
+      - description: Conteúdo parcial
+        in: query
+        name: content
+        type: string
+      - description: Valor mínimo por hora
+        in: query
+        name: min_hourly_rate
+        type: number
+      - description: Valor máximo por hora
+        in: query
+        name: max_hourly_rate
+        type: number
+      - description: 'Campo para ordenar: title,hourly_rate,status,time_created'
+        in: query
+        name: sort_by
+        type: string
+      - description: 'Direção: ASC ou DESC'
+        in: query
+        name: order
+        type: string
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ServicesResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      summary: Listar serviços de um analista
+      tags:
+      - Serviços
   /users/{id}/analyst/skills:
     delete:
       consumes:
@@ -3002,7 +3058,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.AnalystSkillsResponse'
+            $ref: '#/definitions/pkg.SkillsResponse'
         "400":
           description: Bad Request
           schema:
@@ -3021,26 +3077,26 @@ paths:
     post:
       consumes:
       - application/json
-      description: Cria uma nova habilidade para um analista pelo ID e ID da habilidade
+      description: Cria uma skill (se não existir) e a associa a um analista
       parameters:
       - description: ID do analista
         in: path
         name: id
         required: true
         type: integer
-      - description: Objeto associação
+      - description: Objeto skill
         in: body
-        name: certification
+        name: skill
         required: true
         schema:
-          $ref: '#/definitions/pkg.AnalystSkill'
+          $ref: '#/definitions/pkg.SkillCreateRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/pkg.AnalystSkillResponse'
+            $ref: '#/definitions/pkg.SkillResponse'
         "400":
           description: Bad Request
           schema:
@@ -3049,13 +3105,61 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Criar habilidade para o analista
+      summary: Adicionar skill ao analista
+      tags:
+      - Habilidades
+  /users/{id}/analyst/skills/{skill_id}:
+    post:
+      consumes:
+      - application/json
+      description: Associa uma skill já existente a um analista pelo ID
+      parameters:
+      - description: ID do analista
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID da skill
+        in: path
+        name: skill_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.SkillResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Associar skill existente ao analista
       tags:
       - Habilidades
   /users/{id}/client:
@@ -3173,12 +3277,12 @@ paths:
         name: id
         required: true
         type: integer
-      - description: '{\'
+      - description: Objeto cliente
         in: body
-        name: proposed_budget
+        name: client
         required: true
         schema:
-          type: object
+          $ref: '#/definitions/pkg.ClientCreateRequest'
       produces:
       - application/json
       responses:
@@ -3188,6 +3292,14 @@ paths:
             $ref: '#/definitions/pkg.ClientResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":
@@ -3331,6 +3443,14 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -3380,6 +3500,198 @@ paths:
       summary: Atualizar perfil do cliente
       tags:
       - Perfis
+  /users/{id}/client/proposals:
+    get:
+      consumes:
+      - application/json
+      description: Retorna lista de cartas de proposta (proposals) relacionadas a
+        um cliente específico
+      parameters:
+      - description: ID do cliente
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID do analista
+        in: query
+        name: analyst_id
+        type: integer
+      - description: Título parcial
+        in: query
+        name: title
+        type: string
+      - description: Conteúdo parcial
+        in: query
+        name: content
+        type: string
+      - description: Valor mínimo por hora proposto
+        in: query
+        name: min_proposed_hourly_rate
+        type: number
+      - description: Valor máximo por hora proposto
+        in: query
+        name: max_proposed_hourly_rate
+        type: number
+      - description: 'Campo para ordenar: title,proposed_hourly_rate,time_created'
+        in: query
+        name: sort_by
+        type: string
+      - description: 'Direção: ASC ou DESC'
+        in: query
+        name: order
+        type: string
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ProposalLettersResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      summary: Listar propostas de cliente
+      tags:
+      - Propostas
+  /users/{id}/client/reviews:
+    get:
+      consumes:
+      - application/json
+      description: Retorna avaliações relacionadas a um cliente com filtros e paginação
+      parameters:
+      - description: ID do cliente
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID do analista
+        in: query
+        name: analyst_id
+        type: integer
+      - description: ID do serviço
+        in: query
+        name: service_id
+        type: integer
+      - description: Avaliação exata
+        in: query
+        name: rating
+        type: integer
+      - description: Avaliação mínima
+        in: query
+        name: min_rating
+        type: integer
+      - description: Avaliação máxima
+        in: query
+        name: max_rating
+        type: integer
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ReviewsResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      summary: Listar avaliações de um cliente
+      tags:
+      - Avaliações
+  /users/{id}/client/services:
+    get:
+      consumes:
+      - application/json
+      description: Retorna lista de serviços relacionados a um cliente com filtros
+      parameters:
+      - description: ID do cliente
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Status do serviço
+        in: query
+        name: status
+        type: string
+      - description: ID da proposta
+        in: query
+        name: proposal_letter_id
+        type: integer
+      - description: Título parcial
+        in: query
+        name: title
+        type: string
+      - description: Conteúdo parcial
+        in: query
+        name: content
+        type: string
+      - description: Valor mínimo por hora
+        in: query
+        name: min_hourly_rate
+        type: number
+      - description: Valor máximo por hora
+        in: query
+        name: max_hourly_rate
+        type: number
+      - description: 'Campo para ordenar: title,hourly_rate,status,time_created'
+        in: query
+        name: sort_by
+        type: string
+      - description: 'Direção: ASC ou DESC'
+        in: query
+        name: order
+        type: string
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ServicesResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      summary: Listar serviços do cliente
+      tags:
+      - Serviços
   /users/{id}/profile:
     delete:
       consumes:
@@ -3394,12 +3706,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
+        "204":
+          description: Deleção com sucesso
         "400":
           description: Bad Request
           schema:
@@ -3476,6 +3784,14 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -3550,6 +3866,10 @@ paths:
             $ref: '#/definitions/pkg.UserProfileResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
         "500":

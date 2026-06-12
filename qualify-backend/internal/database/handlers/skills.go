@@ -1,14 +1,13 @@
 package handlers
 
 import (
-	"fmt"
 	"main/pkg"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/n-r-w/squirrel"
 )
 
 // Skill Handlers
@@ -26,37 +25,27 @@ import (
 // @Router /skills [get]
 func GetSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		query := `SELECT id, name FROM skill WHERE 1=1`
-		args := []interface{}{}
-		argCounter := 1
+		builder := squirrel.Select("id, name").
+			From("skill").OrderBy("name ASC").
+			PlaceholderFormat(squirrel.Dollar)
 
 		if name := c.Query("name"); name != "" {
-			query += fmt.Sprintf(" AND name ILIKE $%d", argCounter)
-			args = append(args, "%"+name+"%")
-			argCounter++
+			builder = builder.Where(squirrel.ILike{"name": pkg.PutPercent(name)})
 		}
 
-		query += " ORDER BY name ASC"
+		query, args, err := builder.ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
 
 		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 		defer rows.Close()
 
-		var skills []pkg.Skill
-		for rows.Next() {
-			var skill pkg.Skill
-			if err := rows.Scan(&skill.Id, &skill.Name); err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
-				return
-			}
-			skills = append(skills, skill)
-		}
-
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		skills, err := pkg.ScanRows(c, rows, pkg.ScanSkill)
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -78,23 +67,23 @@ func GetSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /skills/{id} [get]
 func GetSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		skillID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
-		var skill pkg.Skill
-		err = conn.QueryRow(c.Request.Context(),
-			`SELECT id, name FROM skill WHERE id = $1`, skillID).
-			Scan(&skill.Id, &skill.Name)
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		query, args, err := squirrel.Select("id, name").
+			From("skill").Where(squirrel.Eq{"id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		skill, err := pkg.ScanSkill(conn.QueryRow(c.Request.Context(), query, args...))
+		if err == pgx.ErrNoRows {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Skill not found"))
+			return
+		} else if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -111,26 +100,37 @@ func GetSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Param skill body pkg.Skill true "Objeto habilidade"
 // @Success 201 {object} pkg.SkillResponse
 // @Failure 400 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /skills [post]
 func CreateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var skill pkg.Skill
-		if err := c.BindJSON(&skill); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		if err := c.BindJSON(&skill); pkg.HandleErr(c, err) {
 			return
 		}
 
+		var exists bool
 		err := conn.QueryRow(c.Request.Context(),
-			`INSERT INTO skill (name)
-			 VALUES ($1)
-			 RETURNING id`,
-			skill.Name).
-			Scan(&skill.Id)
+			`SELECT EXISTS(SELECT 1 FROM skill WHERE name = $1)`, skill.Name).Scan(&exists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if exists {
+			c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Skill already exists"))
+			return
+		}
 
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		query, args, err := squirrel.Insert("skill").
+			Columns("name").Values(skill.Name).
+			Suffix("RETURNING id, name").
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		skill, err = pkg.ScanSkill(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -154,37 +154,31 @@ func CreateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /skills/{id} [put]
 func UpdateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		skillID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
-			return
-		}
-		var skill pkg.Skill
-		if err := c.BindJSON(&skill); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		// Validando parâmetros obrigatórios
+		var skill pkg.Skill
+		if err := c.BindJSON(&skill); pkg.HandleErr(c, err) {
+			return
+		}
+
 		if skill.Name == "" {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty name"))
 			return
 		}
 
-		err = conn.QueryRow(c.Request.Context(),
-			`UPDATE skill SET name = $1
-			 WHERE id = $2
-			 RETURNING id, name`,
-			skill.Name, skillID).
-			Scan(&skill.Id, &skill.Name)
+		query, args, err := squirrel.Update("skill").
+			Set("name", skill.Name).Where(squirrel.Eq{"id": id}).
+			Suffix("RETURNING id, name").
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
 
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), err.Error()))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		skill, err = pkg.ScanSkill(conn.QueryRow(c.Request.Context(), query, args...))
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -207,21 +201,22 @@ func UpdateSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /skills/{id} [delete]
 func DeleteSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		skillID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		result, err := conn.Exec(c.Request.Context(),
-			`DELETE FROM skill WHERE id = $1`, skillID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		query, args, err := squirrel.Delete("skill").
+			Where(squirrel.Eq{"id": id}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		if result.RowsAffected() == 0 {
+		result, err := conn.Exec(c.Request.Context(), query, args...)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Skill not found"))
 			return
 		}
@@ -239,46 +234,34 @@ func DeleteSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do analista"
-// @Success 200 {object} pkg.AnalystSkillsResponse
+// @Success 200 {object} pkg.SkillsResponse
 // @Failure 400 {object} pkg.ErrorResponse
 // @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Router /users/{id}/analyst/skills [get]
 func GetAnalystSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		analystID := c.Param("id")
-		analystIDVal, err := strconv.Atoi(analystID)
-
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		rows, err := conn.Query(c.Request.Context(),
-			`SELECT s.id, s.name
-			 FROM skill s
-			 JOIN analyst_skill ac ON s.id = ac.skill_id
-			 WHERE ac.analyst_id = $1
-			 ORDER BY s.name`,
-			analystIDVal,
-		)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		query, args, err := squirrel.Select("s.id, s.name").
+			From("skill s").Join("analyst_skill ac ON s.id = ac.skill_id").
+			Where(squirrel.Eq{"ac.analyst_id": id}).OrderBy("s.name").
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		rows, err := conn.Query(c.Request.Context(), query, args...)
+		if pkg.HandleErr(c, err) {
 			return
 		}
 		defer rows.Close()
-		var skills []pkg.Skill
-		for rows.Next() {
-			var skill pkg.Skill
-			if err := rows.Scan(&skill.Id, &skill.Name); err != nil {
-				c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
-				return
-			}
-			skills = append(skills, skill)
-		}
 
-		if err = rows.Err(); err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		skills, err := pkg.ScanRows(c, rows, pkg.ScanSkill)
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
@@ -286,72 +269,141 @@ func GetAnalystSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 	}
 }
 
-// CreateAnalystSkill godoc
-// @Summary Criar habilidade para o analista
-// @Description Cria uma nova habilidade para um analista pelo ID e ID da habilidade
+// AssociateAnalystSkill godoc
+// @Summary Associar skill existente ao analista
+// @Description Associa uma skill já existente a um analista pelo ID
 // @Tags Habilidades
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do analista"
-// @Param certification body pkg.AnalystSkill true "Objeto associação"
-// @Success 201 {object} pkg.AnalystSkillResponse
+// @Param skill_id path int true "ID da skill"
+// @Success 200 {object} pkg.SkillResponse
 // @Failure 400 {object} pkg.ErrorResponse
 // @Failure 404 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
-// @Security     BearerAuth
+// @Security BearerAuth
+// @Router /users/{id}/analyst/skills/{skill_id} [post]
+func AssociateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, err := pkg.ParseIdParam(c)
+		if err != nil {
+			return
+		}
+
+		skillID, err := pkg.ParsePathParam(c, "skill_id")
+		if err != nil {
+			return
+		}
+
+		selQuery, selArgs, err := squirrel.Select("id, name").
+			From("skill").Where(squirrel.Eq{"id": skillID}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		}
+
+		skill, err := pkg.ScanSkill(conn.QueryRow(c.Request.Context(), selQuery, selArgs...))
+		if err == pgx.ErrNoRows {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Skill not found"))
+			return
+		} else if pkg.HandleErr(c, err) {
+			return
+		}
+
+		insQuery, insArgs, err := squirrel.Insert("analyst_skill").
+			Columns("analyst_id", "skill_id").Values(id, skillID).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
+			return
+		} else if _, err = conn.Exec(c.Request.Context(), insQuery, insArgs...); pkg.HandleErr(c, err) {
+			return
+		}
+
+		c.JSON(http.StatusOK, pkg.SkillResponse{Skill: skill})
+	}
+}
+
+// CreateAnalystSkill godoc
+// @Summary Adicionar skill ao analista
+// @Description Cria uma skill (se não existir) e a associa a um analista
+// @Tags Habilidades
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do analista"
+// @Param skill body pkg.SkillCreateRequest true "Objeto skill"
+// @Success 201 {object} pkg.SkillResponse
+// @Failure 400 {object} pkg.ErrorResponse
+// @Failure 404 {object} pkg.ErrorResponse
+// @Failure 409 {object} pkg.ErrorResponse
+// @Failure 500 {object} pkg.ErrorResponse
+// @Security BearerAuth
 // @Router /users/{id}/analyst/skills [post]
 func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := c.Param("id")
-		analystID, err := strconv.Atoi(id)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		var as pkg.AnalystSkill
-		if err := c.BindJSON(&as); err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
+		var skillCreateRequest pkg.SkillCreateRequest
+
+		var skill pkg.Skill
+		if err := c.BindJSON(&skillCreateRequest); pkg.HandleErr(c, err) {
 			return
 		}
-		as.Analyst_id = analystID
 
-		// Validando parâmetros obrigatórios
+		skill.Name = skillCreateRequest.Name
+
+		ctx := c.Request.Context()
+
+		tx, err := conn.Begin(ctx)
+		if pkg.HandleErr(c, err) {
+			return
+		}
+		defer tx.Rollback(ctx)
+
 		var analystExists bool
-		err = conn.QueryRow(c.Request.Context(),
-			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, as.Analyst_id,
-		).Scan(&analystExists)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, id).Scan(&analystExists)
+		if pkg.HandleErr(c, err) {
 			return
-		}
-		if !analystExists {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Analyst does not exist"))
+		} else if !analystExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst not found"))
 			return
 		}
 
-		var skillExists bool
-		err = conn.QueryRow(c.Request.Context(),
-			`SELECT EXISTS(SELECT 1 FROM skill WHERE id = $1)`, as.Skill_id,
-		).Scan(&skillExists)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
-			return
-		}
-		if !skillExists {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Skill does not exist"))
+		err = tx.QueryRow(ctx, `SELECT id FROM skill WHERE name = $1`, skillCreateRequest.Name).Scan(&skill.Id)
+
+		if err == pgx.ErrNoRows {
+			insQuery, insArgs, err := squirrel.Insert("skill").
+				Columns("name").Values(skill.Name).
+				Suffix("RETURNING id, name").
+				PlaceholderFormat(squirrel.Dollar).ToSql()
+			if pkg.HandleErr(c, err) {
+				return
+			}
+			skill, err = pkg.ScanSkill(tx.QueryRow(ctx, insQuery, insArgs...))
+			if pkg.HandleErr(c, err) {
+				return
+			}
+		} else if pkg.HandleErr(c, err) {
 			return
 		}
 
-		_, err = conn.Exec(c.Request.Context(),
-			`INSERT INTO analyst_skill (analyst_id, skill_id) VALUES ($1, $2)`,
-			as.Analyst_id, as.Skill_id,
-		)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		assocQuery, assocArgs, err := squirrel.Insert("analyst_skill").
+			Columns("analyst_id", "skill_id").Values(id, skill.Id).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
 			return
 		}
-		c.JSON(http.StatusCreated, pkg.AnalystSkillResponse{Analyst_skill: as})
+
+		if _, err = tx.Exec(ctx, assocQuery, assocArgs...); pkg.HandleErr(c, err) {
+			return
+		} else if err := tx.Commit(ctx); pkg.HandleErr(c, err) {
+			return
+		}
+
+		c.JSON(http.StatusCreated, pkg.SkillResponse{Skill: skill})
 	}
 }
 
@@ -371,34 +423,27 @@ func CreateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /users/{id}/analyst/skills [delete]
 func DeleteAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID := c.Param("id")
-		userIDVal, err := strconv.Atoi(userID)
+		id, err := pkg.ParseIdParam(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		skillID := c.Query("skill_id")
-		if skillID == "" {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty skill id"))
-			return
-		}
-		skillIDVal, err := strconv.Atoi(skillID)
+		skillID, err := pkg.ParsePathQuery(c, "skill_id")
 		if err != nil {
-			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), err.Error()))
 			return
 		}
 
-		result, err := conn.Exec(c.Request.Context(),
-			`DELETE FROM analyst_skill WHERE analyst_id = $1 AND skill_id = $2`,
-			userIDVal, skillIDVal,
-		)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, pkg.Internal(c.FullPath(), err.Error()))
+		query, args, err := squirrel.Delete("analyst_skill").
+			Where(squirrel.Eq{"analyst_id": id, "skill_id": skillID}).
+			PlaceholderFormat(squirrel.Dollar).ToSql()
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		if result.RowsAffected() == 0 {
+		result, err := conn.Exec(c.Request.Context(), query, args...)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if result.RowsAffected() == 0 {
 			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst skill not found"))
 			return
 		}

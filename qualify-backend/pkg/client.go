@@ -5,6 +5,10 @@ type Client struct {
 	Proposed_budget float64 `json:"proposed_budget"`
 }
 
+type ClientCreateRequest struct {
+	Proposed_budget float64 `json:"proposed_budget"`
+}
+
 type ClientUpdateRequest struct {
 	UserUpdateRequest
 	Proposed_budget *float64 `json:"proposed_budget,omitempty"`

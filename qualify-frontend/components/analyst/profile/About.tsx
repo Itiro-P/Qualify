@@ -14,6 +14,8 @@ import { Certification } from "@/types/services/certification";
 import { skillService } from "@/libs";
 
 function TabsSystem({ analyst }: { analyst: Analyst }) {
+  const [error, setError] = useState("");
+
   const [biography, setBiography] = useState<string>("");
 
   const [reviewCardsVector, setReviewCardsVector] = useState<Review[]>([]);
@@ -34,36 +36,51 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
       const profileResp = await analystService.getProfile(analyst.id);
       if (profileResp != null) {
         setBiography(profileResp.biography);
+      } else {
+        setError("Erro ao carregar a biografia do analista.");
       }
 
       // Reviews
       const reviewsResp = await reviewService.list({
         analyst_id: analyst.id,
       });
-
-      setReviewCardsVector(reviewsResp.reviews);
+      if (reviewsResp?.reviews != null) {
+        setReviewCardsVector(reviewsResp.reviews);
+      } else {
+        setError("Erro ao carregar as avaliações do analista.");
+      }
 
       // Skills
       const anlystSkillIds = await analystService.listSkills(analyst.id);
       if (anlystSkillIds != null) {
         const analystSkills: Skill[] = [];
         anlystSkillIds.forEach(async (ref) => {
-          const analystSkill = await skillService.getById(ref.skill_id);
+          const analystSkill = await skillService.getById(ref.id);
           if (analystSkill != null) {
             analystSkills.push(analystSkill);
           }
         });
 
         setSkillsCardsVector(analystSkills);
+      } else {
+        setError("Erro ao carregar as habilidades do analista.");
       }
 
       // Certifications
       const certResp = await analystService.listCertifications(analyst.id);
-
-      setCertificationsCardsVector(certResp.certifications);
+      if (certResp != null) {
+        setCertificationsCardsVector(certResp);
+      } else {
+        setError("Erro ao carregar as certificações do analista.");
+      }
     }
     loadData();
-  }, [analyst.id]);
+    console.log("Analyst ID:", analyst.id);
+    console.log("Biography:", biography);
+    console.log("Reviews:", reviewCardsVector);
+    console.log("Skills:", skillsCardsVector);
+    console.log("Certifications:", certificationsCardsVector);
+  }, []);
 
   return (
     <div>
@@ -93,6 +110,8 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
           Certificações
         </button>
       </div>
+
+      {error && <p className="text-red-500">{error}</p>}
 
       <div className="mt-4">
         {abaAtiva === "biography" && <Biography biography={biography} />}

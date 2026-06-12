@@ -35,6 +35,7 @@ export interface ClientUpdateRequest {
 
 export interface ClientProfile {
   user_id?: number;
+  picture?: string;
   biography?: string;
 }
 

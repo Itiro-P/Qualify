@@ -3,6 +3,7 @@ package test
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"main/internal/routes"
 	"main/pkg"
 	"net/http"
@@ -22,7 +23,7 @@ func TestProfile(t *testing.T) {
 		Name:          "Reginaldo Ré",
 		Email:         "reginaldo@utfpr.edu.br",
 		Password:      "aabbccddee",
-		Phone:         "41999999989",
+		Phone:         "41999979989",
 		Country_code:  "BR",
 		Country_name:  "Brazil",
 		Country_state: "PR",
@@ -80,7 +81,7 @@ func TestProfile(t *testing.T) {
 		req = authRequest(http.MethodDelete, fmt.Sprintf("/users/%d/analyst/profile", analystUserID), nil, analystToken)
 		w = httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, http.StatusNoContent, w.Code)
 	})
 
 	t.Run("Fluxo de Perfil do Cliente", func(t *testing.T) {
@@ -100,6 +101,7 @@ func TestProfile(t *testing.T) {
 		req = authRequest(http.MethodPost, fmt.Sprintf("/users/%d/client/profile", clientUserID), body, clientToken)
 		w = httptest.NewRecorder()
 		router.ServeHTTP(w, req)
+		log.Print(w.Body)
 		assert.Equal(t, http.StatusCreated, w.Code)
 
 		// Alterar Perfil
@@ -119,7 +121,7 @@ func TestProfile(t *testing.T) {
 		req = authRequest(http.MethodDelete, fmt.Sprintf("/users/%d/client/profile", clientUserID), nil, clientToken)
 		w = httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, http.StatusNoContent, w.Code)
 	})
 
 	t.Run("Cleanup de usuários", func(t *testing.T) {

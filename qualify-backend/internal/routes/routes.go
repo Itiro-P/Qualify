@@ -82,6 +82,7 @@ func SetupRoutes(router *gin.Engine, conn *pgxpool.Pool) {
 	router.GET("/services", handlers.GetServices(conn))
 	router.GET("/services/:id", handlers.GetService(conn))
 	router.GET("/skills", handlers.GetSkills(conn))
+	router.GET("/skills/:id", handlers.GetSkill(conn))
 	router.GET("/certifications", handlers.GetCertifications(conn))
 	router.GET("/certifications/:id", handlers.GetCertification(conn))
 
@@ -115,7 +116,9 @@ func SetupRoutes(router *gin.Engine, conn *pgxpool.Pool) {
 				analyst.PATCH("", handlers.UpdateAnalystPartial(conn))
 				analyst.DELETE("", handlers.DeleteAnalyst(conn))
 				analyst.POST("/skills", handlers.CreateAnalystSkill(conn))
+				analyst.POST("/skills/:skill_id", handlers.AssociateAnalystSkill(conn))
 				analyst.DELETE("/skills", handlers.DeleteAnalystSkill(conn))
+				analyst.POST("/certifications/:cert_id", handlers.AssociateAnalystCertification(conn))
 				analyst.POST("/certifications", handlers.CreateAnalystCertification(conn))
 				analyst.DELETE("/certifications", handlers.DeleteAnalystCertification(conn))
 

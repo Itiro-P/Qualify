@@ -1,7 +1,32 @@
+"use client";
+
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { getSessionUser } from "@/libs/session";
 
 export function HeroSection() {
+  const router = useRouter();
+
+  // Contratar: exige login. Logado, busca analistas da região (País) do usuário.
+  async function handleHire() {
+    const user = await getSessionUser();
+    if (!user) {
+      router.push("/user/login");
+      return;
+    }
+    router.push(
+      user.country_name
+        ? `/customer/searchAnalyst?country=${encodeURIComponent(user.country_name)}`
+        : "/customer/searchAnalyst",
+    );
+  }
+
+  // Explorar: busca genérica, sem nenhum filtro aplicado.
+  function handleExplore() {
+    router.push("/customer/searchAnalyst");
+  }
+
   return (
     <section className="relative px-6 md:px-20 pt-20 pb-32 overflow-hidden">
       <div className="absolute top-0 right-0 -z-10 w-1/2 h-full bg-linear-to-l from-primary/10 to-transparent" />
@@ -25,11 +50,17 @@ export function HeroSection() {
             confiança.
           </p>
           <div className="flex flex-wrap gap-4">
-            <button className="bg-primary hover:scale-105 transition-transform px-8 py-4 font-bold rounded-lg flex items-center gap-2 cursor-pointer">
+            <button
+              onClick={handleHire}
+              className="bg-primary hover:scale-105 transition-transform px-8 py-4 font-bold rounded-lg flex items-center gap-2 cursor-pointer"
+            >
               Contratar especialistas
               <ArrowRight className="w-5 h-5" />
             </button>
-            <button className="bg-white/5 hover:bg-white/10 border border-white/10 px-8 py-4 font-bold rounded-lg cursor-pointer">
+            <button
+              onClick={handleExplore}
+              className="bg-white/5 hover:bg-white/10 border border-white/10 px-8 py-4 font-bold rounded-lg cursor-pointer"
+            >
               Explorar o marketplace
             </button>
           </div>
