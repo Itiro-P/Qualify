@@ -1,14 +1,20 @@
 "use client";
 
+import { Suspense } from "react";
 import { Footer, Header } from "@/components";
 import { SearchAnalyst } from "@/components/customer/searchAnalyst";
+import { Loading } from "@/components/ui";
 
-export default function Profile() {
+export default function SearchAnalystPage() {
   return (
-    <section id="profile" className="px-6 md:px-20 py-14">
+    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
       <Header />
-      <SearchAnalyst />
+      <main className="flex-1">
+        <Suspense fallback={<Loading />}>
+          <SearchAnalyst />
+        </Suspense>
+      </main>
       <Footer />
-    </section>
+    </div>
   );
 }

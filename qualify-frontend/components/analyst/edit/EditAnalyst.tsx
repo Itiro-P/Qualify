@@ -38,25 +38,13 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
         setAnalystCertifications(analystCertifications); // pega apenas as certificações e coloca elas na variavel
       }
 
-      const analysytSkills = await analystService.listSkills(analyst.id); // pega os ids das skills do analist
-      if (analysytSkills != null) {
-        for (const skillResponse of analysytSkills) {
-          // para cada item dos ids dos analistas
-          const skill = await skillService.getById(skillResponse.skill_id); // passa para a função apenas o id e pega apenas a skill
-
-          if (skill != null) {
-            // verifica se retornou uma skill
-            setAnalystSkills((prev) => [...prev, skill]); // coloca a skill na variavel preservando as skills anteriores na variavel
-          }
-        }
+      const analystSkillsList = await analystService.listSkills(analyst.id); // pega as skills completas do analista
+      if (analystSkillsList != null) {
+        setAnalystSkills(analystSkillsList);
       }
     }
 
     getInfo();
-    console.log("Analyst ID:", analyst.id);
-    console.log("Hourly Rate:", hourlyRateAnalyst);
-    console.log("Certifications:", analystCertifications);
-    console.log("Skills:", anlystSkills);
   }, []);
 
   async function updateHourlyRate(): Promise<number> {
@@ -143,12 +131,12 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
       const removedSkills = analystSkillsIds.filter(
         (dbSkill) =>
           !anlystSkills.some(
-            (analystSkill) => analystSkill.id === dbSkill.skill_id,
+            (analystSkill) => analystSkill.id === dbSkill.id,
           ),
       ); // pega skills que foram removidas pelo analista
 
       for (const skill of removedSkills) {
-        await analystService.removeSkill(analyst.id, skill.skill_id); // remove a skill do analista
+        await analystService.removeSkill(analyst.id, skill.id); // remove a skill do analista
       } // remove as skills do analista
     }
 
@@ -202,7 +190,7 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
       setLoading(false);
       return; // se der erro na atualização das skills, para o processo
     }
-    setSuccess("Cadastro de analista realizado com sucesso!");
+    setSuccess("Analista atualizado com sucesso!");
     setLoading(false);
   }
 
@@ -232,10 +220,10 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
       <FormButton
         onClick={handleSubmitAll}
         loading={loading}
-        loadingText="Cadastrando..."
+        loadingText="Salvando..."
         className="mt-4"
       >
-        Cadastrar-se
+        Salvar alterações
       </FormButton>
     </FormPanel>
   );

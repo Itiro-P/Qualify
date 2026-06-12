@@ -32,14 +32,12 @@ export default function Register() {
     fetchUser();
   }, [router]);
   return (
-    <section id="register" className="px-6 md:px-20 py-14">
+    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
       <Header />
-      <div className="flex justify-center">
-        <div className="flex flex-col ml-3 w-1/2">
-          {user != null ? <RegisterAnalyst userSession={user} /> : <Loading />}
-        </div>
-      </div>
+      <main className="flex-1">
+        {user != null ? <RegisterAnalyst userSession={user} /> : <Loading />}
+      </main>
       <Footer />
-    </section>
+    </div>
   );
 }
