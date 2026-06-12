@@ -71,4 +71,15 @@ export const serviceService = {
   delete(id: number): Promise<Record<string, string>> {
     return api.delete(`/services/${id}`);
   },
-};
+
+  listServicesByClient(userId: number): Promise<Service[] | null> {
+    return api.get<ServicesResponse>(`/users/${userId}/client/services`).then(
+      (resp) => {
+        return resp.services;
+      },
+      () => {
+        return null;
+      },
+    );
+  },
+}
