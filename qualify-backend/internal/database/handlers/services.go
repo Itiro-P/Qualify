@@ -358,7 +358,7 @@ func DeleteService(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Success 200 {object} pkg.ServicesResponse
 // @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
-// @Router /clients/{id}/services [get]
+// @Router /users/{id}/client/services [get]
 func GetClientServices(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
@@ -415,7 +415,7 @@ func GetClientServices(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Success 200 {object} pkg.ServicesResponse
 // @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
-// @Router /analysts/{id}/services [get]
+// @Router /users/{id}/analyst/services [get]
 func GetAnalystServices(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
