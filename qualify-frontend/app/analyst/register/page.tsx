@@ -14,7 +14,7 @@ export default function Register() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    async function fetchAnalyst() {
+    async function fetchUser() {
       const session = await getSessionUser();
 
       if (!session) {
@@ -29,7 +29,7 @@ export default function Register() {
       }
     }
 
-    fetchAnalyst();
+    fetchUser();
   }, [router]);
   return (
     <section id="register" className="px-6 md:px-20 py-14">

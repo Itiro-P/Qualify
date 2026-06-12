@@ -53,6 +53,10 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
     }
 
     getInfo();
+    console.log("Analyst ID:", analyst.id);
+    console.log("Hourly Rate:", hourlyRateAnalyst);
+    console.log("Certifications:", analystCertifications);
+    console.log("Skills:", anlystSkills);
   }, []);
 
   async function updateHourlyRate(): Promise<number> {
@@ -123,7 +127,6 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
           createdCertification = certificationOfDataBase[0]; // pega primeira correspondência
         }
 
-        // verifica se criou ou pegou certification corretamente
         await analystService.addCertification(analyst.id, {
           certification_id: createdCertification.id,
         }); // adiciona certificação ao analista

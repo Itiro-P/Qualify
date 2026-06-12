@@ -79,10 +79,6 @@ export function RegisterAnalyst({ userSession }: { userSession: User }) {
   async function updateSkills(): Promise<number> {
     for (const skill of skillsAnalyst) {
       const skillOfDataBase = await skillService.list(skill.name); // pega skill que correspondem ao nome da skill
-      if (skillOfDataBase == null) {
-        setError("Deu erro ao criar a skill. Tente novamente.");
-        return -1; // retorna -1 para indicar falha
-      }
       let createdSkill: Skill | null;
       if (skillOfDataBase == null) {
         // não tem skill no banco de dados
@@ -96,9 +92,14 @@ export function RegisterAnalyst({ userSession }: { userSession: User }) {
         setError("Deu erro ao criar a skill. Tente novamente.");
         return -1; // retorna -1 para indicar falha
       }
-      await analystService.addSkill(userSession.id, {
+      const result = await analystService.addSkill(userSession.id, {
         skill_id: createdSkill.id,
       }); // adiciona skill no analista
+
+      if (!result) {
+        setError("Deu erro ao adicionar a skill. Tente novamente.");
+        return -1; // retorna -1 para indicar falha
+      }
     }
     return 0;
   }

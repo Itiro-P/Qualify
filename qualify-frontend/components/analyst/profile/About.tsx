@@ -65,6 +65,11 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
       }
     }
     loadData();
+    console.log("Analyst ID:", analyst.id);
+    console.log("Biography:", biography);
+    console.log("Reviews:", reviewCardsVector);
+    console.log("Skills:", skillsCardsVector);
+    console.log("Certifications:", certificationsCardsVector);
   }, [analyst.id]);
 
   return (
