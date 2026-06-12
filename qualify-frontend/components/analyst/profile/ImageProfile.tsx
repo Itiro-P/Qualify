@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Testerson from "@/assets/images/Testerson.png";
+import Testerson from "@/public/Testerson.png";
 
 export function ImageProfile({
   user,
