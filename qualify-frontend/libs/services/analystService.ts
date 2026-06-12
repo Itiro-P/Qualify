@@ -220,12 +220,28 @@ export const analystService = {
       );
   },
 
-  addSkill(
+  addPostSkill(
     userId: number,
     data: { skill_name: string },
   ): Promise<AnalystSkill | null> {
     return api
       .post<AnalystSkillResponse>(`/users/${userId}/analyst/skills`, data)
+      .then(
+        (resp) => {
+          return resp.analyst_skill;
+        },
+        () => {
+          return null;
+        },
+      );
+  },
+
+  addSkill(userId: number, skillId: number): Promise<AnalystSkill | null> {
+    return api
+      .post<AnalystSkillResponse>(
+        `/users/${userId}/analyst/skills/${skillId}`,
+        {},
+      )
       .then(
         (resp) => {
           return resp.analyst_skill;

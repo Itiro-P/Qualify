@@ -172,9 +172,7 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
 
       if (dataBaseSkill != null) {
         // verifica se criou ou pegou skill corretamente
-        await analystService.addSkill(analyst.id, {
-          skill_name: dataBaseSkill.name,
-        }); // adiciona ao analista
+        await analystService.addSkill(analyst.id, dataBaseSkill.id); // adiciona ao analista
       }
     }
     return 0; // retorna 0 para indicar sucesso
