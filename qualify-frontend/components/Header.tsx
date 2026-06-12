@@ -9,6 +9,7 @@ import {
   Settings,
   ChevronDown,
   ChevronsUp,
+  Clipboard,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -175,6 +176,22 @@ export function Header() {
                       Editar analista
                     </Link>
                   )}
+                  <Link
+                    href="/user/listReviews"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/80 hover:bg-white/5 hover:text-accent transition-colors"
+                  >
+                    <Terminal className="w-4 h-4" />
+                    Minhas avaliações
+                  </Link>
+                  <Link
+                    href="/user/listService"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/80 hover:bg-white/5 hover:text-accent transition-colors"
+                  >
+                    <Clipboard className="w-4 h-4" />
+                    Meus serviços
+                  </Link>
                   <button
                     onClick={handleLogout}
                     className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"

@@ -2,9 +2,9 @@
 
 import { Alert } from "@/components/ui/Alert";
 import { Loading } from "@/components/ui/Loading";
-import { analystService } from "@/libs/services/analystService";
-import { Analyst } from "@/types/services/analyst";
+import { reviewService } from "@/libs/services/reviewService";
 import { Review } from "@/types/services/review";
+import { User } from "@/types/services/user";
 import { Star, MessageSquare } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -52,7 +52,7 @@ function ReviewCard({ review }: { review: Review }) {
   );
 }
 
-export function ListReviews({ analyst }: { analyst: Analyst }) {
+export function ListReviews({ user }: { user: User }) {
   const [reviewsAnalyst, setReviewsAnalyst] = useState<Review[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -60,16 +60,16 @@ export function ListReviews({ analyst }: { analyst: Analyst }) {
   useEffect(() => {
     async function getInfo() {
       setLoading(true);
-      const analystReviews = await analystService.listReviews(analyst.id);
-      if (analystReviews) {
-        setReviewsAnalyst(analystReviews);
+      const reviews = await reviewService.listReviewsByClient(user.id);
+      if (reviews) {
+        setReviewsAnalyst(reviews);
       } else {
-        setError("Erro ao carregar as avaliações do analista.");
+        setError("Erro ao carregar as avaliações do usuário.");
       }
       setLoading(false);
     }
     getInfo();
-  }, [analyst.id]);
+  }, [user.id]);
 
   if (loading) return <Loading />;
 
