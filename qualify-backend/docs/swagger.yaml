@@ -1608,6 +1608,38 @@ paths:
       summary: Excluir avaliação
       tags:
       - Avaliações
+    get:
+      consumes:
+      - application/json
+      description: Retorna uma avaliação pelo ID
+      parameters:
+      - description: ID da avaliação
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ReviewResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      summary: Obter avaliação
+      tags:
+      - Avaliações
     patch:
       consumes:
       - application/json
@@ -1746,6 +1778,41 @@ paths:
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
       summary: Listar serviços
+      tags:
+      - Serviços
+    post:
+      consumes:
+      - application/json
+      description: Cria um novo serviço associado a uma proposta
+      parameters:
+      - description: Objeto serviço
+        in: body
+        name: service
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.Service'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/pkg.ServiceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Criar serviço
       tags:
       - Serviços
   /services/{id}:
@@ -2443,6 +2510,49 @@ paths:
         name: id
         required: true
         type: integer
+      - description: Nome parcial
+        in: query
+        name: name
+        type: string
+      - description: Instituição parcial
+        in: query
+        name: institution
+        type: string
+      - description: Ano
+        in: query
+        name: year
+        type: integer
+      - description: Ano inicial
+        in: query
+        name: from_year
+        type: integer
+      - description: Ano final
+        in: query
+        name: to_year
+        type: integer
+      - description: 'Campo para ordenar: name,year,institution'
+        enum:
+        - name
+        - year
+        - institution
+        in: query
+        name: sort_by
+        type: string
+      - description: 'Direção: ASC ou DESC'
+        enum:
+        - ASC
+        - DESC
+        in: query
+        name: order
+        type: string
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
@@ -2528,8 +2638,8 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
-          description: Created
+        "200":
+          description: OK
           schema:
             $ref: '#/definitions/pkg.CertificationResponse'
         "400":
@@ -3027,8 +3137,8 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
-          description: Created
+        "200":
+          description: OK
           schema:
             $ref: '#/definitions/pkg.SkillResponse'
         "400":
@@ -3390,6 +3500,72 @@ paths:
       summary: Atualizar perfil do cliente
       tags:
       - Perfis
+  /users/{id}/client/proposals:
+    get:
+      consumes:
+      - application/json
+      description: Retorna lista de cartas de proposta (proposals) relacionadas a
+        um cliente específico
+      parameters:
+      - description: ID do cliente
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID do analista
+        in: query
+        name: analyst_id
+        type: integer
+      - description: Título parcial
+        in: query
+        name: title
+        type: string
+      - description: Conteúdo parcial
+        in: query
+        name: content
+        type: string
+      - description: Valor mínimo por hora proposto
+        in: query
+        name: min_proposed_hourly_rate
+        type: number
+      - description: Valor máximo por hora proposto
+        in: query
+        name: max_proposed_hourly_rate
+        type: number
+      - description: 'Campo para ordenar: title,proposed_hourly_rate,time_created'
+        in: query
+        name: sort_by
+        type: string
+      - description: 'Direção: ASC ou DESC'
+        in: query
+        name: order
+        type: string
+      - description: Página
+        in: query
+        name: page
+        type: integer
+      - description: Tamanho da página
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.ProposalLettersResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      summary: Listar propostas de cliente
+      tags:
+      - Propostas
   /users/{id}/client/reviews:
     get:
       consumes:
@@ -3516,72 +3692,6 @@ paths:
       summary: Listar serviços
       tags:
       - Serviços
-  /users/{id}/clients/proposals:
-    get:
-      consumes:
-      - application/json
-      description: Retorna lista de cartas de proposta (proposals) relacionadas a
-        um cliente específico
-      parameters:
-      - description: ID do cliente
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: ID do analista
-        in: query
-        name: analyst_id
-        type: integer
-      - description: Título parcial
-        in: query
-        name: title
-        type: string
-      - description: Conteúdo parcial
-        in: query
-        name: content
-        type: string
-      - description: Valor mínimo por hora proposto
-        in: query
-        name: min_proposed_hourly_rate
-        type: number
-      - description: Valor máximo por hora proposto
-        in: query
-        name: max_proposed_hourly_rate
-        type: number
-      - description: 'Campo para ordenar: title,proposed_hourly_rate,time_created'
-        in: query
-        name: sort_by
-        type: string
-      - description: 'Direção: ASC ou DESC'
-        in: query
-        name: order
-        type: string
-      - description: Página
-        in: query
-        name: page
-        type: integer
-      - description: Tamanho da página
-        in: query
-        name: page_size
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/pkg.ProposalLettersResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-      summary: Listar propostas de cliente
-      tags:
-      - Propostas
   /users/{id}/profile:
     delete:
       consumes:

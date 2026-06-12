@@ -1598,6 +1598,54 @@ const docTemplate = `{
             }
         },
         "/reviews/{id}": {
+            "get": {
+                "description": "Retorna uma avaliação pelo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Avaliações"
+                ],
+                "summary": "Obter avaliação",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da avaliação",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ReviewResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            },
             "put": {
                 "security": [
                     {
@@ -1853,6 +1901,61 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/pkg.ServicesResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cria um novo serviço associado a uma proposta",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Serviços"
+                ],
+                "summary": "Criar serviço",
+                "parameters": [
+                    {
+                        "description": "Objeto serviço",
+                        "name": "service",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/pkg.Service"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ServiceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
                         }
                     },
                     "500": {
@@ -2884,6 +2987,69 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Nome parcial",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Instituição parcial",
+                        "name": "institution",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Ano",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Ano inicial",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Ano final",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "name",
+                            "year",
+                            "institution"
+                        ],
+                        "type": "string",
+                        "description": "Campo para ordenar: name,year,institution",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "ASC",
+                            "DESC"
+                        ],
+                        "type": "string",
+                        "description": "Direção: ASC ou DESC",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -3074,8 +3240,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/pkg.CertificationResponse"
                         }
@@ -3835,8 +4001,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/pkg.SkillResponse"
                         }
@@ -4390,6 +4556,104 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/{id}/client/proposals": {
+            "get": {
+                "description": "Retorna lista de cartas de proposta (proposals) relacionadas a um cliente específico",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Propostas"
+                ],
+                "summary": "Listar propostas de cliente",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do cliente",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID do analista",
+                        "name": "analyst_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Título parcial",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Conteúdo parcial",
+                        "name": "content",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor mínimo por hora proposto",
+                        "name": "min_proposed_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Valor máximo por hora proposto",
+                        "name": "max_proposed_hourly_rate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Campo para ordenar: title,proposed_hourly_rate,time_created",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Direção: ASC ou DESC",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ProposalLettersResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/users/{id}/client/reviews": {
             "get": {
                 "description": "Retorna avaliações relacionadas a um cliente com filtros e paginação",
@@ -4563,104 +4827,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/pkg.ServicesResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/users/{id}/clients/proposals": {
-            "get": {
-                "description": "Retorna lista de cartas de proposta (proposals) relacionadas a um cliente específico",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Propostas"
-                ],
-                "summary": "Listar propostas de cliente",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID do cliente",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "ID do analista",
-                        "name": "analyst_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Título parcial",
-                        "name": "title",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Conteúdo parcial",
-                        "name": "content",
-                        "in": "query"
-                    },
-                    {
-                        "type": "number",
-                        "description": "Valor mínimo por hora proposto",
-                        "name": "min_proposed_hourly_rate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "number",
-                        "description": "Valor máximo por hora proposto",
-                        "name": "max_proposed_hourly_rate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Campo para ordenar: title,proposed_hourly_rate,time_created",
-                        "name": "sort_by",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Direção: ASC ou DESC",
-                        "name": "order",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Página",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Tamanho da página",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ProposalLettersResponse"
                         }
                     },
                     "404": {

@@ -277,7 +277,7 @@ func GetAnalystSkills(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do analista"
 // @Param skill_id path int true "ID da skill"
-// @Success 201 {object} pkg.SkillResponse
+// @Success 200 {object} pkg.SkillResponse
 // @Failure 400 {object} pkg.ErrorResponse
 // @Failure 404 {object} pkg.ErrorResponse
 // @Failure 409 {object} pkg.ErrorResponse
@@ -320,7 +320,7 @@ func AssociateAnalystSkill(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, pkg.SkillResponse{Skill: skill})
+		c.JSON(http.StatusOK, pkg.SkillResponse{Skill: skill})
 	}
 }
 

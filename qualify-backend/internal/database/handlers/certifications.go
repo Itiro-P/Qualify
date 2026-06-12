@@ -10,7 +10,63 @@ import (
 	"github.com/n-r-w/squirrel"
 )
 
-const certificationSelect = `id, name, year, description, institution`
+const certificationSelect = "id, name, year, description, institution"
+const certificationSelectQualified = "c.id, c.name, c.year, c.description, c.institution"
+
+func applyCertificationFilters(builder squirrel.SelectBuilder, filters pkg.CertificationFilter) squirrel.SelectBuilder {
+	if filters.Name != "" {
+		builder = builder.Where(squirrel.ILike{"c.name": pkg.PutPercent(filters.Name)})
+	}
+	if filters.Year != nil {
+		builder = builder.Where(squirrel.Eq{"c.year": *filters.Year})
+	}
+	if filters.FromYear != nil {
+		builder = builder.Where(squirrel.GtOrEq{"c.year": *filters.FromYear})
+	}
+	if filters.ToYear != nil {
+		builder = builder.Where(squirrel.LtOrEq{"c.year": *filters.ToYear})
+	}
+	if filters.Institution != "" {
+		builder = builder.Where(squirrel.ILike{"c.institution": pkg.PutPercent(filters.Institution)})
+	}
+
+	orderClause := filters.SortOptions.ValidateSort(pkg.CertificationSortFields)
+
+	if orderClause != "" {
+		builder = builder.OrderBy("c." + orderClause)
+	} else {
+		builder = builder.OrderBy("c.year DESC")
+	}
+
+	return builder.Limit(uint64(filters.PageSize)).Offset(uint64(filters.Offset()))
+}
+
+func certificationBuilder(filters pkg.CertificationFilter) squirrel.SelectBuilder {
+	return applyCertificationFilters(
+		squirrel.Select(certificationSelectQualified).From("certification c").PlaceholderFormat(squirrel.Dollar),
+		filters,
+	)
+}
+
+func scanCertifications(c *gin.Context, conn *pgxpool.Pool, builder squirrel.SelectBuilder) {
+	query, args, err := builder.ToSql()
+	if pkg.HandleErr(c, err) {
+		return
+	}
+
+	rows, err := conn.Query(c.Request.Context(), query, args...)
+	if pkg.HandleErr(c, err) {
+		return
+	}
+	defer rows.Close()
+
+	certs, err := pkg.ScanRows(c, rows, pkg.ScanCertification)
+	if pkg.HandleErr(c, err) {
+		return
+	}
+
+	c.JSON(http.StatusOK, pkg.CertificationsResponse{Certifications: certs, Count: len(certs)})
+}
 
 // GetCertifications godoc
 // @Summary Listar certificações
@@ -38,52 +94,8 @@ func GetCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 		filters.Normalize()
-		builder := squirrel.Select(certificationSelect).From("certification").PlaceholderFormat(squirrel.Dollar)
 
-		if filters.Name != "" {
-			builder = builder.Where(squirrel.ILike{"name": pkg.PutPercent(filters.Name)})
-		}
-		if filters.Year != nil {
-			builder = builder.Where(squirrel.Eq{"year": *filters.Year})
-		}
-		if filters.FromYear != nil {
-			builder = builder.Where(squirrel.GtOrEq{"year": *filters.FromYear})
-		}
-		if filters.ToYear != nil {
-			builder = builder.Where(squirrel.LtOrEq{"year": *filters.ToYear})
-		}
-		if filters.Institution != "" {
-			builder = builder.Where(squirrel.ILike{"institution": pkg.PutPercent(filters.Institution)}) // ← faltava
-		}
-
-		orderClause := filters.SortOptions.ValidateSort(pkg.CertificationSortFields)
-
-		if orderClause != "" {
-			builder = builder.OrderBy(orderClause)
-		} else {
-			builder = builder.OrderBy("year DESC")
-		}
-
-		builder = builder.Limit(uint64(filters.PageSize)).Offset(uint64(filters.Offset()))
-
-		query, args, err := builder.ToSql()
-		if pkg.HandleErr(c, err) {
-			return
-		}
-
-		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if pkg.HandleErr(c, err) {
-			return
-		}
-
-		defer rows.Close()
-
-		certs, err := pkg.ScanRows(c, rows, pkg.ScanCertification)
-		if pkg.HandleErr(c, err) {
-			return
-		}
-
-		c.JSON(http.StatusOK, pkg.CertificationsResponse{Certifications: certs, Count: len(certs)})
+		scanCertifications(c, conn, certificationBuilder(filters))
 	}
 }
 
@@ -366,6 +378,15 @@ func DeleteCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID do usuário (analista)"
+// @Param name query string false "Nome parcial"
+// @Param institution query string false "Instituição parcial"
+// @Param year query int false "Ano"
+// @Param from_year query int false "Ano inicial"
+// @Param to_year query int false "Ano final"
+// @Param sort_by query string false "Campo para ordenar: name,year,institution" enums(name,year,institution)
+// @Param order query string false "Direção: ASC ou DESC" enums(ASC,DESC)
+// @Param page query int false "Página"
+// @Param page_size query int false "Tamanho da página"
 // @Success 200 {object} pkg.CertificationsResponse
 // @Failure 400 {object} pkg.ErrorResponse
 // @Failure 404 {object} pkg.ErrorResponse
@@ -378,27 +399,32 @@ func GetAnalystCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		query, args, err := squirrel.Select("c.id, c.name, c.year, c.description, c.institution").
+		// Checando se o analista já existe
+		var analystExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, id).Scan(&analystExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if !analystExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst does not exists"))
+			return
+		}
+
+		var filters pkg.CertificationFilter
+		err = c.ShouldBindQuery(&filters)
+		if pkg.HandleErr(c, err) {
+			return
+		}
+		filters.Normalize()
+
+		builder := squirrel.Select(certificationSelectQualified).
 			From("certification c").
 			Join("analyst_certification ac ON c.id = ac.certification_id").
-			Where(squirrel.Eq{"ac.analyst_id": id}).OrderBy("c.year DESC").
-			PlaceholderFormat(squirrel.Dollar).ToSql()
-		if pkg.HandleErr(c, err) {
-			return
-		}
+			Where(squirrel.Eq{"ac.analyst_id": id}).
+			PlaceholderFormat(squirrel.Dollar)
+		builder = applyCertificationFilters(builder, filters)
 
-		rows, err := conn.Query(c.Request.Context(), query, args...)
-		if pkg.HandleErr(c, err) {
-			return
-		}
-		defer rows.Close()
-
-		certs, err := pkg.ScanRows(c, rows, pkg.ScanCertification)
-		if pkg.HandleErr(c, err) {
-			return
-		}
-
-		c.JSON(http.StatusOK, pkg.CertificationsResponse{Certifications: certs, Count: len(certs)})
+		scanCertifications(c, conn, builder)
 	}
 }
 
@@ -410,7 +436,7 @@ func GetAnalystCertifications(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Produce json
 // @Param id path int true "ID do analista"
 // @Param cert_id path int true "ID da certificação"
-// @Success 201 {object} pkg.CertificationResponse
+// @Success 200 {object} pkg.CertificationResponse
 // @Failure 400 {object} pkg.ErrorResponse
 // @Failure 404 {object} pkg.ErrorResponse
 // @Failure 409 {object} pkg.ErrorResponse
@@ -450,7 +476,7 @@ func AssociateAnalystCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, pkg.CertificationResponse{Certification: cert})
+		c.JSON(http.StatusOK, pkg.CertificationResponse{Certification: cert})
 	}
 }
 
