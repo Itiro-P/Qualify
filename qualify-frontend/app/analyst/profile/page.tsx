@@ -31,6 +31,8 @@ function ProfileContent() {
           router.push("/customer/searchAnalyst");
         } else {
           setAnalyst(analyst);
+          const profileResp = await analystService.getProfile(analyst.id);
+          setPicture(profileResp?.picture ?? "");
         }
         return;
       }
