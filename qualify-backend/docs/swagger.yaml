@@ -1458,7 +1458,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Registra e cria um novo usuário
+      description: Registra e cria um novo usuário com um cadastro de cliente já feito
       parameters:
       - description: Objeto do usuário
         in: body
@@ -1485,7 +1485,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
-      summary: Criar usuário
+      summary: Criar usuário e cliente
       tags:
       - Usuários
   /reviews:
@@ -3689,7 +3689,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
-      summary: Listar serviços
+      summary: Listar serviços do cliente
       tags:
       - Serviços
   /users/{id}/profile:

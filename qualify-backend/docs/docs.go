@@ -1413,7 +1413,7 @@ const docTemplate = `{
         },
         "/register": {
             "post": {
-                "description": "Registra e cria um novo usuário",
+                "description": "Registra e cria um novo usuário com um cadastro de cliente já feito",
                 "consumes": [
                     "application/json"
                 ],
@@ -1423,7 +1423,7 @@ const docTemplate = `{
                 "tags": [
                     "Usuários"
                 ],
-                "summary": "Criar usuário",
+                "summary": "Criar usuário e cliente",
                 "parameters": [
                     {
                         "description": "Objeto do usuário",
@@ -4752,7 +4752,7 @@ const docTemplate = `{
                 "tags": [
                     "Serviços"
                 ],
-                "summary": "Listar serviços",
+                "summary": "Listar serviços do cliente",
                 "parameters": [
                     {
                         "type": "integer",

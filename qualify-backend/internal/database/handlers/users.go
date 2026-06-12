@@ -94,8 +94,8 @@ func GetCurrentUser(conn *pgxpool.Pool) gin.HandlerFunc {
 }
 
 // CreateUser godoc
-// @Summary Criar usuário
-// @Description Registra e cria um novo usuário
+// @Summary Criar usuário e cliente
+// @Description Registra e cria um novo usuário com um cadastro de cliente já feito
 // @Tags Usuários
 // @Accept json
 // @Produce json
@@ -131,6 +131,22 @@ func CreateUser(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 
 		if err = services.CreateUser(c.Request.Context(), conn, &user); pkg.HandleErr(c, err) {
+			return
+		}
+
+		// Checando se o cliente já existe
+		var clientExists bool
+		err = conn.QueryRow(c.Request.Context(),
+			`SELECT EXISTS(SELECT 1 FROM client WHERE id = $1)`, user.Id).Scan(&clientExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if clientExists {
+			c.JSON(http.StatusConflict, pkg.Conflict(c.FullPath(), "Client already exists"))
+			return
+		}
+
+		_, err = services.AssignClientRole(c.Request.Context(), conn, user.Id, 0)
+		if pkg.HandleErr(c, err) {
 			return
 		}
 
