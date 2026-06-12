@@ -93,7 +93,7 @@ export function RegisterAnalyst({ userSession }: { userSession: User }) {
         return -1; // retorna -1 para indicar falha
       }
       const result = await analystService.addSkill(userSession.id, {
-        skill_id: createdSkill.id,
+        skill_name: createdSkill.name,
       }); // adiciona skill no analista
 
       if (!result) {

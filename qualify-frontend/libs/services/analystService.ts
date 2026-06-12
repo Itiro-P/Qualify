@@ -203,7 +203,7 @@ export const analystService = {
 
   addSkill(
     userId: number,
-    data: { skill_id: number },
+    data: { skill_name: string },
   ): Promise<AnalystSkill | null> {
     return api
       .post<AnalystSkillResponse>(`/users/${userId}/analyst/skills`, data)
