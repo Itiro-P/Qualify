@@ -55,7 +55,7 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
       if (anlystSkillIds != null) {
         const analystSkills: Skill[] = [];
         anlystSkillIds.forEach(async (ref) => {
-          const analystSkill = await skillService.getById(ref.skill_id);
+          const analystSkill = await skillService.getById(ref.id);
           if (analystSkill != null) {
             analystSkills.push(analystSkill);
           }
