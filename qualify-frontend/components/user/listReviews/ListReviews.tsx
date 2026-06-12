@@ -1,10 +1,9 @@
 "use client";
 
-import { Alert } from "@/components/ui/Alert";
 import { Loading } from "@/components/ui/Loading";
-import { analystService } from "@/libs/services/analystService";
-import { Analyst } from "@/types/services/analyst";
+import { reviewService } from "@/libs/services/reviewService";
 import { Review } from "@/types/services/review";
+import { User } from "@/types/services/user";
 import { Star, MessageSquare } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -52,24 +51,23 @@ function ReviewCard({ review }: { review: Review }) {
   );
 }
 
-export function ListReviews({ analyst }: { analyst: Analyst }) {
+export function ListReviews({ user }: { user: User }) {
   const [reviewsAnalyst, setReviewsAnalyst] = useState<Review[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     async function getInfo() {
       setLoading(true);
-      const analystReviews = await analystService.listReviews(analyst.id);
-      if (analystReviews) {
-        setReviewsAnalyst(analystReviews);
+      const reviews = await reviewService.listReviewsByClient(user.id);
+      if (reviews) {
+        setReviewsAnalyst(reviews);
       } else {
-        setError("Erro ao carregar as avaliações do analista.");
+        setReviewsAnalyst([]);
       }
       setLoading(false);
     }
     getInfo();
-  }, [analyst.id]);
+  }, [user.id]);
 
   if (loading) return <Loading />;
 
@@ -99,9 +97,7 @@ export function ListReviews({ analyst }: { analyst: Analyst }) {
           )}
         </div>
 
-        {error && <Alert variant="error">{error}</Alert>}
-
-        {!error && reviewsAnalyst.length === 0 ? (
+        {reviewsAnalyst.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/2 py-20 text-center">
             <MessageSquare className="w-10 h-10 text-neutral-slate mb-4" />
             <p className="text-neutral-slate">

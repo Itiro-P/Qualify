@@ -3,40 +3,34 @@
 import { Footer, Header } from "@/components";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Analyst } from "@/types/services";
-import { analystService } from "@/libs";
-import { getSessionUser } from "@/libs/session";
+import { getSessionUser, User } from "@/libs/session";
 import { Loading } from "@/components/ui";
-import { ListServices } from "@/components/analyst/listServices/ListServices";
+import { ListServices } from "@/components/user/listServices/ListServices";
 
 export default function Edit() {
   const router = useRouter();
-  const [analyst, setAnalyst] = useState<Analyst | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    async function fetchAnalyst() {
+    async function fetchUser() {
       const session = await getSessionUser();
 
       if (!session) {
+        console.log("No session found, redirecting to register");
         router.push("/user/register");
         return;
       }
-      const analyst = await analystService.getByUserId(session.id);
-      if (analyst == null) {
-        router.push("/user/login");
-      } else {
-        setAnalyst(analyst);
-      }
+      setUser(session);
     }
 
-    fetchAnalyst();
+    fetchUser();
   }, [router]);
 
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
       <Header />
       <main className="flex-1">
-        {analyst != null ? <ListServices analyst={analyst} /> : <Loading />}
+        {user != null ? <ListServices user={user} /> : <Loading />}
       </main>
       <Footer />
     </div>

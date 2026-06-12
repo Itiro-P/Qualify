@@ -1,9 +1,8 @@
 "use client";
 
-import { Alert } from "@/components/ui/Alert";
 import { Loading } from "@/components/ui/Loading";
-import { analystService } from "@/libs/services/analystService";
-import { Analyst } from "@/types/services/analyst";
+import { serviceService } from "@/libs/services/serviceService";
+import { User } from "@/libs/session";
 import { Service } from "@/types/services/service";
 import { Briefcase, Clock } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -60,25 +59,24 @@ function ServiceCard({ service }: { service: Service }) {
   );
 }
 
-export function ListServices({ analyst }: { analyst: Analyst }) {
+export function ListServices({ user }: { user: User }) {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<StatusKey>("COMPLETED");
 
   useEffect(() => {
     async function getInfo() {
       setLoading(true);
-      const analystServices = await analystService.listServices(analyst.id);
-      if (analystServices) {
-        setServices(analystServices);
+      const services = await serviceService.listServicesByClient(user.id);
+      if (services) {
+        setServices(services);
       } else {
-        setError("Erro ao carregar os serviços do analista.");
+        setServices([]);
       }
       setLoading(false);
     }
     getInfo();
-  }, [analyst.id]);
+  }, [user.id]);
 
   const countByStatus = useMemo(() => {
     const counts = {} as Record<StatusKey, number>;
@@ -105,8 +103,6 @@ export function ListServices({ analyst }: { analyst: Analyst }) {
             Acompanhe seus serviços organizados por etapa.
           </p>
         </div>
-
-        {error && <Alert variant="error">{error}</Alert>}
 
         <div className="flex flex-wrap gap-2 border-b border-white/10 mb-6">
           {TABS.map((tab) => (

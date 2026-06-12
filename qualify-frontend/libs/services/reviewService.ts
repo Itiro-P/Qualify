@@ -82,4 +82,15 @@ export const reviewService = {
   delete(id: number): Promise<Record<string, string>> {
     return api.delete(`/reviews/${id}`);
   },
-};
+
+  listReviewsByClient(userId: number): Promise<Review[] | null> {
+    return api.get<ReviewsResponse>(`/users/${userId}/client/reviews`).then(
+      (resp) => {
+        return resp.reviews;
+      },
+      () => {
+        return null;
+      },
+    );
+  }
+}
