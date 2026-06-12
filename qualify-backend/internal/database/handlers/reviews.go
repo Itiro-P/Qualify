@@ -115,7 +115,6 @@ func GetReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
 // @Router /reviews/{id} [get]
-
 func GetReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
@@ -375,7 +374,7 @@ func DeleteReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Success 200 {object} pkg.ReviewsResponse
 // @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
-// @Router /clients/{id}/reviews [get]
+// @Router /users/{id}/client/reviews [get]
 func GetClientReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
@@ -429,7 +428,7 @@ func GetClientReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Success 200 {object} pkg.ReviewsResponse
 // @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
-// @Router /analysts/{id}/reviews [get]
+// @Router /users/{id}/analyst/reviews [get]
 func GetAnalystReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
