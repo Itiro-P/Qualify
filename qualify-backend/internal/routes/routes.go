@@ -82,6 +82,7 @@ func SetupRoutes(router *gin.Engine, conn *pgxpool.Pool) {
 	router.GET("/services", handlers.GetServices(conn))
 	router.GET("/services/:id", handlers.GetService(conn))
 	router.GET("/skills", handlers.GetSkills(conn))
+	router.GET("/skills/:id", handlers.GetSkill(conn))
 	router.GET("/certifications", handlers.GetCertifications(conn))
 	router.GET("/certifications/:id", handlers.GetCertification(conn))
 

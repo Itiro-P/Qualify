@@ -366,7 +366,7 @@ func DeleteProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Success 200 {object} pkg.ProposalLettersResponse
 // @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
-// @Router /clients/{id}/proposals [get]
+// @Router /users/{id}/client/proposals [get]
 func GetClientProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
@@ -422,7 +422,7 @@ func GetClientProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Success 200 {object} pkg.ProposalLettersResponse
 // @Failure 404 {object} pkg.ErrorResponse
 // @Failure 500 {object} pkg.ErrorResponse
-// @Router /analysts/{id}/proposals [get]
+// @Router /users/{id}/analyst/proposals [get]
 func GetAnalystProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := pkg.ParseIdParam(c)
