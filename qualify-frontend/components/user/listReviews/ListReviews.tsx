@@ -1,6 +1,5 @@
 "use client";
 
-import { Alert } from "@/components/ui/Alert";
 import { Loading } from "@/components/ui/Loading";
 import { reviewService } from "@/libs/services/reviewService";
 import { Review } from "@/types/services/review";
@@ -55,7 +54,6 @@ function ReviewCard({ review }: { review: Review }) {
 export function ListReviews({ user }: { user: User }) {
   const [reviewsAnalyst, setReviewsAnalyst] = useState<Review[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     async function getInfo() {
@@ -64,7 +62,7 @@ export function ListReviews({ user }: { user: User }) {
       if (reviews) {
         setReviewsAnalyst(reviews);
       } else {
-        setError("Erro ao carregar as avaliações do usuário.");
+        setReviewsAnalyst([]);
       }
       setLoading(false);
     }
@@ -99,9 +97,7 @@ export function ListReviews({ user }: { user: User }) {
           )}
         </div>
 
-        {error && <Alert variant="error">{error}</Alert>}
-
-        {!error && reviewsAnalyst.length === 0 ? (
+        {reviewsAnalyst.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/2 py-20 text-center">
             <MessageSquare className="w-10 h-10 text-neutral-slate mb-4" />
             <p className="text-neutral-slate">

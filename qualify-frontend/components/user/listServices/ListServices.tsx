@@ -1,6 +1,5 @@
 "use client";
 
-import { Alert } from "@/components/ui/Alert";
 import { Loading } from "@/components/ui/Loading";
 import { serviceService } from "@/libs/services/serviceService";
 import { User } from "@/libs/session";
@@ -63,7 +62,6 @@ function ServiceCard({ service }: { service: Service }) {
 export function ListServices({ user }: { user: User }) {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<StatusKey>("COMPLETED");
 
   useEffect(() => {
@@ -73,7 +71,7 @@ export function ListServices({ user }: { user: User }) {
       if (services) {
         setServices(services);
       } else {
-        setError("Erro ao carregar os serviços do usuário.");
+        setServices([]);
       }
       setLoading(false);
     }
@@ -105,8 +103,6 @@ export function ListServices({ user }: { user: User }) {
             Acompanhe seus serviços organizados por etapa.
           </p>
         </div>
-
-        {error && <Alert variant="error">{error}</Alert>}
 
         <div className="flex flex-wrap gap-2 border-b border-white/10 mb-6">
           {TABS.map((tab) => (
