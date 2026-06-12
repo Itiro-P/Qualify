@@ -156,14 +156,33 @@ export const analystService = {
       );
   },
 
-  addCertification(
+  addPostCertification(
     userId: number,
-    data: { certification_id: number },
+    certification: Certification,
   ): Promise<AnalystCertification | null> {
     return api
       .post<AnalystCertificationResponse>(
         `/users/${userId}/analyst/certifications`,
-        data,
+        certification,
+      )
+      .then(
+        (resp) => {
+          return resp.analyst_certification;
+        },
+        () => {
+          return null;
+        },
+      );
+  },
+
+  addCertification(
+    userId: number,
+    certificationId: number,
+  ): Promise<AnalystCertification | null> {
+    return api
+      .post<AnalystCertificationResponse>(
+        `/users/${userId}/analyst/certifications/${certificationId}`,
+        {},
       )
       .then(
         (resp) => {

@@ -127,9 +127,10 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
           createdCertification = certificationOfDataBase[0]; // pega primeira correspondência
         }
 
-        await analystService.addCertification(analyst.id, {
-          certification_id: createdCertification.id,
-        }); // adiciona certificação ao analista
+        await analystService.addCertification(
+          analyst.id,
+          createdCertification.id,
+        ); // adiciona certificação ao analista
       }
     }
     return 0; // retorna 0 para indicar sucesso
@@ -147,10 +148,7 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
       ); // pega skills que foram removidas pelo analista
 
       for (const skill of removedSkills) {
-          await analystService.removeSkill(
-          analyst.id,
-          skill.skill_id,
-        ); // remove a skill do analista
+        await analystService.removeSkill(analyst.id, skill.skill_id); // remove a skill do analista
       } // remove as skills do analista
     }
 

@@ -69,9 +69,10 @@ export function RegisterAnalyst({ userSession }: { userSession: User }) {
         setError("Deu erro ao criar a certificação. Tente novamente.");
         return -1; // retorna -1 para indicar falha
       }
-      await analystService.addCertification(userSession.id, {
-        certification_id: createdCertification.id,
-      }); // adiciona certificação ao analista
+      await analystService.addCertification(
+        userSession.id,
+        createdCertification.id,
+      ); // adiciona certificação ao analista
     }
     return 0;
   }
