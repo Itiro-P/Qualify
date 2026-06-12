@@ -10,40 +10,41 @@ import (
 )
 
 const reviewSelect = "id, analyst_id, client_id, service_id, rating, comment, time_created"
+const reviewSelectQualified = "r.id, r.analyst_id, r.client_id, r.service_id, r.rating, r.comment, r.time_created"
 
 func applyReviewFilters(builder squirrel.SelectBuilder, filters pkg.ReviewFilter) squirrel.SelectBuilder {
 	if filters.AnalystId != nil {
-		builder = builder.Where(squirrel.Eq{"analyst_id": *filters.AnalystId})
+		builder = builder.Where(squirrel.Eq{"r.analyst_id": *filters.AnalystId})
 	}
 	if filters.ClientId != nil {
-		builder = builder.Where(squirrel.Eq{"client_id": *filters.ClientId})
+		builder = builder.Where(squirrel.Eq{"r.client_id": *filters.ClientId})
 	}
 	if filters.ServiceId != nil {
-		builder = builder.Where(squirrel.Eq{"service_id": *filters.ServiceId})
+		builder = builder.Where(squirrel.Eq{"r.service_id": *filters.ServiceId})
 	}
 	if filters.Rating != nil {
-		builder = builder.Where(squirrel.Eq{"rating": *filters.Rating})
+		builder = builder.Where(squirrel.Eq{"r.rating": *filters.Rating})
 	}
 	if filters.MinRating != nil {
-		builder = builder.Where(squirrel.GtOrEq{"rating": *filters.MinRating})
+		builder = builder.Where(squirrel.GtOrEq{"r.rating": *filters.MinRating})
 	}
 	if filters.MaxRating != nil {
-		builder = builder.Where(squirrel.LtOrEq{"rating": *filters.MaxRating})
+		builder = builder.Where(squirrel.LtOrEq{"r.rating": *filters.MaxRating})
 	}
 	if filters.Comment != "" {
-		builder = builder.Where(squirrel.ILike{"comment": pkg.PutPercent(filters.Comment)})
+		builder = builder.Where(squirrel.ILike{"r.comment": pkg.PutPercent(filters.Comment)})
 	}
 	if order := filters.ValidateSort(pkg.ReviewSortFields); order != "" {
-		builder = builder.OrderBy(order)
+		builder = builder.OrderBy("r." + order)
 	} else {
-		builder = builder.OrderBy("time_created DESC")
+		builder = builder.OrderBy("r.time_created DESC")
 	}
 	return builder.Limit(uint64(filters.PageSize)).Offset(uint64(filters.Offset()))
 }
 
 func reviewBuilder(filters pkg.ReviewFilter) squirrel.SelectBuilder {
 	return applyReviewFilters(
-		squirrel.Select(reviewSelect).From("review").PlaceholderFormat(squirrel.Dollar),
+		squirrel.Select(reviewSelectQualified).From("review r").PlaceholderFormat(squirrel.Dollar),
 		filters,
 	)
 }
@@ -122,8 +123,8 @@ func GetReview(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		query, args, err := squirrel.Select(reviewSelect).
-			From("review").Where(squirrel.Eq{"id": id}).
+		query, args, err := squirrel.Select(reviewSelectQualified).
+			From("review r").Where(squirrel.Eq{"r.id": id}).
 			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
@@ -401,7 +402,7 @@ func GetClientReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 		filters.Normalize()
 
 		builder := applyReviewFilters(
-			squirrel.Select(reviewSelect).
+			squirrel.Select(reviewSelectQualified).
 				From("review r").
 				Join("client cl ON r.client_id = cl.id").
 				Where(squirrel.Eq{"cl.id": id}).
@@ -455,7 +456,7 @@ func GetAnalystReviews(conn *pgxpool.Pool) gin.HandlerFunc {
 		filters.Normalize()
 
 		builder := applyReviewFilters(
-			squirrel.Select(reviewSelect).
+			squirrel.Select(reviewSelectQualified).
 				From("review r").
 				Join("analyst a ON r.analyst_id = a.id").
 				Where(squirrel.Eq{"a.id": id}).

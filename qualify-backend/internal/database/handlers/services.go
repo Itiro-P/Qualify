@@ -10,37 +10,38 @@ import (
 )
 
 const serviceSelect = "id, title, content, proposal_letter_id, hourly_rate, status, time_created"
+const serviceSelectQualified = "s.id, s.title, s.content, s.proposal_letter_id, s.hourly_rate, s.status, s.time_created"
 
 func applyServiceFilters(builder squirrel.SelectBuilder, filters pkg.ServiceFilter) squirrel.SelectBuilder {
 	if filters.Status != "" {
-		builder = builder.Where(squirrel.Eq{"status": filters.Status})
+		builder = builder.Where(squirrel.ILike{"s.status": pkg.PutPercent(filters.Status)})
 	}
 	if filters.ProposalId != nil {
-		builder = builder.Where(squirrel.Eq{"proposal_letter_id": *filters.ProposalId})
+		builder = builder.Where(squirrel.Eq{"s.proposal_letter_id": *filters.ProposalId})
 	}
 	if filters.Title != "" {
-		builder = builder.Where(squirrel.ILike{"title": pkg.PutPercent(filters.Title)})
+		builder = builder.Where(squirrel.ILike{"s.title": pkg.PutPercent(filters.Title)})
 	}
 	if filters.Content != "" {
-		builder = builder.Where(squirrel.ILike{"content": pkg.PutPercent(filters.Content)})
+		builder = builder.Where(squirrel.ILike{"s.content": pkg.PutPercent(filters.Content)})
 	}
 	if filters.MinHourlyRate != nil {
-		builder = builder.Where(squirrel.GtOrEq{"hourly_rate": *filters.MinHourlyRate})
+		builder = builder.Where(squirrel.GtOrEq{"s.hourly_rate": *filters.MinHourlyRate})
 	}
 	if filters.MaxHourlyRate != nil {
-		builder = builder.Where(squirrel.LtOrEq{"hourly_rate": *filters.MaxHourlyRate})
+		builder = builder.Where(squirrel.LtOrEq{"s.hourly_rate": *filters.MaxHourlyRate})
 	}
 	if order := filters.ValidateSort(pkg.ServiceSortFields); order != "" {
-		builder = builder.OrderBy(order)
+		builder = builder.OrderBy("s." + order)
 	} else {
-		builder = builder.OrderBy("time_created DESC")
+		builder = builder.OrderBy("s.time_created DESC")
 	}
 	return builder.Limit(uint64(filters.PageSize)).Offset(uint64(filters.Offset()))
 }
 
 func serviceBuilder(filters pkg.ServiceFilter) squirrel.SelectBuilder {
 	return applyServiceFilters(
-		squirrel.Select(serviceSelect).From("service").PlaceholderFormat(squirrel.Dollar),
+		squirrel.Select(serviceSelectQualified).From("service s").PlaceholderFormat(squirrel.Dollar),
 		filters,
 	)
 }
@@ -116,8 +117,8 @@ func GetService(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		query, args, err := squirrel.Select(serviceSelect).
-			From("service").Where(squirrel.Eq{"id": id}).
+		query, args, err := squirrel.Select(serviceSelectQualified).
+			From("service s").Where(squirrel.Eq{"s.id": id}).
 			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
@@ -145,7 +146,6 @@ func GetService(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Failure 500 {object} pkg.ErrorResponse
 // @Security     BearerAuth
 // @Router /services [post]
-
 func CreateService(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var service pkg.Service
@@ -372,8 +372,8 @@ func GetClientServices(conn *pgxpool.Pool) gin.HandlerFunc {
 			`SELECT EXISTS(SELECT 1 FROM client WHERE id = $1)`, id).Scan(&clientExists)
 		if pkg.HandleErr(c, err) {
 			return
-		} else if clientExists {
-			c.JSON(http.StatusConflict, pkg.Internal(c.FullPath(), "Client already exists"))
+		} else if !clientExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Client does not exists"))
 			return
 		}
 
@@ -385,7 +385,7 @@ func GetClientServices(conn *pgxpool.Pool) gin.HandlerFunc {
 		filters.Normalize()
 
 		builder := applyServiceFilters(
-			squirrel.Select(serviceSelect).
+			squirrel.Select(serviceSelectQualified).
 				From("service s").
 				Join("proposal_letter p ON s.proposal_letter_id = p.id").
 				Join("client cl ON p.client_id = cl.id").
@@ -428,8 +428,8 @@ func GetAnalystServices(conn *pgxpool.Pool) gin.HandlerFunc {
 			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, id).Scan(&analystExists)
 		if pkg.HandleErr(c, err) {
 			return
-		} else if analystExists {
-			c.JSON(http.StatusConflict, pkg.Internal(c.FullPath(), "Analyst already exists"))
+		} else if !analystExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Analyst does not exists"))
 			return
 		}
 
@@ -441,7 +441,7 @@ func GetAnalystServices(conn *pgxpool.Pool) gin.HandlerFunc {
 		filters.Normalize()
 
 		builder := applyServiceFilters(
-			squirrel.Select(serviceSelect).
+			squirrel.Select(serviceSelectQualified).
 				From("service s").
 				Join("proposal_letter p ON s.proposal_letter_id = p.id").
 				Join("analyst a ON p.analyst_id = a.id").

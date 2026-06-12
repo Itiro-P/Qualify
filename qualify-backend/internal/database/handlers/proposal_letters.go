@@ -10,37 +10,38 @@ import (
 )
 
 const proposalSelect = "id, client_id, analyst_id, proposed_hourly_rate, title, content, time_created"
+const proposalSelectQualified = "p.id, p.client_id, p.analyst_id, p.proposed_hourly_rate, p.title, p.content, p.time_created"
 
 func applyProposalFilters(builder squirrel.SelectBuilder, filters pkg.ProposalFilter) squirrel.SelectBuilder {
 	if filters.ClientId != nil {
-		builder = builder.Where(squirrel.Eq{"client_id": *filters.ClientId})
+		builder = builder.Where(squirrel.Eq{"p.client_id": *filters.ClientId})
 	}
 	if filters.AnalystId != nil {
-		builder = builder.Where(squirrel.Eq{"analyst_id": *filters.AnalystId})
+		builder = builder.Where(squirrel.Eq{"p.analyst_id": *filters.AnalystId})
 	}
 	if filters.Title != "" {
-		builder = builder.Where(squirrel.ILike{"title": pkg.PutPercent(filters.Title)})
+		builder = builder.Where(squirrel.ILike{"p.title": pkg.PutPercent(filters.Title)})
 	}
 	if filters.Content != "" {
-		builder = builder.Where(squirrel.ILike{"content": pkg.PutPercent(filters.Content)})
+		builder = builder.Where(squirrel.ILike{"p.content": pkg.PutPercent(filters.Content)})
 	}
 	if filters.MinProposedHourlyRate != nil {
-		builder = builder.Where(squirrel.GtOrEq{"proposed_hourly_rate": *filters.MinProposedHourlyRate})
+		builder = builder.Where(squirrel.GtOrEq{"p.proposed_hourly_rate": *filters.MinProposedHourlyRate})
 	}
 	if filters.MaxProposedHourlyRate != nil {
-		builder = builder.Where(squirrel.LtOrEq{"proposed_hourly_rate": *filters.MaxProposedHourlyRate})
+		builder = builder.Where(squirrel.LtOrEq{"p.proposed_hourly_rate": *filters.MaxProposedHourlyRate})
 	}
 	if order := filters.ValidateSort(pkg.ProposalSortFields); order != "" {
-		builder = builder.OrderBy(order)
+		builder = builder.OrderBy("p." + order)
 	} else {
-		builder = builder.OrderBy("time_created DESC")
+		builder = builder.OrderBy("p.time_created DESC")
 	}
 	return builder.Limit(uint64(filters.PageSize)).Offset(uint64(filters.Offset()))
 }
 
 func proposalBuilder(filters pkg.ProposalFilter) squirrel.SelectBuilder {
 	return applyProposalFilters(
-		squirrel.Select(proposalSelect).From("proposal_letter").PlaceholderFormat(squirrel.Dollar),
+		squirrel.Select(proposalSelectQualified).From("proposal_letter p").PlaceholderFormat(squirrel.Dollar),
 		filters,
 	)
 }
@@ -152,7 +153,7 @@ func CreateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		// Checando se o cliente já existe
+		// Checando se o analista já existe
 		var analystExists bool
 		err := conn.QueryRow(c.Request.Context(),
 			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, proposal.Analyst_id).Scan(&analystExists)
@@ -392,7 +393,7 @@ func GetClientProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 		filters.Normalize()
 
-		builder := squirrel.Select("p." + proposalSelect).
+		builder := squirrel.Select(proposalSelectQualified).
 			From("proposal_letter p").
 			Join("client cl ON p.client_id = cl.id").
 			Where(squirrel.Eq{"cl.id": id}).
@@ -448,10 +449,10 @@ func GetAnalystProposalLetters(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 		filters.Normalize()
 
-		builder := squirrel.Select("p." + proposalSelect).
+		builder := squirrel.Select(proposalSelectQualified).
 			From("proposal_letter p").
-			Join("client cl ON p.client_id = cl.id").
-			Where(squirrel.Eq{"cl.id": id}).
+			Join("analyst a ON p.analyst_id = a.id").
+			Where(squirrel.Eq{"a.id": id}).
 			PlaceholderFormat(squirrel.Dollar)
 		builder = applyProposalFilters(builder, filters)
 
