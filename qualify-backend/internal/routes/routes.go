@@ -66,12 +66,14 @@ func SetupRoutes(router *gin.Engine, conn *pgxpool.Pool) {
 		usersPublic.GET("/:id/analyst/proposals", handlers.GetAnalystProposalLetters(conn))
 		usersPublic.GET("/:id/analyst/reviews", handlers.GetAnalystReviews(conn))
 		usersPublic.GET("/:id/analyst/services", handlers.GetAnalystServices(conn))
-		usersPublic.GET("/:id/analyst/profile", handlers.GetAnalystProfile(conn))
+		usersPublic.GET("/:id/analyst/conversations", handlers.GetAnalystConversations(conn))
+		usersPublic.GET("/:id/analyst/conversations/:conv_id", handlers.GetAnalystConversation(conn))
 		usersPublic.GET("/:id/client", handlers.GetClient(conn))
 		usersPublic.GET("/:id/client/proposals", handlers.GetClientProposalLetters(conn))
 		usersPublic.GET("/:id/client/reviews", handlers.GetClientReviews(conn))
 		usersPublic.GET("/:id/client/services", handlers.GetClientServices(conn))
-		usersPublic.GET("/:id/client/profile", handlers.GetClientProfile(conn))
+		usersPublic.GET("/:id/client/conversations", handlers.GetClientConversations(conn))
+		usersPublic.GET("/:id/client/conversations/:conv_id", handlers.GetClientConversation(conn))
 	}
 
 	// Outras Leituras Públicas
@@ -89,6 +91,7 @@ func SetupRoutes(router *gin.Engine, conn *pgxpool.Pool) {
 	// ROTAS AUTENTICADAS (Escrita e Sensíveis)
 	authenticated := router.Group("")
 	authenticated.Use(middleware.AuthMiddleware())
+
 	{
 		// Auth Privado
 		authenticated.POST("/auth/logout", handlers.Logout(conn))
@@ -121,13 +124,6 @@ func SetupRoutes(router *gin.Engine, conn *pgxpool.Pool) {
 				analyst.POST("/certifications/:cert_id", handlers.AssociateAnalystCertification(conn))
 				analyst.POST("/certifications", handlers.CreateAnalystCertification(conn))
 				analyst.DELETE("/certifications", handlers.DeleteAnalystCertification(conn))
-
-				analystProfile := analyst.Group("/profile")
-				{
-					analystProfile.POST("", handlers.CreateAnalystProfile(conn))
-					analystProfile.PUT("", handlers.UpdateAnalystProfile(conn))
-					analystProfile.DELETE("", handlers.DeleteAnalystProfile(conn))
-				}
 			}
 
 			client := users.Group("/:id/client")
@@ -136,13 +132,6 @@ func SetupRoutes(router *gin.Engine, conn *pgxpool.Pool) {
 				client.PUT("", handlers.UpdateClient(conn))
 				client.PATCH("", handlers.UpdateClientPartial(conn))
 				client.DELETE("", handlers.DeleteClient(conn))
-
-				clientProfile := client.Group("/profile")
-				{
-					clientProfile.POST("", handlers.CreateClientProfile(conn))
-					clientProfile.PUT("", handlers.UpdateClientProfile(conn))
-					clientProfile.DELETE("", handlers.DeleteClientProfile(conn))
-				}
 			}
 		}
 
@@ -170,6 +159,20 @@ func SetupRoutes(router *gin.Engine, conn *pgxpool.Pool) {
 		authenticated.PUT("/certifications/:id", handlers.UpdateCertification(conn))
 		authenticated.PATCH("/certifications/:id", handlers.UpdateCertificationPartial(conn))
 		authenticated.DELETE("/certifications/:id", handlers.DeleteCertification(conn))
+
+		conversations := authenticated.Group("/conversations")
+		{
+			conversations.POST("", handlers.CreateConversation(conn))
+			conversations.PUT("/:conv_id", handlers.UpdateConversation(conn))
+			conversations.PATCH("/:conv_id", handlers.UpdateConversationPartial(conn))
+			conversations.DELETE("/:conv_id", handlers.DeleteConversation(conn))
+
+			conversations.GET("/:conv_id/messages", handlers.GetConversationMessages(conn))
+			conversations.POST("/:conv_id/messages", handlers.CreateMessage(conn))
+			conversations.PUT("/:conv_id/messages/:msg_id", handlers.UpdateMessage(conn))
+			conversations.PUT("/:conv_id/messages/:msg_id/read", handlers.ReadMessage(conn))
+			conversations.DELETE("/:conv_id/messages/:msg_id", handlers.DeleteMessage(conn))
+		}
 	}
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

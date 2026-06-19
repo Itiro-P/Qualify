@@ -33,20 +33,6 @@ definitions:
       hourly_rate:
         type: number
     type: object
-  pkg.AnalystProfile:
-    properties:
-      biography:
-        type: string
-      picture:
-        type: string
-      user_id:
-        type: integer
-    type: object
-  pkg.AnalystProfileResponse:
-    properties:
-      analyst_profile:
-        $ref: '#/definitions/pkg.AnalystProfile'
-    type: object
   pkg.AnalystResponse:
     properties:
       analyst:
@@ -93,6 +79,17 @@ definitions:
         type: string
       id:
         type: integer
+      institution:
+        type: string
+      name:
+        type: string
+      year:
+        type: integer
+    type: object
+  pkg.CertificationCreateRequest:
+    properties:
+      description:
+        type: string
       institution:
         type: string
       name:
@@ -155,20 +152,6 @@ definitions:
       proposed_budget:
         type: number
     type: object
-  pkg.ClientProfile:
-    properties:
-      biography:
-        type: string
-      picture:
-        type: string
-      user_id:
-        type: integer
-    type: object
-  pkg.ClientProfileResponse:
-    properties:
-      client_profile:
-        $ref: '#/definitions/pkg.ClientProfile'
-    type: object
   pkg.ClientResponse:
     properties:
       client:
@@ -205,6 +188,52 @@ definitions:
       count:
         type: integer
     type: object
+  pkg.Conversation:
+    properties:
+      analyst_id:
+        type: integer
+      client_id:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      proposal_id:
+        type: integer
+      service_id:
+        type: integer
+    type: object
+  pkg.ConversationCreateRequest:
+    properties:
+      analyst_id:
+        type: integer
+      client_id:
+        type: integer
+      proposal_id:
+        type: integer
+      service_id:
+        type: integer
+    type: object
+  pkg.ConversationResponse:
+    properties:
+      conversations:
+        items:
+          $ref: '#/definitions/pkg.Conversation'
+        type: array
+      count:
+        type: integer
+    type: object
+  pkg.ConversationUpdateRequest:
+    properties:
+      analyst_id:
+        type: integer
+      client_id:
+        type: integer
+      proposal_id:
+        type: integer
+      service_id:
+        type: integer
+    type: object
   pkg.ErrorResponse:
     properties:
       code:
@@ -233,6 +262,42 @@ definitions:
       refresh_token:
         type: string
       token_type:
+        type: string
+    type: object
+  pkg.Message:
+    properties:
+      content:
+        type: string
+      conversation_id:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      read_at:
+        type: string
+      sender_id:
+        type: integer
+    type: object
+  pkg.MessageCreateRequest:
+    properties:
+      content:
+        type: string
+      sender_id:
+        type: integer
+    type: object
+  pkg.MessageResponse:
+    properties:
+      count:
+        type: integer
+      messages:
+        items:
+          $ref: '#/definitions/pkg.Message'
+        type: array
+    type: object
+  pkg.MessageUpdateRequest:
+    properties:
+      content:
         type: string
     type: object
   pkg.PasswordChangeRequest:
@@ -272,6 +337,19 @@ definitions:
         type: number
       time_created:
         type: string
+      title:
+        type: string
+    type: object
+  pkg.ProposalLetterCreateRequest:
+    properties:
+      analyst_id:
+        type: integer
+      client_id:
+        type: integer
+      content:
+        type: string
+      proposed_hourly_rate:
+        type: number
       title:
         type: string
     type: object
@@ -315,6 +393,19 @@ definitions:
       time_created:
         type: string
     type: object
+  pkg.ReviewCreateRequest:
+    properties:
+      analyst_id:
+        type: integer
+      client_id:
+        type: integer
+      comment:
+        type: string
+      rating:
+        type: integer
+      service_id:
+        type: integer
+    type: object
   pkg.ReviewResponse:
     properties:
       review:
@@ -353,6 +444,19 @@ definitions:
       status:
         type: string
       time_created:
+        type: string
+      title:
+        type: string
+    type: object
+  pkg.ServiceCreateRequest:
+    properties:
+      content:
+        type: string
+      hourly_rate:
+        type: number
+      proposal_letter_id:
+        type: integer
+      status:
         type: string
       title:
         type: string
@@ -962,7 +1066,7 @@ paths:
         name: certification
         required: true
         schema:
-          $ref: '#/definitions/pkg.Certification'
+          $ref: '#/definitions/pkg.CertificationCreateRequest'
       produces:
       - application/json
       responses:
@@ -1214,6 +1318,328 @@ paths:
       summary: Listar clientes
       tags:
       - Clientes
+  /conversations:
+    post:
+      consumes:
+      - application/json
+      description: Cria uma nova conversa entre um cliente e um analista
+      parameters:
+      - description: Objeto conversa
+        in: body
+        name: conversation
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.ConversationCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/pkg.Conversation'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Criar conversa
+      tags:
+      - Conversas
+  /conversations/{conv_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove uma conversa pelo ID
+      parameters:
+      - description: ID da conversa
+        in: path
+        name: conv_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Deleção com sucesso
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Excluir conversa
+      tags:
+      - Conversas
+    patch:
+      consumes:
+      - application/json
+      description: Atualiza apenas os campos enviados de uma conversa pelo ID
+      parameters:
+      - description: ID da conversa
+        in: path
+        name: conv_id
+        required: true
+        type: integer
+      - description: Campos a atualizar
+        in: body
+        name: conversation
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.ConversationUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.Conversation'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Atualizar conversa parcialmente
+      tags:
+      - Conversas
+    put:
+      consumes:
+      - application/json
+      description: Atualiza os campos de uma conversa pelo ID
+      parameters:
+      - description: ID da conversa
+        in: path
+        name: conv_id
+        required: true
+        type: integer
+      - description: Objeto conversa
+        in: body
+        name: conversation
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.ConversationUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.Conversation'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Atualizar conversa
+      tags:
+      - Conversas
+  /conversations/{conv_id}/messages:
+    get:
+      consumes:
+      - application/json
+      description: Retorna todas as mensagens de uma conversa específica
+      parameters:
+      - description: ID da conversa
+        in: path
+        name: conv_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.MessageResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Obter mensagens de uma conversa
+      tags:
+      - Mensagens
+    post:
+      consumes:
+      - application/json
+      description: Adiciona uma nova mensagem a uma conversa
+      parameters:
+      - description: ID da conversa
+        in: path
+        name: conv_id
+        required: true
+        type: integer
+      - description: Conteúdo da mensagem
+        in: body
+        name: message
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.MessageCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/pkg.Message'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Criar mensagem
+      tags:
+      - Mensagens
+  /conversations/{conv_id}/messages/{msg_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove uma mensagem pelo ID
+      parameters:
+      - description: ID da conversa
+        in: path
+        name: conv_id
+        required: true
+        type: integer
+      - description: ID da mensagem
+        in: path
+        name: msg_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Deleção com sucesso
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Excluir mensagem
+      tags:
+      - Mensagens
+    put:
+      consumes:
+      - application/json
+      description: Atualiza campos de uma mensagem pelo ID (via rota /messages/{msg_id})
+      parameters:
+      - description: ID da conversa
+        in: path
+        name: conv_id
+        required: true
+        type: integer
+      - description: ID da mensagem
+        in: path
+        name: msg_id
+        required: true
+        type: integer
+      - description: Campos a atualizar
+        in: body
+        name: message
+        required: true
+        schema:
+          $ref: '#/definitions/pkg.MessageUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg.Message'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Atualizar mensagem
+      tags:
+      - Mensagens
+  /conversations/{conv_id}/messages/{msg_id}/read:
+    put:
+      consumes:
+      - application/json
+      description: Marca uma mensagem como lida e atualiza o campo `read_at` (só poder
+        ser feito uma vez)
+      parameters:
+      - description: ID da conversa
+        in: path
+        name: conv_id
+        required: true
+        type: integer
+      - description: ID da mensagem
+        in: path
+        name: msg_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Leitura com sucesso
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/pkg.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Lê mensagem
+      tags:
+      - Mensagens
   /proposals:
     get:
       consumes:
@@ -1284,7 +1710,7 @@ paths:
         name: proposal
         required: true
         schema:
-          $ref: '#/definitions/pkg.ProposalLetter'
+          $ref: '#/definitions/pkg.ProposalLetterCreateRequest'
       produces:
       - application/json
       responses:
@@ -1550,7 +1976,7 @@ paths:
         name: review
         required: true
         schema:
-          $ref: '#/definitions/pkg.Review'
+          $ref: '#/definitions/pkg.ReviewCreateRequest'
       produces:
       - application/json
       responses:
@@ -1790,7 +2216,7 @@ paths:
         name: service
         required: true
         schema:
-          $ref: '#/definitions/pkg.Service'
+          $ref: '#/definitions/pkg.ServiceCreateRequest'
       produces:
       - application/json
       responses:
@@ -2663,43 +3089,11 @@ paths:
       summary: Associar certificação existente ao analista
       tags:
       - Certificações
-  /users/{id}/analyst/profile:
-    delete:
-      consumes:
-      - application/json
-      description: Remove o perfil do analista
-      parameters:
-      - description: ID do usuário (analista)
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: Deleção com sucesso
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Excluir perfil do analista
-      tags:
-      - Perfis
+  /users/{id}/analyst/conversations:
     get:
       consumes:
       - application/json
-      description: Retorna o perfil do analista pelo ID do usuário
+      description: Retorna as conversas em que um usuário está relacionado como analista
       parameters:
       - description: ID do usuário (analista)
         in: path
@@ -2712,7 +3106,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.AnalystProfileResponse'
+            $ref: '#/definitions/pkg.ConversationResponse'
         "400":
           description: Bad Request
           schema:
@@ -2725,76 +3119,33 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
-      summary: Obter perfil do analista
+      summary: Obter conversas do analista
       tags:
-      - Perfis
-    post:
+      - Conversas
+  /users/{id}/analyst/conversations/{conv_id}:
+    get:
       consumes:
       - application/json
-      description: Cria o perfil do analista para o usuário especificado
+      description: Retorna uma conversa específica em que o usuário está relacionado
+        como analista
       parameters:
       - description: ID do usuário (analista)
         in: path
         name: id
         required: true
         type: integer
-      - description: Objeto perfil
-        in: body
-        name: profile
-        required: true
-        schema:
-          $ref: '#/definitions/pkg.AnalystProfile'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/pkg.AnalystProfileResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-        "409":
-          description: Conflict
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Criar perfil do analista
-      tags:
-      - Perfis
-    put:
-      consumes:
-      - application/json
-      description: Atualiza o perfil do analista pelo ID do usuário
-      parameters:
-      - description: ID do usuário (analista)
+      - description: ID da conversa
         in: path
-        name: id
+        name: conv_id
         required: true
         type: integer
-      - description: Objeto perfil
-        in: body
-        name: profile
-        required: true
-        schema:
-          $ref: '#/definitions/pkg.AnalystProfile'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.AnalystProfileResponse'
+            $ref: '#/definitions/pkg.ConversationResponse'
         "400":
           description: Bad Request
           schema:
@@ -2807,11 +3158,9 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Atualizar perfil do analista
+      summary: Obter conversa do analista pelo ID
       tags:
-      - Perfis
+      - Conversas
   /users/{id}/analyst/proposals:
     get:
       consumes:
@@ -3351,43 +3700,11 @@ paths:
       summary: Atualizar cliente
       tags:
       - Clientes
-  /users/{id}/client/profile:
-    delete:
-      consumes:
-      - application/json
-      description: Remove o perfil do cliente
-      parameters:
-      - description: ID do usuário (cliente)
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: Deleção com sucesso
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Excluir perfil do cliente
-      tags:
-      - Perfis
+  /users/{id}/client/conversations:
     get:
       consumes:
       - application/json
-      description: Retorna o perfil do cliente pelo ID do usuário
+      description: Retorna as conversas em que um usuário está relacionado como cliente
       parameters:
       - description: ID do usuário (cliente)
         in: path
@@ -3400,7 +3717,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.ClientProfileResponse'
+            $ref: '#/definitions/pkg.ConversationResponse'
         "400":
           description: Bad Request
           schema:
@@ -3413,76 +3730,33 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
-      summary: Obter perfil do cliente
+      summary: Obter conversas do cliente
       tags:
-      - Perfis
-    post:
+      - Conversas
+  /users/{id}/client/conversations/{conv_id}:
+    get:
       consumes:
       - application/json
-      description: Cria o perfil do cliente para o usuário especificado
+      description: Retorna uma conversa específica em que o usuário está relacionado
+        como cliente
       parameters:
       - description: ID do usuário (cliente)
         in: path
         name: id
         required: true
         type: integer
-      - description: Objeto perfil
-        in: body
-        name: profile
-        required: true
-        schema:
-          $ref: '#/definitions/pkg.ClientProfile'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/pkg.ClientProfileResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-        "409":
-          description: Conflict
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/pkg.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Criar perfil do cliente
-      tags:
-      - Perfis
-    put:
-      consumes:
-      - application/json
-      description: Atualiza o perfil do cliente pelo ID do usuário
-      parameters:
-      - description: ID do usuário (cliente)
+      - description: ID da conversa
         in: path
-        name: id
+        name: conv_id
         required: true
         type: integer
-      - description: Objeto perfil
-        in: body
-        name: profile
-        required: true
-        schema:
-          $ref: '#/definitions/pkg.ClientProfile'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg.ClientProfileResponse'
+            $ref: '#/definitions/pkg.ConversationResponse'
         "400":
           description: Bad Request
           schema:
@@ -3495,11 +3769,9 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/pkg.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Atualizar perfil do cliente
+      summary: Obter conversa do cliente pelo ID
       tags:
-      - Perfis
+      - Conversas
   /users/{id}/client/proposals:
     get:
       consumes:

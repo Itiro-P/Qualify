@@ -145,7 +145,7 @@ func GetReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Tags Avaliações
 // @Accept json
 // @Produce json
-// @Param review body pkg.Review true "Objeto avaliação"
+// @Param review body pkg.ReviewCreateRequest true "Objeto avaliação"
 // @Success 201 {object} pkg.ReviewResponse
 // @Failure 400 {object} pkg.ErrorResponse
 // @Failure 409 {object} pkg.ErrorResponse
@@ -154,26 +154,26 @@ func GetReview(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /reviews [post]
 func CreateReview(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var review pkg.Review
-		if err := c.BindJSON(&review); pkg.HandleErr(c, err) {
+		var reviewRequest pkg.ReviewCreateRequest
+		if err := c.BindJSON(&reviewRequest); pkg.HandleErr(c, err) {
 			return
 		}
 
-		if review.Rating < 1 || review.Rating > 5 {
+		if reviewRequest.Rating < 1 || reviewRequest.Rating > 5 {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Rating should be between 1 and 5"))
 			return
 		}
 
 		query, args, err := squirrel.Insert("review").
 			Columns("analyst_id", "client_id", "service_id", "rating", "comment").
-			Values(review.Analyst_id, review.Client_id, review.Service_id, review.Rating, review.Comment).
+			Values(reviewRequest.Analyst_id, reviewRequest.Client_id, reviewRequest.Service_id, reviewRequest.Rating, reviewRequest.Comment).
 			Suffix("RETURNING " + reviewSelect).
 			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		review, err = pkg.ScanReview(conn.QueryRow(c.Request.Context(), query, args...))
+		review, err := pkg.ScanReview(conn.QueryRow(c.Request.Context(), query, args...))
 		if pkg.HandleErr(c, err) {
 			return
 		}

@@ -664,7 +664,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/pkg.Certification"
+                            "$ref": "#/definitions/pkg.CertificationCreateRequest"
                         }
                     }
                 ],
@@ -1041,6 +1041,507 @@ const docTemplate = `{
                 }
             }
         },
+        "/conversations": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cria uma nova conversa entre um cliente e um analista",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Conversas"
+                ],
+                "summary": "Criar conversa",
+                "parameters": [
+                    {
+                        "description": "Objeto conversa",
+                        "name": "conversation",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ConversationCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.Conversation"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/conversations/{conv_id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Atualiza os campos de uma conversa pelo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Conversas"
+                ],
+                "summary": "Atualizar conversa",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da conversa",
+                        "name": "conv_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Objeto conversa",
+                        "name": "conversation",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ConversationUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.Conversation"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Remove uma conversa pelo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Conversas"
+                ],
+                "summary": "Excluir conversa",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da conversa",
+                        "name": "conv_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Deleção com sucesso"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Atualiza apenas os campos enviados de uma conversa pelo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Conversas"
+                ],
+                "summary": "Atualizar conversa parcialmente",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da conversa",
+                        "name": "conv_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Campos a atualizar",
+                        "name": "conversation",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ConversationUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.Conversation"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/conversations/{conv_id}/messages": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna todas as mensagens de uma conversa específica",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Mensagens"
+                ],
+                "summary": "Obter mensagens de uma conversa",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da conversa",
+                        "name": "conv_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.MessageResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Adiciona uma nova mensagem a uma conversa",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Mensagens"
+                ],
+                "summary": "Criar mensagem",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da conversa",
+                        "name": "conv_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Conteúdo da mensagem",
+                        "name": "message",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/pkg.MessageCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/conversations/{conv_id}/messages/{msg_id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Atualiza campos de uma mensagem pelo ID (via rota /messages/{msg_id})",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Mensagens"
+                ],
+                "summary": "Atualizar mensagem",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da conversa",
+                        "name": "conv_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID da mensagem",
+                        "name": "msg_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Campos a atualizar",
+                        "name": "message",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/pkg.MessageUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Remove uma mensagem pelo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Mensagens"
+                ],
+                "summary": "Excluir mensagem",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da conversa",
+                        "name": "conv_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID da mensagem",
+                        "name": "msg_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Deleção com sucesso"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/conversations/{conv_id}/messages/{msg_id}/read": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marca uma mensagem como lida e atualiza o campo ` + "`" + `read_at` + "`" + ` (só poder ser feito uma vez)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Mensagens"
+                ],
+                "summary": "Lê mensagem",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID da conversa",
+                        "name": "conv_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID da mensagem",
+                        "name": "msg_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Leitura com sucesso"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/proposals": {
             "get": {
                 "description": "Retorna lista de cartas de proposta (proposals)",
@@ -1155,7 +1656,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/pkg.ProposalLetter"
+                            "$ref": "#/definitions/pkg.ProposalLetterCreateRequest"
                         }
                     }
                 ],
@@ -1565,7 +2066,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/pkg.Review"
+                            "$ref": "#/definitions/pkg.ReviewCreateRequest"
                         }
                     }
                 ],
@@ -1935,7 +2436,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/pkg.Service"
+                            "$ref": "#/definitions/pkg.ServiceCreateRequest"
                         }
                     }
                 ],
@@ -3273,9 +3774,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/{id}/analyst/profile": {
+        "/users/{id}/analyst/conversations": {
             "get": {
-                "description": "Retorna o perfil do analista pelo ID do usuário",
+                "description": "Retorna as conversas em que um usuário está relacionado como analista",
                 "consumes": [
                     "application/json"
                 ],
@@ -3283,9 +3784,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Perfis"
+                    "Conversas"
                 ],
-                "summary": "Obter perfil do analista",
+                "summary": "Obter conversas do analista",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3299,7 +3800,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AnalystProfileResponse"
+                            "$ref": "#/definitions/pkg.ConversationResponse"
                         }
                     },
                     "400": {
@@ -3321,14 +3822,11 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Atualiza o perfil do analista pelo ID do usuário",
+            }
+        },
+        "/users/{id}/analyst/conversations/{conv_id}": {
+            "get": {
+                "description": "Retorna uma conversa específica em que o usuário está relacionado como analista",
                 "consumes": [
                     "application/json"
                 ],
@@ -3336,9 +3834,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Perfis"
+                    "Conversas"
                 ],
-                "summary": "Atualizar perfil do analista",
+                "summary": "Obter conversa do analista pelo ID",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3348,139 +3846,19 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Objeto perfil",
-                        "name": "profile",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/pkg.AnalystProfile"
-                        }
+                        "type": "integer",
+                        "description": "ID da conversa",
+                        "name": "conv_id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AnalystProfileResponse"
+                            "$ref": "#/definitions/pkg.ConversationResponse"
                         }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Cria o perfil do analista para o usuário especificado",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Perfis"
-                ],
-                "summary": "Criar perfil do analista",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID do usuário (analista)",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Objeto perfil",
-                        "name": "profile",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/pkg.AnalystProfile"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.AnalystProfileResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Remove o perfil do analista",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Perfis"
-                ],
-                "summary": "Excluir perfil do analista",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID do usuário (analista)",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Deleção com sucesso"
                     },
                     "400": {
                         "description": "Bad Request",
@@ -4326,9 +4704,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/{id}/client/profile": {
+        "/users/{id}/client/conversations": {
             "get": {
-                "description": "Retorna o perfil do cliente pelo ID do usuário",
+                "description": "Retorna as conversas em que um usuário está relacionado como cliente",
                 "consumes": [
                     "application/json"
                 ],
@@ -4336,9 +4714,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Perfis"
+                    "Conversas"
                 ],
-                "summary": "Obter perfil do cliente",
+                "summary": "Obter conversas do cliente",
                 "parameters": [
                     {
                         "type": "integer",
@@ -4352,7 +4730,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.ClientProfileResponse"
+                            "$ref": "#/definitions/pkg.ConversationResponse"
                         }
                     },
                     "400": {
@@ -4374,14 +4752,11 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Atualiza o perfil do cliente pelo ID do usuário",
+            }
+        },
+        "/users/{id}/client/conversations/{conv_id}": {
+            "get": {
+                "description": "Retorna uma conversa específica em que o usuário está relacionado como cliente",
                 "consumes": [
                     "application/json"
                 ],
@@ -4389,9 +4764,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Perfis"
+                    "Conversas"
                 ],
-                "summary": "Atualizar perfil do cliente",
+                "summary": "Obter conversa do cliente pelo ID",
                 "parameters": [
                     {
                         "type": "integer",
@@ -4401,139 +4776,19 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Objeto perfil",
-                        "name": "profile",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ClientProfile"
-                        }
+                        "type": "integer",
+                        "description": "ID da conversa",
+                        "name": "conv_id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg.ClientProfileResponse"
+                            "$ref": "#/definitions/pkg.ConversationResponse"
                         }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Cria o perfil do cliente para o usuário especificado",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Perfis"
-                ],
-                "summary": "Criar perfil do cliente",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID do usuário (cliente)",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Objeto perfil",
-                        "name": "profile",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ClientProfile"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ClientProfileResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/pkg.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Remove o perfil do cliente",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Perfis"
-                ],
-                "summary": "Excluir perfil do cliente",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID do usuário (cliente)",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Deleção com sucesso"
                     },
                     "400": {
                         "description": "Bad Request",
@@ -5190,28 +5445,6 @@ const docTemplate = `{
                 }
             }
         },
-        "pkg.AnalystProfile": {
-            "type": "object",
-            "properties": {
-                "biography": {
-                    "type": "string"
-                },
-                "picture": {
-                    "type": "string"
-                },
-                "user_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "pkg.AnalystProfileResponse": {
-            "type": "object",
-            "properties": {
-                "analyst_profile": {
-                    "$ref": "#/definitions/pkg.AnalystProfile"
-                }
-            }
-        },
         "pkg.AnalystResponse": {
             "type": "object",
             "properties": {
@@ -5281,6 +5514,23 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "institution": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
+        },
+        "pkg.CertificationCreateRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
                 },
                 "institution": {
                     "type": "string"
@@ -5378,28 +5628,6 @@ const docTemplate = `{
                 }
             }
         },
-        "pkg.ClientProfile": {
-            "type": "object",
-            "properties": {
-                "biography": {
-                    "type": "string"
-                },
-                "picture": {
-                    "type": "string"
-                },
-                "user_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "pkg.ClientProfileResponse": {
-            "type": "object",
-            "properties": {
-                "client_profile": {
-                    "$ref": "#/definitions/pkg.ClientProfile"
-                }
-            }
-        },
         "pkg.ClientResponse": {
             "type": "object",
             "properties": {
@@ -5455,6 +5683,77 @@ const docTemplate = `{
                 }
             }
         },
+        "pkg.Conversation": {
+            "type": "object",
+            "properties": {
+                "analyst_id": {
+                    "type": "integer"
+                },
+                "client_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "proposal_id": {
+                    "type": "integer"
+                },
+                "service_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "pkg.ConversationCreateRequest": {
+            "type": "object",
+            "properties": {
+                "analyst_id": {
+                    "type": "integer"
+                },
+                "client_id": {
+                    "type": "integer"
+                },
+                "proposal_id": {
+                    "type": "integer"
+                },
+                "service_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "pkg.ConversationResponse": {
+            "type": "object",
+            "properties": {
+                "conversations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/pkg.Conversation"
+                    }
+                },
+                "count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "pkg.ConversationUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "analyst_id": {
+                    "type": "integer"
+                },
+                "client_id": {
+                    "type": "integer"
+                },
+                "proposal_id": {
+                    "type": "integer"
+                },
+                "service_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "pkg.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -5497,6 +5796,62 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "token_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "pkg.Message": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "conversation_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "read_at": {
+                    "type": "string"
+                },
+                "sender_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "pkg.MessageCreateRequest": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "sender_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "pkg.MessageResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "messages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/pkg.Message"
+                    }
+                }
+            }
+        },
+        "pkg.MessageUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "content": {
                     "type": "string"
                 }
             }
@@ -5555,6 +5910,26 @@ const docTemplate = `{
                 },
                 "time_created": {
                     "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "pkg.ProposalLetterCreateRequest": {
+            "type": "object",
+            "properties": {
+                "analyst_id": {
+                    "type": "integer"
+                },
+                "client_id": {
+                    "type": "integer"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "proposed_hourly_rate": {
+                    "type": "number"
                 },
                 "title": {
                     "type": "string"
@@ -5623,6 +5998,26 @@ const docTemplate = `{
                 }
             }
         },
+        "pkg.ReviewCreateRequest": {
+            "type": "object",
+            "properties": {
+                "analyst_id": {
+                    "type": "integer"
+                },
+                "client_id": {
+                    "type": "integer"
+                },
+                "comment": {
+                    "type": "string"
+                },
+                "rating": {
+                    "type": "integer"
+                },
+                "service_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "pkg.ReviewResponse": {
             "type": "object",
             "properties": {
@@ -5681,6 +6076,26 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "time_created": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "pkg.ServiceCreateRequest": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "hourly_rate": {
+                    "type": "number"
+                },
+                "proposal_letter_id": {
+                    "type": "integer"
+                },
+                "status": {
                     "type": "string"
                 },
                 "title": {

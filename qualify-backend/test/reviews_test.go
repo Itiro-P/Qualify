@@ -75,7 +75,7 @@ func TestReview(t *testing.T) {
 		clientID = cResp.Client.Id
 
 		// 3. Criar Proposta (Cliente -> Analista)
-		pData := pkg.ProposalLetter{
+		pData := pkg.ProposalLetterCreateRequest{
 			Title: "Arrumem a merda da traseira", Content: "Só arruma cara",
 			Proposed_hourly_rate: 70.0, Analyst_id: analystID, Client_id: clientID,
 		}
@@ -89,7 +89,7 @@ func TestReview(t *testing.T) {
 		proposalID = pResp.Proposal_letter.Id
 
 		// 4. Criar Serviço (Baseado na Proposta)
-		sData := pkg.Service{
+		sData := pkg.ServiceCreateRequest{
 			Title: "Arrumar a traseira", Content: "Preciso que arrumem minha traseira",
 			Hourly_rate: 69.0, Status: "RUNNING", Proposal_letter_id: proposalID,
 		}
@@ -103,7 +103,7 @@ func TestReview(t *testing.T) {
 		serviceID = sResp.Service.Id
 
 		// 5. Criar Review (Finalmente!)
-		rData := pkg.Review{
+		rData := pkg.ReviewCreateRequest{
 			Rating: 4, Comment: "Arrumaram muito bem minha traseira",
 			Service_id: serviceID, Analyst_id: analystID, Client_id: clientID,
 		}
