@@ -14,7 +14,7 @@ import (
 )
 
 func TestCertifications(t *testing.T) {
-	var certifications = []pkg.Certification{
+	var certificationsRequest = []pkg.CertificationCreateRequest{
 		{
 			Name:        "Mestrado em Teste Baseado em Aspectos",
 			Institution: "UTFPR",
@@ -47,6 +47,8 @@ func TestCertifications(t *testing.T) {
 		},
 	}
 
+	var certifications = []pkg.Certification{}
+
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 
@@ -73,7 +75,7 @@ func TestCertifications(t *testing.T) {
 	token, userID := registerAndLogin(t, router, userRegister)
 
 	// Primeiros testes para criação de certificações
-	for i, c := range certifications {
+	for _, c := range certificationsRequest {
 		t.Run("Criar Certificação para "+c.Name, func(t *testing.T) {
 			certification := c
 			body, _ := json.Marshal(certification)
@@ -92,7 +94,7 @@ func TestCertifications(t *testing.T) {
 			if certificationResponse.Certification.Id == 0 {
 				t.Error("O ID da certificação não deveria ser zero")
 			}
-			certifications[i] = certificationResponse.Certification
+			certifications = append(certifications, certificationResponse.Certification)
 		})
 	}
 

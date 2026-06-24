@@ -139,7 +139,7 @@ func GetProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Tags Propostas
 // @Accept json
 // @Produce json
-// @Param proposal body pkg.ProposalLetter true "Objeto proposta"
+// @Param proposal body pkg.ProposalLetterCreateRequest true "Objeto proposta"
 // @Success 201 {object} pkg.ProposalLetterResponse
 // @Failure 400 {object} pkg.ErrorResponse
 // @Failure 404 {object} pkg.ErrorResponse
@@ -148,15 +148,15 @@ func GetProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /proposals [post]
 func CreateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var proposal pkg.ProposalLetter
-		if err := c.BindJSON(&proposal); pkg.HandleErr(c, err) {
+		var proposalRequest pkg.ProposalLetterCreateRequest
+		if err := c.BindJSON(&proposalRequest); pkg.HandleErr(c, err) {
 			return
 		}
 
 		// Checando se o analista já existe
 		var analystExists bool
 		err := conn.QueryRow(c.Request.Context(),
-			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, proposal.Analyst_id).Scan(&analystExists)
+			`SELECT EXISTS(SELECT 1 FROM analyst WHERE id = $1)`, proposalRequest.Analyst_id).Scan(&analystExists)
 		if pkg.HandleErr(c, err) {
 			return
 		} else if !analystExists {
@@ -167,7 +167,7 @@ func CreateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 		// Checando se o cliente já existe
 		var clientExists bool
 		err = conn.QueryRow(c.Request.Context(),
-			`SELECT EXISTS(SELECT 1 FROM client WHERE id = $1)`, proposal.Client_id).Scan(&clientExists)
+			`SELECT EXISTS(SELECT 1 FROM client WHERE id = $1)`, proposalRequest.Client_id).Scan(&clientExists)
 		if pkg.HandleErr(c, err) {
 			return
 		} else if !clientExists {
@@ -177,14 +177,14 @@ func CreateProposalLetter(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		query, args, err := squirrel.Insert("proposal_letter").
 			Columns("title", "content", "client_id", "analyst_id", "proposed_hourly_rate").
-			Values(proposal.Title, proposal.Content, proposal.Client_id, proposal.Analyst_id, proposal.Proposed_hourly_rate).
+			Values(proposalRequest.Title, proposalRequest.Content, proposalRequest.Client_id, proposalRequest.Analyst_id, proposalRequest.Proposed_hourly_rate).
 			Suffix("RETURNING " + proposalSelect).
 			PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		proposal, err = pkg.ScanProposalLetter(conn.QueryRow(c.Request.Context(), query, args...))
+		proposal, err := pkg.ScanProposalLetter(conn.QueryRow(c.Request.Context(), query, args...))
 		if pkg.HandleErr(c, err) {
 			return
 		}

@@ -74,7 +74,7 @@ func TestService(t *testing.T) {
 		clientID = cResp.Client.Id
 
 		// 3. Criar Proposta
-		pData := pkg.ProposalLetter{
+		pData := pkg.ProposalLetterCreateRequest{
 			Title: "Arrumem a merda da traseira", Content: "Só arruma cara",
 			Proposed_hourly_rate: 70.0, Analyst_id: analystID, Client_id: clientID,
 		}
@@ -88,7 +88,7 @@ func TestService(t *testing.T) {
 		proposalID = pResp.Proposal_letter.Id
 
 		// 4. Criar Serviço (O clímax do teste)
-		sData := pkg.Service{
+		sData := pkg.ServiceCreateRequest{
 			Title: "Arrumar a traseira", Content: "Preciso que arrumem minha traseira",
 			Hourly_rate: 69.0, Status: "RUNNING", Proposal_letter_id: proposalID,
 		}
