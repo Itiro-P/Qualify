@@ -1,11 +1,15 @@
 package pkg
 
-type Certification struct {
-	Id          int    `json:"id,omitempty"`
+type CertificationCreateRequest struct {
 	Name        string `json:"name"`
 	Year        int    `json:"year"`
 	Description string `json:"description"`
 	Institution string `json:"institution"`
+}
+
+type Certification struct {
+	CertificationCreateRequest
+	Id int `json:"id"`
 }
 
 type CertificationUpdateRequest struct {

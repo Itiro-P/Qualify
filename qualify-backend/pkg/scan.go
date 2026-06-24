@@ -136,24 +136,31 @@ func ScanProfile(row pgx.Row) (UserProfile, error) {
 	return p, err
 }
 
-// Função auxiliar que escaneia perfis de analistas
-func ScanAnalystProfile(row pgx.Row) (AnalystProfile, error) {
-	var p AnalystProfile
+// Função auxiliar que escaneia Conversas
+func ScanConversation(row pgx.Row) (Conversation, error) {
+	var conv Conversation
 	err := row.Scan(
-		&p.User_id,
-		&p.Biography,
-		&p.Picture)
-	return p, err
+		&conv.Id,
+		&conv.Service_id,
+		&conv.Proposal_id,
+		&conv.Client_id,
+		&conv.Analyst_id,
+		&conv.Created_at,
+	)
+	return conv, err
 }
 
-// Função auxiliar que escaneia perfis de clientes
-func ScanClientProfile(row pgx.Row) (ClientProfile, error) {
-	var p ClientProfile
+// Função auxiliar que escaneia Mensagens
+func ScanMessage(row pgx.Row) (Message, error) {
+	var m Message
 	err := row.Scan(
-		&p.User_id,
-		&p.Biography,
-		&p.Picture)
-	return p, err
+		&m.Id,
+		&m.Conversation_id,
+		&m.Sender_id,
+		&m.Content,
+		&m.Created_at,
+		&m.Read_at)
+	return m, err
 }
 
 func ScanRows[T any](c *gin.Context, rows pgx.Rows, scan func(pgx.Row) (T, error)) ([]T, error) {

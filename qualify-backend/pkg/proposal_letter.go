@@ -2,14 +2,18 @@ package pkg
 
 import "time"
 
+type ProposalLetterCreateRequest struct {
+	Title                string  `json:"title"`
+	Content              string  `json:"content"`
+	Client_id            int     `json:"client_id"`
+	Analyst_id           int     `json:"analyst_id"`
+	Proposed_hourly_rate float64 `json:"proposed_hourly_rate"`
+}
+
 type ProposalLetter struct {
-	Id                   int       `json:"id,omitempty"`
-	Title                string    `json:"title"`
-	Content              string    `json:"content"`
-	Client_id            int       `json:"client_id"`
-	Analyst_id           int       `json:"analyst_id"`
-	Proposed_hourly_rate float64   `json:"proposed_hourly_rate"`
-	Time_created         time.Time `json:"time_created"`
+	ProposalLetterCreateRequest
+	Id           int       `json:"id"`
+	Time_created time.Time `json:"time_created"`
 }
 
 type ProposalLetterUpdateRequest struct {

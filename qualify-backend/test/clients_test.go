@@ -43,7 +43,7 @@ func TestClient(t *testing.T) {
 	var clients = []pkg.Client{
 		{
 			User:            pkg.User{},
-			Proposed_budget: 100.0,
+			Proposed_budget: 101.0,
 		},
 		{
 			User:            pkg.User{},
@@ -59,31 +59,29 @@ func TestClient(t *testing.T) {
 
 	// Primeiros testes para criação de clientes, que dependem da criação prévia de usuários
 	for i := range len(userRegisters) {
-		t.Run("Criar Cliente para "+userRegisters[i].Name, func(t *testing.T) {
-			// Agora pegamos o token e o ID de uma vez
-			token, userID := registerAndLogin(t, router, userRegisters[i])
+		ur := userRegisters[i]
 
-			// Atribui o ID ao analista antes de enviar o POST
-			clients[i].User.Id = userID
+		t.Run("Criar Cliente para "+ur.Name, func(t *testing.T) {
+			token, userID := registerAndLogin(t, router, ur)
+			tokens = append(tokens, token)
 
-			body, _ := json.Marshal(clients[i])
+			// Atualiza o proposed_budget via PATCH
+			patchBody, _ := json.Marshal(map[string]interface{}{
+				"proposed_budget": clients[i].Proposed_budget,
+			})
 			targetURL := fmt.Sprintf("/users/%d/client", userID)
-
-			req := authRequest(http.MethodPost, targetURL, body, token)
+			req := authRequest(http.MethodPatch, targetURL, patchBody, token)
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
-
-			assert.Equal(t, http.StatusCreated, w.Code)
+			assert.Equal(t, http.StatusOK, w.Code)
 
 			var clientResponse pkg.ClientResponse
 			json.Unmarshal(w.Body.Bytes(), &clientResponse)
 			assert.NotZero(t, clientResponse.Client.Id)
 
 			clients[i] = clientResponse.Client
-			tokens = append(tokens, token)
 		})
 	}
-
 	// Agora vemos se todos os clientes foram criados corretamente
 	t.Run("Listando todos os clientes", func(t *testing.T) {
 		targetURL := "/clients"

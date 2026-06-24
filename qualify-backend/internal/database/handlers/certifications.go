@@ -140,7 +140,7 @@ func GetCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Tags Certificações
 // @Accept json
 // @Produce json
-// @Param certification body pkg.Certification true "Objeto certificação"
+// @Param certification body pkg.CertificationCreateRequest true "Objeto certificação"
 // @Success 201 {object} pkg.CertificationResponse
 // @Failure 400 {object} pkg.ErrorResponse
 // @Failure 409 {object} pkg.ErrorResponse
@@ -149,24 +149,24 @@ func GetCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /certifications [post]
 func CreateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var cert pkg.Certification
-		if err := c.BindJSON(&cert); pkg.HandleErr(c, err) {
+		var certRequest pkg.CertificationCreateRequest
+		if err := c.BindJSON(&certRequest); pkg.HandleErr(c, err) {
 			return
 		}
 
-		if cert.Name == "" {
+		if certRequest.Name == "" {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty name"))
 			return
 		}
-		if cert.Description == "" {
+		if certRequest.Description == "" {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty description"))
 			return
 		}
-		if cert.Institution == "" {
+		if certRequest.Institution == "" {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received empty institution"))
 			return
 		}
-		if cert.Year < 1900 || cert.Year > 2030 {
+		if certRequest.Year < 1900 || certRequest.Year > 2030 {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Received invalid year. Must be between 1900 and 2030"))
 			return
 		}
@@ -174,7 +174,7 @@ func CreateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 		var exists bool
 		err := conn.QueryRow(c.Request.Context(),
 			`SELECT EXISTS(SELECT 1 FROM certification WHERE name = $1 AND institution = $2)`,
-			cert.Name, cert.Institution).Scan(&exists)
+			certRequest.Name, certRequest.Institution).Scan(&exists)
 		if pkg.HandleErr(c, err) {
 			return
 		} else if exists {
@@ -184,14 +184,25 @@ func CreateCertification(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		insertQuery, insertArgs, err := squirrel.Insert("certification").
 			Columns("name", "year", "description", "institution").
-			Values(cert.Name, cert.Year, cert.Description, cert.Institution).
+			Values(certRequest.Name, certRequest.Year, certRequest.Description, certRequest.Institution).
 			Suffix("RETURNING id").
 			PlaceholderFormat(squirrel.Dollar).
 			ToSql()
+		var Id int
 		if pkg.HandleErr(c, err) {
 			return
-		} else if pkg.HandleErr(c, conn.QueryRow(c.Request.Context(), insertQuery, insertArgs...).Scan(&cert.Id)) {
+		} else if pkg.HandleErr(c, conn.QueryRow(c.Request.Context(), insertQuery, insertArgs...).Scan(&Id)) {
 			return
+		}
+
+		cert := pkg.Certification{
+			Id: Id,
+			CertificationCreateRequest: pkg.CertificationCreateRequest{
+				Name:        certRequest.Name,
+				Year:        certRequest.Year,
+				Description: certRequest.Description,
+				Institution: certRequest.Institution,
+			},
 		}
 
 		c.JSON(http.StatusCreated, pkg.CertificationResponse{Certification: cert})

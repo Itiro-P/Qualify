@@ -139,7 +139,7 @@ func GetService(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Tags Serviços
 // @Accept json
 // @Produce json
-// @Param service body pkg.Service true "Objeto serviço"
+// @Param service body pkg.ServiceCreateRequest true "Objeto serviço"
 // @Success 201 {object} pkg.ServiceResponse
 // @Failure 400 {object} pkg.ErrorResponse
 // @Failure 404 {object} pkg.ErrorResponse
@@ -148,20 +148,20 @@ func GetService(conn *pgxpool.Pool) gin.HandlerFunc {
 // @Router /services [post]
 func CreateService(conn *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var service pkg.Service
-		if err := c.BindJSON(&service); pkg.HandleErr(c, err) {
+		var serviceRequest pkg.ServiceCreateRequest
+		if err := c.BindJSON(&serviceRequest); pkg.HandleErr(c, err) {
 			return
 		}
 
 		query, args, err := squirrel.Insert("service").
 			Columns("proposal_letter_id", "title", "content", "hourly_rate", "status").
-			Values(service.Proposal_letter_id, service.Title, service.Content, service.Hourly_rate, service.Status).
+			Values(serviceRequest.Proposal_letter_id, serviceRequest.Title, serviceRequest.Content, serviceRequest.Hourly_rate, serviceRequest.Status).
 			Suffix("RETURNING " + serviceSelect).PlaceholderFormat(squirrel.Dollar).ToSql()
 		if pkg.HandleErr(c, err) {
 			return
 		}
 
-		service, err = pkg.ScanService(conn.QueryRow(c.Request.Context(), query, args...))
+		service, err := pkg.ScanService(conn.QueryRow(c.Request.Context(), query, args...))
 		if pkg.HandleErr(c, err) {
 			return
 		}

@@ -81,7 +81,7 @@ func TestProposalLetter(t *testing.T) {
 		clientID = cResp.Client.Id
 
 		// 3. Criar a Carta Proposta (O cliente envia para o analista)
-		proposal_letter := pkg.ProposalLetter{
+		proposal_letter := pkg.ProposalLetterCreateRequest{
 			Title:                "Arrumem a merda da traseira pelo AMOR DE AAAAA",
 			Content:              "Só arruma cara. Por favor :)",
 			Proposed_hourly_rate: 79.0,

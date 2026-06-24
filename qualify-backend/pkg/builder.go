@@ -43,7 +43,7 @@ func BuildFilterUser(builder squirrel.SelectBuilder, filters UserFilter) squirre
 
 func BuildFilterAnalyst(builder squirrel.SelectBuilder, filters AnalystFilter) squirrel.SelectBuilder {
 	filters.Normalize()
-	toReturn := BuildFilterUser(builder, filters.UserFilter)
+	toReturn := builder
 
 	if filters.Skills != "" {
 		var skills = strings.Split(filters.Skills, ",")
@@ -102,7 +102,7 @@ func BuildFilterAnalyst(builder squirrel.SelectBuilder, filters AnalystFilter) s
 
 func BuildFilterClient(builder squirrel.SelectBuilder, filters ClientFilter) squirrel.SelectBuilder {
 	filters.Normalize()
-	toReturn := BuildFilterUser(builder, filters.UserFilter)
+	toReturn := builder
 
 	if filters.MinProposedBudget != nil {
 		toReturn = toReturn.Where(squirrel.GtOrEq{"c.proposed_budget": *filters.MinProposedBudget})
