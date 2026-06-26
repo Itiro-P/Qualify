@@ -245,7 +245,7 @@ func DeleteUserProfile(conn *pgxpool.Pool) gin.HandlerFunc {
 		_ = conn.QueryRow(c.Request.Context(),
 			"SELECT COALESCE(picture, '') FROM user_profile WHERE user_id = $1", id).Scan(&fileName)
 
-		if fileName != "" && fileName != "default_picture.png" {
+		if fileName != "" && fileName != "default_picture.png" && fileName != "/uploads/default_picture.png" {
 			_ = os.Remove(filepath.Join("uploads", fileName))
 		}
 

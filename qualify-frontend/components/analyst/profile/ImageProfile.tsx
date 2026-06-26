@@ -12,7 +12,7 @@ export function ImageProfile({
   // Forçamos o tipo do src a aceitar tanto a string da URL quanto o objeto estático do Next
   const imageSrc: string | StaticImageData =
     imageURL && imageURL.trim() !== ""
-      ? `http://localhost:3001${imageURL}`
+      ? `http://localhost:3001${imageURL.startsWith('/uploads') ? imageURL  : `/uploads/${imageURL}`}`
       : Testerson;
 
   return (
