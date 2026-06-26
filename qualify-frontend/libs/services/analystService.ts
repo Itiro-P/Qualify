@@ -91,16 +91,14 @@ export const analystService = {
 
   // Profile
   getProfile(userId: number): Promise<AnalystProfile | null> {
-    return api
-      .get<AnalystProfileResponse>(`/users/${userId}/profile`)
-      .then(
-        (resp) => {
-          return resp.user_profile;
-        },
-        () => {
-          return null;
-        },
-      );
+    return api.get<AnalystProfileResponse>(`/users/${userId}/profile`).then(
+      (resp) => {
+        return resp.user_profile;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
   createProfile(
@@ -145,7 +143,7 @@ export const analystService = {
       .post<AnalystProfileResponse>(`/users/${userId}/profile/picture`, image)
       .then(
         (resp) => {
-          return resp.analyst_profile;
+          return resp.user_profile;
         },
         () => {
           return null;
