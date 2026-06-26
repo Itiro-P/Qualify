@@ -8,44 +8,79 @@ import { User } from "@/libs/session";
 import { ProposalLetter } from "@/types/services/proposal";
 import { Service } from "@/types/services/service";
 import { Briefcase, Clock } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-type StatusKey =
-  | "PROPOSAL"
-  | "NEGOTIATION"
-  | "IN_PROGRESS"
-  | "BLOCKED"
-  | "COMPLETED";
+type StatusKey = "PROPOSTA" | "ATIVO" | "FINALIZADO" | "CANCELADO";
+type ServiceRole = "client" | "analyst";
+
+interface ServiceListItem {
+  service: Service;
+  role: ServiceRole;
+  statusKey: Exclude<StatusKey, "PROPOSTA">;
+}
 
 const TABS: { key: StatusKey; label: string }[] = [
-  { key: "PROPOSAL", label: "Propostas" },
-  { key: "NEGOTIATION", label: "Negociação" },
-  { key: "IN_PROGRESS", label: "Em andamento" },
-  { key: "BLOCKED", label: "Bloqueados" },
-  { key: "COMPLETED", label: "Concluídos" },
+  { key: "PROPOSTA", label: "Propostas" },
+  { key: "ATIVO", label: "Ativos" },
+  { key: "FINALIZADO", label: "Finalizados" },
+  { key: "CANCELADO", label: "Cancelados" },
 ];
 
 const STATUS_BADGE: Record<StatusKey, string> = {
-  PROPOSAL: "bg-blue-500/10 text-blue-400 border-blue-500/30",
-  NEGOTIATION: "bg-yellow-500/10 text-yellow-400 border-yellow-500/30",
-  IN_PROGRESS: "bg-accent/10 text-accent border-accent/30",
-  BLOCKED: "bg-red-500/10 text-red-400 border-red-500/30",
-  COMPLETED: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+  PROPOSTA: "bg-blue-500/10 text-blue-400 border-blue-500/30",
+  ATIVO: "bg-accent/10 text-accent border-accent/30",
+  FINALIZADO: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+  CANCELADO: "bg-red-500/10 text-red-400 border-red-500/30",
 };
 
-function ServiceCard({ service }: { service: Service }) {
-  const status = (service.status as StatusKey) ?? "PROPOSAL";
-  const label = TABS.find((t) => t.key === status)?.label ?? status;
+function normalizeStatus(value?: string): Exclude<StatusKey, "PROPOSTA"> {
+  const base = (value ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  if (base.includes("cancel") || base.includes("block")) {
+    return "CANCELADO";
+  }
+
+  if (
+    base.includes("final") ||
+    base.includes("conclu") ||
+    base.includes("complet")
+  ) {
+    return "FINALIZADO";
+  }
+
+  return "ATIVO";
+}
+
+function ServiceCard({
+  item,
+  acting,
+  onCancel,
+  onFinalize,
+}: {
+  item: ServiceListItem;
+  acting: boolean;
+  onCancel: () => void;
+  onFinalize: () => void;
+}) {
+  const { service, statusKey, role } = item;
+  const label = TABS.find((t) => t.key === statusKey)?.label ?? statusKey;
+  const canCancel =
+    role === "analyst" && statusKey !== "CANCELADO" && statusKey !== "FINALIZADO";
+  const canFinalize =
+    role === "client" && statusKey !== "CANCELADO" && statusKey !== "FINALIZADO";
+  const contextLabel = role === "analyst" ? "Como analista" : "Como cliente";
 
   return (
     <div className="rounded-xl border border-white/10 bg-white/5 p-6">
       <div className="flex items-start justify-between gap-4">
-        <h3 className="text-lg font-bold text-white">{service.title}</h3>
-        <span
-          className={`shrink-0 rounded-full border px-3 py-1 text-xs font-medium ${
-            STATUS_BADGE[status] ?? STATUS_BADGE.PROPOSAL
-          }`}
-        >
+        <div>
+          <h3 className="text-lg font-bold text-white">{service.title}</h3>
+          <p className="mt-1 text-xs text-neutral-slate">{contextLabel}</p>
+        </div>
+        <span className={`shrink-0 rounded-full border px-3 py-1 text-xs font-medium ${STATUS_BADGE[statusKey]}`}>
           {label}
         </span>
       </div>
@@ -58,106 +93,137 @@ function ServiceCard({ service }: { service: Service }) {
           R$ {service.hourly_rate}/h
         </p>
       )}
+
+      {canCancel && (
+        <div className="mt-5">
+          <button
+            onClick={onCancel}
+            disabled={acting}
+            className="w-full rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-2 text-sm font-medium hover:bg-red-500/20 transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            Cancelar serviço
+          </button>
+        </div>
+      )}
+
+      {canFinalize && (
+        <div className="mt-5">
+          <button
+            onClick={onFinalize}
+            disabled={acting}
+            className="w-full rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-4 py-2 text-sm font-medium hover:bg-emerald-500/20 transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            Finalizar serviço
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
 export function ListServices({ user }: { user: User }) {
-  const [services, setServices] = useState<Service[]>([]);
+  const [services, setServices] = useState<ServiceListItem[]>([]);
   const [proposals, setProposals] = useState<ProposalLetter[]>([]);
-  const [isAnalyst, setIsAnalyst] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<StatusKey>("COMPLETED");
+  const [actingServiceId, setActingServiceId] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<StatusKey>("ATIVO");
 
-  useEffect(() => {
-    async function getInfo() {
-      setLoading(true);
-      const analyst = await analystService.getByUserId(user.id);
+  const loadData = useCallback(async () => {
+    setLoading(true);
 
-      if (analyst) {
-        setIsAnalyst(true);
-        const analystProposals = await proposalService.listByAnalyst(user.id);
-        setProposals(analystProposals ?? []);
-        setServices([]);
-      } else {
-        setIsAnalyst(false);
-        const services = await serviceService.listServicesByClient(user.id);
-        if (services) {
-          setServices(services);
-        } else {
-          setServices([]);
-        }
-        setProposals([]);
-      }
+    const [clientServices, analyst] = await Promise.all([
+      serviceService.listServicesByClient(user.id),
+      analystService.getByUserId(user.id),
+    ]);
 
-      setLoading(false);
+    let analystServices: Service[] = [];
+    let pendingProposals: ProposalLetter[] = [];
+
+    if (analyst) {
+      const [servicesByAnalyst, analystProposals] = await Promise.all([
+        analystService.listServices(user.id),
+        proposalService.listByAnalyst(user.id),
+      ]);
+
+      analystServices = servicesByAnalyst ?? [];
+
+      const pendingChecks = await Promise.all(
+        (analystProposals ?? []).map(async (proposal) => {
+          if (!proposal.id) return proposal;
+          const linkedServices = await serviceService.list({
+            proposal_id: proposal.id,
+          });
+
+          return linkedServices && linkedServices.length > 0 ? null : proposal;
+        }),
+      );
+
+      pendingProposals = pendingChecks.filter(
+        (proposal): proposal is ProposalLetter => proposal != null,
+      );
     }
 
-    getInfo();
+    const clientList: ServiceListItem[] = (clientServices ?? []).map((service) => ({
+      service,
+      role: "client",
+      statusKey: normalizeStatus(service.status),
+    }));
+
+    const analystList: ServiceListItem[] = analystServices.map((service) => ({
+      service,
+      role: "analyst",
+      statusKey: normalizeStatus(service.status),
+    }));
+
+    setServices([...clientList, ...analystList]);
+    setProposals(pendingProposals);
+    setLoading(false);
   }, [user.id]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  async function handleCancelService(serviceId?: number) {
+    if (!serviceId) return;
+    setActingServiceId(serviceId);
+    await serviceService.patch(serviceId, { status: "Cancelado" });
+    setActingServiceId(null);
+    await loadData();
+  }
+
+  async function handleFinalizeService(serviceId?: number) {
+    if (!serviceId) return;
+    setActingServiceId(serviceId);
+    await serviceService.patch(serviceId, { status: "Finalizado" });
+    setActingServiceId(null);
+    await loadData();
+  }
 
   const countByStatus = useMemo(() => {
     const counts = {} as Record<StatusKey, number>;
-    for (const tab of TABS) {
-      counts[tab.key] = services.filter((s) => s.status === tab.key).length;
-    }
+    counts.PROPOSTA = proposals.length;
+    counts.ATIVO = services.filter((s) => s.statusKey === "ATIVO").length;
+    counts.FINALIZADO = services.filter((s) => s.statusKey === "FINALIZADO").length;
+    counts.CANCELADO = services.filter((s) => s.statusKey === "CANCELADO").length;
     return counts;
-  }, [services]);
+  }, [services, proposals]);
 
-  const visibleServices = useMemo(
-    () => services.filter((s) => s.status === activeTab),
-    [services, activeTab],
-  );
+  const visibleServices = useMemo(() => {
+    if (activeTab === "PROPOSTA") return [];
+    return services.filter((s) => s.statusKey === activeTab);
+  }, [services, activeTab]);
 
   if (loading) return <Loading />;
-
-  if (isAnalyst) {
-    return (
-      <section className="px-6 md:px-20 py-14">
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-4">Meus serviços</h1>
-            <div className="h-1 w-20 bg-accent mb-6" />
-            <p className="text-neutral-slate max-w-2xl">
-              Aceite ou recuse propostas recebidas de clientes.
-            </p>
-          </div>
-
-          {proposals.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/2 py-20 text-center">
-              <Briefcase className="w-10 h-10 text-neutral-slate mb-4" />
-              <p className="text-neutral-slate">Nenhuma proposta recebida.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {proposals.map((proposal) => (
-                <ProposalCard
-                  key={proposal.id}
-                  proposal={proposal}
-                  viewerRole="analyst"
-                  onUpdate={async () => {
-                    const updatedProposals = await proposalService.listByAnalyst(
-                      user.id,
-                    );
-                    setProposals(updatedProposals ?? []);
-                  }}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-    );
-  }
 
   return (
     <section className="px-6 md:px-20 py-14">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-4">Serviços</h1>
+          <h1 className="text-3xl font-bold mb-4">Meus serviços</h1>
           <div className="h-1 w-20 bg-accent mb-6" />
           <p className="text-neutral-slate max-w-2xl">
-            Acompanhe seus serviços organizados por etapa.
+            Acompanhe propostas e serviços por status.
           </p>
         </div>
 
@@ -180,7 +246,27 @@ export function ListServices({ user }: { user: User }) {
           ))}
         </div>
 
-        {visibleServices.length === 0 ? (
+        {activeTab === "PROPOSTA" ? (
+          proposals.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/2 py-20 text-center">
+              <Briefcase className="w-10 h-10 text-neutral-slate mb-4" />
+              <p className="text-neutral-slate">Nenhuma proposta pendente.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {proposals.map((proposal) => (
+                <ProposalCard
+                  key={proposal.id}
+                  proposal={proposal}
+                  viewerRole="analyst"
+                  onUpdate={() => {
+                    void loadData();
+                  }}
+                />
+              ))}
+            </div>
+          )
+        ) : visibleServices.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/2 py-20 text-center">
             <Briefcase className="w-10 h-10 text-neutral-slate mb-4" />
             <p className="text-neutral-slate">
@@ -189,8 +275,18 @@ export function ListServices({ user }: { user: User }) {
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            {visibleServices.map((service) => (
-              <ServiceCard key={service.id} service={service} />
+            {visibleServices.map((item) => (
+              <ServiceCard
+                key={`${item.role}-${item.service.id ?? item.service.title}`}
+                item={item}
+                acting={actingServiceId === item.service.id}
+                onCancel={() => {
+                  void handleCancelService(item.service.id);
+                }}
+                onFinalize={() => {
+                  void handleFinalizeService(item.service.id);
+                }}
+              />
             ))}
           </div>
         )}

@@ -40,7 +40,7 @@ export function ProposalCard({
       title: proposal.title ?? "",
       content: proposal.content ?? proposal.title ?? "",
       hourly_rate: proposal.proposed_hourly_rate,
-      status: "Contrato Ativo",
+      status: "Ativo",
     });
     setActing(false);
     onUpdate();
