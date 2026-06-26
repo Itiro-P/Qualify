@@ -139,15 +139,14 @@ export const analystService = {
 
   //Profile-image
   postImage(userId: number, image: File): Promise<AnalystProfile | null> {
+    const formData = new FormData();
+    formData.append("picture", image); // chave deve bater com o que o backend espera
+
     return api
-      .post<AnalystProfileResponse>(`/users/${userId}/profile/picture`, image)
+      .upload<AnalystProfileResponse>(`/users/${userId}/profile/picture`, formData)
       .then(
-        (resp) => {
-          return resp.user_profile;
-        },
-        () => {
-          return null;
-        },
+        (resp) => resp.user_profile,
+        () => null,
       );
   },
 

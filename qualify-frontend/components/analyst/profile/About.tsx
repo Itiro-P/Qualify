@@ -36,6 +36,8 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
       const profileResp = await analystService.getProfile(analyst.id);
       if (profileResp != null) {
         setBiography(profileResp.biography);
+      } else {
+        setBiography("Um homem de poucas palavras.");
       }
 
       // Reviews
