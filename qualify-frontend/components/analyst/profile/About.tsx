@@ -68,8 +68,6 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
       const certResp = await analystService.listCertifications(analyst.id);
       if (certResp != null) {
         setCertificationsCardsVector(certResp);
-      } else {
-        setError("Erro ao carregar as certificações do analista.");
       }
     }
     loadData();
