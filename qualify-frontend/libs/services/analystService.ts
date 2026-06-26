@@ -13,7 +13,11 @@ import type {
   ListAnalystsParams,
   Analyst,
 } from "@/types/services/analyst";
-import type { Skill, SkillResponse, SkillsResponse } from "@/types/services/skill";
+import type {
+  Skill,
+  SkillResponse,
+  SkillsResponse,
+} from "@/types/services/skill";
 import { Service } from "@/types/services/service";
 import { Review } from "@/types/services/review";
 
@@ -135,6 +139,20 @@ export const analystService = {
     return api.delete(`/users/${userId}/analyst/profile`);
   },
 
+  //Profile-image
+  postImage(userId: number, image: File): Promise<AnalystProfile | null> {
+    return api
+      .post<AnalystProfileResponse>(`/users/${userId}/profile/picture`, image)
+      .then(
+        (resp) => {
+          return resp.analyst_profile;
+        },
+        () => {
+          return null;
+        },
+      );
+  },
+
   // Certifications
   listCertifications(userId: number): Promise<Certification[] | null> {
     return api
@@ -205,16 +223,14 @@ export const analystService = {
 
   // Skills
   listSkills(userId: number): Promise<Skill[] | null> {
-    return api
-      .get<SkillsResponse>(`/users/${userId}/analyst/skills`)
-      .then(
-        (resp) => {
-          return resp.skills;
-        },
-        () => {
-          return null;
-        },
-      );
+    return api.get<SkillsResponse>(`/users/${userId}/analyst/skills`).then(
+      (resp) => {
+        return resp.skills;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
   addPostSkill(
@@ -235,10 +251,7 @@ export const analystService = {
 
   addSkill(userId: number, skillId: number): Promise<Skill | null> {
     return api
-      .post<SkillResponse>(
-        `/users/${userId}/analyst/skills/${skillId}`,
-        {},
-      )
+      .post<SkillResponse>(`/users/${userId}/analyst/skills/${skillId}`, {})
       .then(
         (resp) => {
           return resp.skill;
