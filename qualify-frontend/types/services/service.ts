@@ -26,5 +26,5 @@ export interface ServiceUpdateRequest {
 
 export interface ListServicesParams {
   status?: string;
-  proposal_letter_id?: number;
+  proposal_id?: number;
 }

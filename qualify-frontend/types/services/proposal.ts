@@ -1,3 +1,11 @@
+export interface ProposalLetterCreateRequest {
+  title: string;
+  content: string;
+  client_id: number;
+  analyst_id: number;
+  proposed_hourly_rate: number;
+}
+
 export interface ProposalLetter {
   id?: number;
   analyst_id?: number;
@@ -27,3 +35,4 @@ export interface ListProposalsParams {
   client_id?: number;
   analyst_id?: number;
 }
+

@@ -19,7 +19,7 @@ export const skillService = {
   },
 
   getById(id: number): Promise<Skill | null> {
-    return api.get<SkillResponse>(`/skills/${id}`).then(
+    return api.get<SkillResponse>(`/skills/search/${id}`).then(
       (resp) => {
         return resp.skill;
       },

@@ -92,10 +92,10 @@ export const analystService = {
   // Profile
   getProfile(userId: number): Promise<AnalystProfile | null> {
     return api
-      .get<AnalystProfileResponse>(`/users/${userId}/analyst/profile`)
+      .get<AnalystProfileResponse>(`/users/${userId}/profile`)
       .then(
         (resp) => {
-          return resp.analyst_profile;
+          return resp.user_profile;
         },
         () => {
           return null;
@@ -108,10 +108,10 @@ export const analystService = {
     data: AnalystProfile,
   ): Promise<AnalystProfile | null> {
     return api
-      .post<AnalystProfileResponse>(`/users/${userId}/analyst/profile`, data)
+      .post<AnalystProfileResponse>(`/users/${userId}/profile`, data)
       .then(
         (resp) => {
-          return resp.analyst_profile;
+          return resp.user_profile;
         },
         () => {
           return null;
@@ -124,10 +124,10 @@ export const analystService = {
     data: AnalystProfile,
   ): Promise<AnalystProfile | null> {
     return api
-      .put<AnalystProfileResponse>(`/users/${userId}/analyst/profile`, data)
+      .put<AnalystProfileResponse>(`/users/${userId}/profile`, data)
       .then(
         (resp) => {
-          return resp.analyst_profile;
+          return resp.user_profile;
         },
         () => {
           return null;
@@ -136,7 +136,7 @@ export const analystService = {
   },
 
   deleteProfile(userId: number): Promise<Record<string, string>> {
-    return api.delete(`/users/${userId}/analyst/profile`);
+    return api.delete(`/users/${userId}/profile`);
   },
 
   //Profile-image
