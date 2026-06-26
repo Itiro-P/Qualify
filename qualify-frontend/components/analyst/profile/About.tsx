@@ -35,9 +35,11 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
       // Biography
       const profileResp = await analystService.getProfile(analyst.id);
       if (profileResp != null) {
-        setBiography(profileResp.biography);
-      } else {
-        setError("Erro ao carregar a biografia do analista.");
+        setBiography(
+          profileResp.biography
+            ? profileResp.biography
+            : "É um usuário de poucas palavras",
+        );
       }
 
       // Reviews
@@ -46,8 +48,6 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
       });
       if (reviewsResp?.reviews != null) {
         setReviewCardsVector(reviewsResp.reviews);
-      } else {
-        setError("Erro ao carregar as avaliações do analista.");
       }
 
       // Skills
@@ -62,8 +62,6 @@ function TabsSystem({ analyst }: { analyst: Analyst }) {
         });
 
         setSkillsCardsVector(analystSkills);
-      } else {
-        setError("Erro ao carregar as habilidades do analista.");
       }
 
       // Certifications
