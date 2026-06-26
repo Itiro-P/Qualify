@@ -1,8 +1,11 @@
 "use client";
 
 import { Loading } from "@/components/ui/Loading";
+import { ProposalCard } from "@/components/analyst/proposals";
+import { analystService, proposalService } from "@/libs/services";
 import { serviceService } from "@/libs/services/serviceService";
 import { User } from "@/libs/session";
+import { ProposalLetter } from "@/types/services/proposal";
 import { Service } from "@/types/services/service";
 import { Briefcase, Clock } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -61,20 +64,35 @@ function ServiceCard({ service }: { service: Service }) {
 
 export function ListServices({ user }: { user: User }) {
   const [services, setServices] = useState<Service[]>([]);
+  const [proposals, setProposals] = useState<ProposalLetter[]>([]);
+  const [isAnalyst, setIsAnalyst] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<StatusKey>("COMPLETED");
 
   useEffect(() => {
     async function getInfo() {
       setLoading(true);
-      const services = await serviceService.listServicesByClient(user.id);
-      if (services) {
-        setServices(services);
-      } else {
+      const analyst = await analystService.getByUserId(user.id);
+
+      if (analyst) {
+        setIsAnalyst(true);
+        const analystProposals = await proposalService.listByAnalyst(user.id);
+        setProposals(analystProposals ?? []);
         setServices([]);
+      } else {
+        setIsAnalyst(false);
+        const services = await serviceService.listServicesByClient(user.id);
+        if (services) {
+          setServices(services);
+        } else {
+          setServices([]);
+        }
+        setProposals([]);
       }
+
       setLoading(false);
     }
+
     getInfo();
   }, [user.id]);
 
@@ -92,6 +110,45 @@ export function ListServices({ user }: { user: User }) {
   );
 
   if (loading) return <Loading />;
+
+  if (isAnalyst) {
+    return (
+      <section className="px-6 md:px-20 py-14">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-4">Meus serviços</h1>
+            <div className="h-1 w-20 bg-accent mb-6" />
+            <p className="text-neutral-slate max-w-2xl">
+              Aceite ou recuse propostas recebidas de clientes.
+            </p>
+          </div>
+
+          {proposals.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/2 py-20 text-center">
+              <Briefcase className="w-10 h-10 text-neutral-slate mb-4" />
+              <p className="text-neutral-slate">Nenhuma proposta recebida.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {proposals.map((proposal) => (
+                <ProposalCard
+                  key={proposal.id}
+                  proposal={proposal}
+                  viewerRole="analyst"
+                  onUpdate={async () => {
+                    const updatedProposals = await proposalService.listByAnalyst(
+                      user.id,
+                    );
+                    setProposals(updatedProposals ?? []);
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="px-6 md:px-20 py-14">
