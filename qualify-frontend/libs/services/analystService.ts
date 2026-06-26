@@ -13,7 +13,11 @@ import type {
   ListAnalystsParams,
   Analyst,
 } from "@/types/services/analyst";
-import type { Skill, SkillResponse, SkillsResponse } from "@/types/services/skill";
+import type {
+  Skill,
+  SkillResponse,
+  SkillsResponse,
+} from "@/types/services/skill";
 import { Service } from "@/types/services/service";
 import { Review } from "@/types/services/review";
 
@@ -87,16 +91,14 @@ export const analystService = {
 
   // Profile
   getProfile(userId: number): Promise<AnalystProfile | null> {
-    return api
-      .get<AnalystProfileResponse>(`/users/${userId}/analyst/profile`)
-      .then(
-        (resp) => {
-          return resp.analyst_profile;
-        },
-        () => {
-          return null;
-        },
-      );
+    return api.get<AnalystProfileResponse>(`/users/${userId}/profile`).then(
+      (resp) => {
+        return resp.user_profile;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
   createProfile(
@@ -104,10 +106,10 @@ export const analystService = {
     data: AnalystProfile,
   ): Promise<AnalystProfile | null> {
     return api
-      .post<AnalystProfileResponse>(`/users/${userId}/analyst/profile`, data)
+      .post<AnalystProfileResponse>(`/users/${userId}/profile`, data)
       .then(
         (resp) => {
-          return resp.analyst_profile;
+          return resp.user_profile;
         },
         () => {
           return null;
@@ -120,10 +122,10 @@ export const analystService = {
     data: AnalystProfile,
   ): Promise<AnalystProfile | null> {
     return api
-      .put<AnalystProfileResponse>(`/users/${userId}/analyst/profile`, data)
+      .put<AnalystProfileResponse>(`/users/${userId}/profile`, data)
       .then(
         (resp) => {
-          return resp.analyst_profile;
+          return resp.user_profile;
         },
         () => {
           return null;
@@ -132,7 +134,20 @@ export const analystService = {
   },
 
   deleteProfile(userId: number): Promise<Record<string, string>> {
-    return api.delete(`/users/${userId}/analyst/profile`);
+    return api.delete(`/users/${userId}/profile`);
+  },
+
+  //Profile-image
+  postImage(userId: number, image: File): Promise<AnalystProfile | null> {
+    const formData = new FormData();
+    formData.append("picture", image); // chave deve bater com o que o backend espera
+
+    return api
+      .upload<AnalystProfileResponse>(`/users/${userId}/profile/picture`, formData)
+      .then(
+        (resp) => resp.user_profile,
+        () => null,
+      );
   },
 
   // Certifications
@@ -205,16 +220,14 @@ export const analystService = {
 
   // Skills
   listSkills(userId: number): Promise<Skill[] | null> {
-    return api
-      .get<SkillsResponse>(`/users/${userId}/analyst/skills`)
-      .then(
-        (resp) => {
-          return resp.skills;
-        },
-        () => {
-          return null;
-        },
-      );
+    return api.get<SkillsResponse>(`/users/${userId}/analyst/skills`).then(
+      (resp) => {
+        return resp.skills;
+      },
+      () => {
+        return null;
+      },
+    );
   },
 
   addPostSkill(
@@ -235,10 +248,7 @@ export const analystService = {
 
   addSkill(userId: number, skillId: number): Promise<Skill | null> {
     return api
-      .post<SkillResponse>(
-        `/users/${userId}/analyst/skills/${skillId}`,
-        {},
-      )
+      .post<SkillResponse>(`/users/${userId}/analyst/skills/${skillId}`, {})
       .then(
         (resp) => {
           return resp.skill;

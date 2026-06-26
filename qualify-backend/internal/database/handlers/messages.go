@@ -79,10 +79,27 @@ func CreateMessage(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		// Validação básica: conversão de string para int se necessário (se o ID for enviado como string no JSON)
 		senderID := req.Sender_id
 		if req.Content == "" || convID == 0 || senderID == 0 {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "Invalid data"))
+			return
+		}
+
+		var conversationExists bool
+		err = conn.QueryRow(c.Request.Context(), `SELECT EXISTS(SELECT 1 FROM conversation WHERE id = $1)`, convID).Scan(&conversationExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if !conversationExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Conversation not found"))
+			return
+		}
+
+		var participantAllowed bool
+		err = conn.QueryRow(c.Request.Context(), `SELECT EXISTS(SELECT 1 FROM conversation WHERE id = $1 AND (client_id = $2 OR analyst_id = $2))`, convID, senderID).Scan(&participantAllowed)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if !participantAllowed {
+			c.JSON(http.StatusForbidden, pkg.Forbidden(c.FullPath(), "Only conversation participants can send messages"))
 			return
 		}
 
@@ -146,6 +163,30 @@ func UpdateMessage(conn *pgxpool.Pool) gin.HandlerFunc {
 
 		if !anyField {
 			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "No fields provided for update"))
+			return
+		}
+
+		var messageOwnerID int
+		err = conn.QueryRow(c.Request.Context(), `SELECT sender_id FROM message WHERE id = $1 AND conversation_id = $2`, msgID, convID).Scan(&messageOwnerID)
+		if err == pgx.ErrNoRows {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Message not found"))
+			return
+		} else if pkg.HandleErr(c, err) {
+			return
+		}
+
+		userIDValue, exists := c.Get("user_id")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, pkg.Unauthorized(c.FullPath(), "user_id not found in token"))
+			return
+		}
+		userID, ok := userIDValue.(int)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, pkg.Unauthorized(c.FullPath(), "invalid user_id in token"))
+			return
+		}
+		if messageOwnerID != userID {
+			c.JSON(http.StatusForbidden, pkg.Forbidden(c.FullPath(), "Only the message sender can edit it"))
 			return
 		}
 
@@ -239,6 +280,30 @@ func DeleteMessage(conn *pgxpool.Pool) gin.HandlerFunc {
 		}
 		msgID, err := pkg.ParsePathParam(c, "msg_id")
 		if err != nil {
+			return
+		}
+
+		var messageOwnerID int
+		err = conn.QueryRow(c.Request.Context(), `SELECT sender_id FROM message WHERE id = $1 AND conversation_id = $2`, msgID, convID).Scan(&messageOwnerID)
+		if err == pgx.ErrNoRows {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Message not found"))
+			return
+		} else if pkg.HandleErr(c, err) {
+			return
+		}
+
+		userIDValue, exists := c.Get("user_id")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, pkg.Unauthorized(c.FullPath(), "user_id not found in token"))
+			return
+		}
+		userID, ok := userIDValue.(int)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, pkg.Unauthorized(c.FullPath(), "invalid user_id in token"))
+			return
+		}
+		if messageOwnerID != userID {
+			c.JSON(http.StatusForbidden, pkg.Forbidden(c.FullPath(), "Only the message sender can delete it"))
 			return
 		}
 

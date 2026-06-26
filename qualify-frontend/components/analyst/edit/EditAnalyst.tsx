@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Certification } from "@/types/services/certification";
 import { Skill } from "@/types/services/skill";
+import { EditImage } from "@/components/analyst/editImage";
 import {
   RegisterCertifications,
   RegisterHourlyRate,
@@ -22,6 +23,7 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
   >([]);
   const [anlystSkills, setAnalystSkills] = useState<Skill[]>([]);
   const [hourlyRateAnalyst, setHourlyRateAnalyst] = useState<number>(-1);
+  const [analystImage, setAnalystImage] = useState<File | undefined>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -46,6 +48,17 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
 
     getInfo();
   }, []);
+
+  async function updateImage(): Promise<number> {
+    if (analystImage) {
+      const result = await analystService.postImage(analyst.id, analystImage); // atualiza a imagem do analista
+      if (result == null) {
+        setError("Ocorreu um erro ao atualizar a imagem. Tente novamente.");
+        return -1; // retorna -1 para indicar falha
+      }
+    }
+    return 0; // retorna 0 para indicar sucesso
+  }
 
   async function updateHourlyRate(): Promise<number> {
     const result = await analystService.patch(analyst.id, {
@@ -130,9 +143,7 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
     if (analystSkillsIds != null) {
       const removedSkills = analystSkillsIds.filter(
         (dbSkill) =>
-          !anlystSkills.some(
-            (analystSkill) => analystSkill.id === dbSkill.id,
-          ),
+          !anlystSkills.some((analystSkill) => analystSkill.id === dbSkill.id),
       ); // pega skills que foram removidas pelo analista
 
       for (const skill of removedSkills) {
@@ -190,6 +201,14 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
       setLoading(false);
       return; // se der erro na atualização das skills, para o processo
     }
+
+    // 4. atualiza a imagem do analista
+    const imageResult = await updateImage();
+    if (imageResult == -1) {
+      setLoading(false);
+      return; // se der erro na atualização do preço por hora, para o processo
+    }
+
     setSuccess("Analista atualizado com sucesso!");
     setLoading(false);
   }
@@ -204,6 +223,7 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
     >
       {error && <Alert variant="error">{error}</Alert>}
       {success && <Alert variant="success">{success}</Alert>}
+      <EditImage analyst={analyst} setAnalystImage={setAnalystImage} />
 
       <RegisterCertifications
         analystCertifications={analystCertifications}

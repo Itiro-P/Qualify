@@ -12,9 +12,11 @@ async function request<T>(
   options: RequestInit = {},
 ): Promise<T> {
   const url = `${BASE_URL}${endpoint}`;
+  const isFormData = options.body instanceof FormData;
 
   const headers: HeadersInit = {
-    "Content-Type": "application/json",
+    // Só seta JSON se não for FormData
+    ...(!isFormData && { "Content-Type": "application/json" }),
     ...options.headers,
   };
 
@@ -67,5 +69,12 @@ export const api = {
 
   delete<T>(endpoint: string): Promise<T> {
     return request<T>(endpoint, { method: "DELETE" });
+  },
+
+  upload<T>(endpoint: string, formData: FormData): Promise<T> {
+    return request<T>(endpoint, {
+      method: "POST",
+      body: formData,
+    });
   },
 };

@@ -44,7 +44,7 @@ export interface AnalystProfile {
 }
 
 export interface AnalystProfileResponse {
-  analyst_profile: AnalystProfile;
+  user_profile: AnalystProfile;
 }
 
 export interface ListAnalystsParams {
