@@ -1,6 +1,7 @@
 import { api } from "@/libs/api";
 import type {
   ProposalLetter,
+  ProposalLetterCreateRequest,
   ProposalLetterResponse,
   ProposalLettersResponse,
   ProposalLetterUpdateRequest,
@@ -36,7 +37,7 @@ export const proposalService = {
     );
   },
 
-  create(data: ProposalLetter): Promise<ProposalLetter | null> {
+  create(data: ProposalLetterCreateRequest): Promise<ProposalLetter | null> {
     return api.post<ProposalLetterResponse>("/proposals", data).then(
       (resp) => {
         return resp.proposal_letter;
@@ -74,5 +75,23 @@ export const proposalService = {
 
   delete(id: number): Promise<Record<string, string>> {
     return api.delete(`/proposals/${id}`);
+  },
+
+  listByClient(userId: number): Promise<ProposalLetter[] | null> {
+    return api
+      .get<ProposalLettersResponse>(`/users/${userId}/client/proposals`)
+      .then(
+        (resp) => resp.proposal_letters,
+        () => null,
+      );
+  },
+
+  listByAnalyst(userId: number): Promise<ProposalLetter[] | null> {
+    return api
+      .get<ProposalLettersResponse>(`/users/${userId}/analyst/proposals`)
+      .then(
+        (resp) => resp.proposal_letters,
+        () => null,
+      );
   },
 };
