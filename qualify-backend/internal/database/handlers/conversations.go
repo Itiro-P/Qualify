@@ -225,6 +225,33 @@ func CreateConversation(conn *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
+		if req.Service_id == nil || *req.Service_id == 0 {
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "service_id is required"))
+			return
+		}
+		if req.Proposal_id == nil || *req.Proposal_id == 0 {
+			c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "proposal_id is required"))
+			return
+		}
+
+		var serviceExists bool
+		err = conn.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM "service" WHERE id = $1)`, *req.Service_id).Scan(&serviceExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if !serviceExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Service not found"))
+			return
+		}
+
+		var proposalExists bool
+		err = conn.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM proposal_letter WHERE id = $1)`, *req.Proposal_id).Scan(&proposalExists)
+		if pkg.HandleErr(c, err) {
+			return
+		} else if !proposalExists {
+			c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Proposal not found"))
+			return
+		}
+
 		ins := squirrel.Insert("conversation").Columns("analyst_id", "client_id").Values(req.Analyst_id, req.Client_id)
 
 		if req.Service_id != nil && *req.Service_id != 0 {
@@ -294,9 +321,35 @@ func UpdateConversation(conn *pgxpool.Pool) gin.HandlerFunc {
 			upd = upd.Set("client_id", *req.Client_id)
 		}
 		if req.Service_id != nil {
+			if *req.Service_id == 0 {
+				c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "service_id is required"))
+				return
+			}
+
+			var serviceExists bool
+			err = conn.QueryRow(c.Request.Context(), `SELECT EXISTS(SELECT 1 FROM "service" WHERE id = $1)`, *req.Service_id).Scan(&serviceExists)
+			if pkg.HandleErr(c, err) {
+				return
+			} else if !serviceExists {
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Service not found"))
+				return
+			}
 			upd = upd.Set("service_id", *req.Service_id)
 		}
 		if req.Proposal_id != nil {
+			if *req.Proposal_id == 0 {
+				c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "proposal_id is required"))
+				return
+			}
+
+			var proposalExists bool
+			err = conn.QueryRow(c.Request.Context(), `SELECT EXISTS(SELECT 1 FROM proposal_letter WHERE id = $1)`, *req.Proposal_id).Scan(&proposalExists)
+			if pkg.HandleErr(c, err) {
+				return
+			} else if !proposalExists {
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Proposal not found"))
+				return
+			}
 			upd = upd.Set("proposal_id", *req.Proposal_id)
 		}
 
@@ -358,10 +411,36 @@ func UpdateConversationPartial(conn *pgxpool.Pool) gin.HandlerFunc {
 			anyField = true
 		}
 		if req.Service_id != nil {
+			if *req.Service_id == 0 {
+				c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "service_id is required"))
+				return
+			}
+
+			var serviceExists bool
+			err = conn.QueryRow(c.Request.Context(), `SELECT EXISTS(SELECT 1 FROM "service" WHERE id = $1)`, *req.Service_id).Scan(&serviceExists)
+			if pkg.HandleErr(c, err) {
+				return
+			} else if !serviceExists {
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Service not found"))
+				return
+			}
 			upd = upd.Set("service_id", *req.Service_id)
 			anyField = true
 		}
 		if req.Proposal_id != nil {
+			if *req.Proposal_id == 0 {
+				c.JSON(http.StatusBadRequest, pkg.BadRequest(c.FullPath(), "proposal_id is required"))
+				return
+			}
+
+			var proposalExists bool
+			err = conn.QueryRow(c.Request.Context(), `SELECT EXISTS(SELECT 1 FROM proposal_letter WHERE id = $1)`, *req.Proposal_id).Scan(&proposalExists)
+			if pkg.HandleErr(c, err) {
+				return
+			} else if !proposalExists {
+				c.JSON(http.StatusNotFound, pkg.NotFound(c.FullPath(), "Proposal not found"))
+				return
+			}
 			upd = upd.Set("proposal_id", *req.Proposal_id)
 			anyField = true
 		}
