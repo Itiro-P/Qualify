@@ -57,8 +57,7 @@ export function EditAnalyst({ analyst }: { analyst: Analyst }) {
         return -1; // retorna -1 para indicar falha
       }
     }
-    setError("Imagem inválida. Tente novamente.");
-    return -1; // retorna -1 para indicar falha
+    return 0; // retorna 0 para indicar sucesso
   }
 
   async function updateHourlyRate(): Promise<number> {

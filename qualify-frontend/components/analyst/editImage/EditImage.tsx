@@ -35,7 +35,7 @@ export function EditImage({
     <div>
       <ImageProfile user={analyst.name} imageURL={imageUrl} />
 
-      <p className="mb-2 text-sm font-medium text-white/80">Certificações</p>
+      <p className="mb-2 text-sm font-medium text-white/80">Foto de perfil</p>
 
       <form className="mt-2 mb-8 rounded-xl border border-white/10 p-5 pt-3">
         <div className="flex flex-col gap-4">
