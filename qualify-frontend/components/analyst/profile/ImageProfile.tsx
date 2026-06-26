@@ -17,7 +17,7 @@ export function ImageProfile({
 
   return (
     <div className="w-[15%]">
-      <Link href="/Analyst/edit">
+      <Link href="/analyst/edit">
         <Image
           src={imageSrc}
           alt={`Foto de ${user}`}
