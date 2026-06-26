@@ -129,10 +129,10 @@ export function RegisterAnalyst({ userSession }: { userSession: User }) {
       return; // se der erro na atualização das skills, para o processo
     }
 
-    // Coloca um perfil aleatório
+    //Cria profile do analista
     analystService.createProfile(userSession.id, {
       user_id: userSession.id,
-      biography: "É um usuário de poucas palavras",
+      biography: "É uma pessoa de poucas palavras",
     });
 
     setSuccess("Cadastro de analista realizado com sucesso!");
